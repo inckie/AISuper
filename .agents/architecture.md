@@ -37,6 +37,7 @@ Business logic for applets is written in JavaScript. This allows the logic to be
     *   `setValue(key, value)`: Scripts can push updates to the UI.
     *   `httpGet(url)`: Scripts can performing blocking HTTP requests.
     *   `process()`, `initialize()`: Entry point functions called by Runtime.
+*   **Resource Loading**: Uses `Res.getUri("files/...")` to resolve platform-specific resource paths (Android namespacing) before reading via `Res.readBytes()`.
 
 **Key Interface:** `com.damn.aisuper.engine.AppJSEngine`
 **Implementation:** `com.damn.aisuper.engine.KeightJSEngine`
