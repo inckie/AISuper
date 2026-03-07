@@ -11,11 +11,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 import aisuper.composeapp.generated.resources.Res
-import com.damn.aisuper.engine.JSEngine
-import com.damn.aisuper.engine.SimpleJSEngine
+import com.damn.aisuper.engine.AppJSEngine
+import com.damn.aisuper.engine.KeightJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.RenderWidget
 import com.damn.aisuper.layout.parseLayout
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
@@ -25,7 +26,10 @@ fun App() {
         var layoutRoot by remember { mutableStateOf<LayoutRoot?>(null) }
         var layoutValues by remember { mutableStateOf(mapOf<String, String>()) }
         var scriptContent by remember { mutableStateOf("") }
-        val engine = remember { SimpleJSEngine() }
+        val scope = rememberCoroutineScope()
+
+        // Use KeightJSEngine
+        val engine = remember { KeightJSEngine() }
 
         LaunchedEffect(Unit) {
             try {
@@ -58,11 +62,13 @@ fun App() {
                         if (action == "processEcho") {
                             val input = layoutValues["input_field"] ?: ""
 
-                            // Execute JS Block
-                            val result = engine.execute(scriptContent, "process", listOf(input))
+                            // Execute JS Block asynchronously
+                            scope.launch {
+                                val result = engine.execute(scriptContent, "process", listOf(input))
 
-                            layoutValues = layoutValues.toMutableMap().apply {
-                                put("result_text", result)
+                                layoutValues = layoutValues.toMutableMap().apply {
+                                    put("result_text", result)
+                                }
                             }
                         }
                     }

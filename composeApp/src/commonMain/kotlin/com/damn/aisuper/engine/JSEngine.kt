@@ -1,31 +1,40 @@
 package com.damn.aisuper.engine
 
-interface JSEngine {
-    fun execute(script: String, functionName: String, args: List<String>): String
+import io.github.alexzhirkevich.keight.JSEngine
+import io.github.alexzhirkevich.keight.JSRuntime
+import kotlinx.coroutines.Dispatchers
+
+interface AppJSEngine {
+    suspend fun execute(script: String, functionName: String, args: List<String>): String
     fun close()
 }
 
-class SimpleJSEngine : JSEngine {
-    // This is a placeholder. Implementing a full JS engine across all platforms (Android, iOS, Desktop)
-    // requires significant dependencies like QuickJS or Rhino.
-    // For this MVP, we will simulate the JS execution by manually parsing the simple script logic.
-    // In a real implementation, we would use:
-    // - Android/JVM: Rhino or QuickJS
-    // - iOS: JavaScriptCore
+class KeightJSEngine : AppJSEngine {
 
-    override fun execute(script: String, functionName: String, args: List<String>): String {
-        // Simple simulation: Check if script contains the expected function logic
-        if (script.contains("function process(input)")) {
-             if (functionName == "process") {
-                 val input = args.firstOrNull() ?: ""
-                 // Logic from script: return "Echo: " + input;
-                 return "Echo: $input"
-             }
+    private val runtime = JSRuntime(Dispatchers.Default)
+    private val engine = JSEngine(runtime)
+
+    override suspend fun execute(script: String, functionName: String, args: List<String>): String {
+        try {
+            // 1. Evaluate the script definition into the context
+            engine.evaluate(script)
+
+            // 2. Construct the function call
+            // Note: Arguments need to be properly escaped in a real app
+            val argsString = args.joinToString(",") { "'$it'" }
+            val callString = "$functionName($argsString)"
+
+            // 3. Evaluate the function call
+            val result = engine.evaluate(callString)
+
+            return result.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return "Error: ${e.message}"
         }
-        return "Error: Function not found or script too complex for simulation."
     }
 
     override fun close() {
-        // clear resources
+        // Keight runtime might need cleanup if available, but for now just let GC handle it
     }
 }
