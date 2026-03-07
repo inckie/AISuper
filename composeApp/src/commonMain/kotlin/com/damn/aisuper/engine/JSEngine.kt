@@ -21,7 +21,11 @@ class KeightJSEngine : AppJSEngine {
     private val engine = JSEngine(runtime)
     private var loadedScript: String? = null
 
-    override suspend fun execute(script: String, functionName: String, args: List<String>): String {
+    override suspend fun execute(
+        script: String,
+        functionName: String,
+        args: List<String>
+    ): String {
         try {
             // 1. Evaluate the script definition into the context only if changed
             if (script != loadedScript) {
@@ -46,7 +50,10 @@ class KeightJSEngine : AppJSEngine {
         }
     }
 
-    override suspend fun registerFunction(name: String, callback: (List<String>) -> String) {
+    override suspend fun registerFunction(
+        name: String,
+        callback: (List<String>) -> String
+    ) {
         runtime.set(name.js, Callable { args ->
             val stringArgs = args.map { it.toString() }
             val result = callback(stringArgs)
@@ -54,12 +61,15 @@ class KeightJSEngine : AppJSEngine {
         })
     }
 
-    override suspend fun registerSuspendFunction(name: String, callback: suspend (List<String>) -> String) {
+    override suspend fun registerSuspendFunction(
+        name: String,
+        callback: suspend (List<String>) -> String
+    ) {
         runtime.set(name.js, Callable { args ->
             val deferred = runtime.async {
-                 val stringArgs = args.map { it.toString() }
-                 val result = callback(stringArgs)
-                 result.js
+                val stringArgs = args.map { it.toString() }
+                val result = callback(stringArgs)
+                result.js
             }
             deferred.js
         })
