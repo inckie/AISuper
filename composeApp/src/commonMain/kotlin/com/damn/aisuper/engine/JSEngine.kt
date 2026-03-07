@@ -27,6 +27,8 @@ class KeightJSEngine : AppJSEngine {
                 loadedScript = script
             }
 
+            if (functionName.isEmpty()) return ""
+
             // 2. Construct the function call
             // Note: Arguments need to be properly escaped in a real app
             val argsString = args.joinToString(",") { "'$it'" }

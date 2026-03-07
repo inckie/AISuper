@@ -1,6 +1,7 @@
 {
   "layout": {
     "type": "Column",
+    "isScrollable": true,
     "children": [
       {
         "type": "Text",
@@ -16,6 +17,10 @@
         "type": "Button",
         "text": "Send",
         "action": "process"
+      },
+      {
+        "type": "Column",
+        "dynamicChildrenId": "imageList"
       }
     ]
   }

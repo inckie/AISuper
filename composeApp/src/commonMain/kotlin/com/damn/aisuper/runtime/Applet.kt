@@ -3,6 +3,7 @@ package com.damn.aisuper.runtime
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.parseLayout
+import com.damn.aisuper.modules.HttpComponent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -43,12 +44,29 @@ class Applet(
                 ""
             }
 
+            // Register httpGet function
+            engine.registerFunction("httpGet") { args ->
+                val url = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'") ?: return@registerFunction ""
+                HttpComponent.get(url)
+            }
+
             val bytes = Res.readBytes(layoutPath)
             val jsonString = bytes.decodeToString()
             _layoutRoot.value = parseLayout(jsonString)
 
             val scriptBytes = Res.readBytes(scriptPath)
             scriptContent = scriptBytes.decodeToString()
+
+            // Initial execution to load functions
+            engine.execute(scriptContent, "", emptyList())
+
+            // Call initialize if present
+            try {
+                engine.execute(scriptContent, "initialize", emptyList())
+            } catch (e: Exception) {
+                // Ignore if initialize is missing or fails
+                println("Initialize failed or missing: ${e.message}")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

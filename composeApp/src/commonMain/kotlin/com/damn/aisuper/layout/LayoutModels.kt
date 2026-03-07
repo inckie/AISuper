@@ -19,7 +19,9 @@ sealed class Widget {
 @SerialName("Column")
 data class ColumnWidget(
     override val id: String? = null,
-    val children: List<Widget> = emptyList()
+    val children: List<Widget> = emptyList(),
+    val dynamicChildrenId: String? = null,
+    val isScrollable: Boolean = false
 ) : Widget()
 
 @Serializable
@@ -44,3 +46,10 @@ data class ButtonWidget(
     val action: String = ""
 ) : Widget()
 
+@Serializable
+@SerialName("Image")
+data class ImageWidget(
+    override val id: String? = null,
+    val url: String = "",
+    val description: String = ""
+) : Widget()
