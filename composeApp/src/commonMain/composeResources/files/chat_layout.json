@@ -9,9 +9,8 @@
         "action": "launch:menu"
       },
       {
-        "type": "Text",
-        "id": "result_text",
-        "text": "Waiting for input..."
+        "type": "Column",
+        "dynamicChildrenId": "messageList"
       },
       {
         "type": "TextField",
