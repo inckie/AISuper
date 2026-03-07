@@ -43,13 +43,14 @@ class Applet(
                 mapOf("id" to k, "name" to (v.name ?: k))
             } ?: emptyList()
 
-            // Should verify if we can serialize map easily or just build JSON string manually/using serialization
+            // Manual JSON string construction
             "[" + featuresList.joinToString(",") {
                 """{"id":"${it["id"]}", "name":"${it["name"]}"}"""
             } + "]"
         }
 
-        engine.registerFunction("launchFeature") { args ->
+        // launchFeature is suspending because it loads resources, so use registerSuspendFunction
+        engine.registerSuspendFunction("launchFeature") { args ->
             val featureId = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'")
             if (featureId != null) {
                 launchFeature(featureId)

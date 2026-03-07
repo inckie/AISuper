@@ -26,7 +26,7 @@ class Feature(
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
         try {
-            // Register getValue function for the script to use
+            // Register getValue function for the script to use (SYNC)
             engine.registerFunction("getValue") { args ->
                 val key = args.firstOrNull() ?: return@registerFunction ""
                 // key might assume string format, simple cleaning just in case
@@ -36,7 +36,7 @@ class Feature(
                 _values.value[cleanKey] ?: ""
             }
 
-            // Register setValue function for the script to use
+            // Register setValue function for the script to use (SYNC)
             engine.registerFunction("setValue") { args ->
                 if (args.size >= 2) {
                     val key = args[0].removeSurrounding("\"").removeSurrounding("'")
@@ -46,9 +46,9 @@ class Feature(
                 ""
             }
 
-            // Register httpGet function
-            engine.registerFunction("httpGet") { args ->
-                val url = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'") ?: return@registerFunction ""
+            // Register httpGet function (ASYNC)
+            engine.registerSuspendFunction("httpGet") { args ->
+                val url = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'") ?: return@registerSuspendFunction ""
                 HttpComponent.get(url)
             }
 

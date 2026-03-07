@@ -6,10 +6,12 @@ import io.github.alexzhirkevich.keight.JSRuntime
 import io.github.alexzhirkevich.keight.js.js
 import io.github.alexzhirkevich.keight.set
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 
 interface AppJSEngine {
     suspend fun execute(script: String, functionName: String, args: List<String>): String
-    suspend fun registerFunction(name: String, callback: suspend (List<String>) -> String)
+    suspend fun registerFunction(name: String, callback: (List<String>) -> String)
+    suspend fun registerSuspendFunction(name: String, callback: suspend (List<String>) -> String)
     fun close()
 }
 
@@ -44,13 +46,22 @@ class KeightJSEngine : AppJSEngine {
         }
     }
 
-    override suspend fun registerFunction(name: String, callback: suspend (List<String>) -> String) {
+    override suspend fun registerFunction(name: String, callback: (List<String>) -> String) {
         runtime.set(name.js, Callable { args ->
-            // Convert args to String list.
-            // In a robust implementation, we'd check types or use toKotlin()
             val stringArgs = args.map { it.toString() }
             val result = callback(stringArgs)
             result.js
+        })
+    }
+
+    override suspend fun registerSuspendFunction(name: String, callback: suspend (List<String>) -> String) {
+        runtime.set(name.js, Callable { args ->
+            val deferred = runtime.async {
+                 val stringArgs = args.map { it.toString() }
+                 val result = callback(stringArgs)
+                 result.js
+            }
+            deferred.js
         })
     }
 
