@@ -1,0 +1,22 @@
+{
+  "id": "com.damn.aisuper.demo",
+  "name": "Super Demo",
+  "entryFeature": "menu",
+  "features": {
+    "menu": {
+      "layout": "files/menu_layout.json",
+      "script": "files/menu_script.js",
+      "name": "Main Menu"
+    },
+    "chat": {
+      "layout": "files/chat_layout.json",
+      "script": "files/chat_script.js",
+      "name": "Echo Chat"
+    },
+    "images": {
+      "layout": "files/images_layout.json",
+      "script": "files/images_script.js",
+      "name": "Girl Images"
+    }
+  }
+}

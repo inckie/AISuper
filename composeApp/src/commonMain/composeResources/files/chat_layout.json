@@ -1,0 +1,28 @@
+{
+  "layout": {
+    "type": "Column",
+    "isScrollable": true,
+    "children": [
+      {
+        "type": "Button",
+        "text": "<< Back",
+        "action": "launch:menu"
+      },
+      {
+        "type": "Text",
+        "id": "result_text",
+        "text": "Waiting for input..."
+      },
+      {
+        "type": "TextField",
+        "id": "input_field",
+        "hint": "Type here..."
+      },
+      {
+        "type": "Button",
+        "text": "Result",
+        "action": "process"
+      }
+    ]
+  }
+}

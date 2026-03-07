@@ -1,0 +1,9 @@
+{
+  "layout": {
+    "type": "Column",
+    "children": [
+      { "type": "Text", "text": "AI Super App Menu" },
+      { "type": "Column", "dynamicChildrenId": "menuButtons" }
+    ]
+  }
+}

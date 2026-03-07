@@ -1,0 +1,95 @@
+package com.damn.aisuper.runtime
+
+import com.damn.aisuper.engine.AppJSEngine
+import com.damn.aisuper.layout.LayoutRoot
+import com.damn.aisuper.layout.parseLayout
+import com.damn.aisuper.modules.HttpComponent
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import aisuper.composeapp.generated.resources.Res
+
+class Feature(
+    val id: String,
+    private val definition: FeatureDefinition,
+    private val engine: AppJSEngine
+) {
+    private val _layoutRoot = MutableStateFlow<LayoutRoot?>(null)
+    val layoutRoot = _layoutRoot.asStateFlow()
+
+    private val _values = MutableStateFlow<Map<String, String>>(emptyMap())
+    val values = _values.asStateFlow()
+
+    private var scriptContent: String = ""
+
+    @OptIn(ExperimentalResourceApi::class)
+    suspend fun load() {
+        try {
+            // Register getValue function for the script to use
+            engine.registerFunction("getValue") { args ->
+                val key = args.firstOrNull() ?: return@registerFunction ""
+                // key might assume string format, simple cleaning just in case
+                val cleanKey = key.removeSurrounding("\"").removeSurrounding("'")
+
+                // Return value from state map or empty
+                _values.value[cleanKey] ?: ""
+            }
+
+            // Register setValue function for the script to use
+            engine.registerFunction("setValue") { args ->
+                if (args.size >= 2) {
+                    val key = args[0].removeSurrounding("\"").removeSurrounding("'")
+                    val value = args[1]
+                    updateValue(key, value)
+                }
+                ""
+            }
+
+            // Register httpGet function
+            engine.registerFunction("httpGet") { args ->
+                val url = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'") ?: return@registerFunction ""
+                HttpComponent.get(url)
+            }
+
+            // In MVP, we assume paths are relative to composeResources/files/
+            // Or provided fully in manifest as "files/..." as readBytes expects
+
+            // Layout
+            val bytes = Res.readBytes(definition.layout)
+            val jsonString = bytes.decodeToString()
+            _layoutRoot.value = parseLayout(jsonString)
+
+            // Script
+            val scriptBytes = Res.readBytes(definition.script)
+            scriptContent = scriptBytes.decodeToString()
+
+            // Initial execution to load functions
+            engine.execute(scriptContent, "", emptyList())
+
+            // Call initialize if present
+            try {
+                engine.execute(scriptContent, "initialize", emptyList())
+            } catch (e: Exception) {
+                // Ignore if initialize is missing or fails
+                println("Initialize failed or missing: ${e.message}")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun updateValue(id: String, value: String) {
+        _values.update { it + (id to value) }
+    }
+
+    suspend fun handleAction(action: String, args: List<String> = emptyList()) {
+        if (action.isNotEmpty()) {
+            engine.execute(scriptContent, action, args)
+        }
+    }
+
+    fun close() {
+        engine.close()
+    }
+}

@@ -1,88 +1,95 @@
 package com.damn.aisuper.runtime
 
 import com.damn.aisuper.engine.AppJSEngine
-import com.damn.aisuper.layout.LayoutRoot
-import com.damn.aisuper.layout.parseLayout
-import com.damn.aisuper.modules.HttpComponent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import aisuper.composeapp.generated.resources.Res
 
 class Applet(
-    private val engine: AppJSEngine
+    private val engineFactory: () -> AppJSEngine
 ) {
-    private val _layoutRoot = MutableStateFlow<LayoutRoot?>(null)
-    val layoutRoot = _layoutRoot.asStateFlow()
+    private val _currentFeature = MutableStateFlow<Feature?>(null)
+    val currentFeature = _currentFeature.asStateFlow()
 
-    private val _values = MutableStateFlow<Map<String, String>>(emptyMap())
-    val values = _values.asStateFlow()
+    private var manifest: AppletManifest? = null
 
-    private var scriptContent: String = ""
+    // For MVP, we can still load a specific feature directly if needed,
+    // but primary entry point is loading an applet manifest.
 
     @OptIn(ExperimentalResourceApi::class)
-    suspend fun load(layoutPath: String, scriptPath: String) {
+    suspend fun loadApplet(manifestPath: String) {
         try {
-            // Register getValue function for the script to use
-            engine.registerFunction("getValue") { args ->
-                val key = args.firstOrNull() ?: return@registerFunction ""
-                // key might assume string format, simple cleaning just in case
-                val cleanKey = key.removeSurrounding("\"").removeSurrounding("'")
-
-                // Return value from state map or empty
-                _values.value[cleanKey] ?: ""
-            }
-
-            // Register setValue function for the script to use
-            engine.registerFunction("setValue") { args ->
-                if (args.size >= 2) {
-                    val key = args[0].removeSurrounding("\"").removeSurrounding("'")
-                    val value = args[1]
-                    updateValue(key, value)
-                }
-                ""
-            }
-
-            // Register httpGet function
-            engine.registerFunction("httpGet") { args ->
-                val url = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'") ?: return@registerFunction ""
-                HttpComponent.get(url)
-            }
-
-            val bytes = Res.readBytes(layoutPath)
+            val bytes = Res.readBytes(manifestPath)
             val jsonString = bytes.decodeToString()
-            _layoutRoot.value = parseLayout(jsonString)
 
-            val scriptBytes = Res.readBytes(scriptPath)
-            scriptContent = scriptBytes.decodeToString()
+            val json = Json { ignoreUnknownKeys = true }
+            manifest = json.decodeFromString<AppletManifest>(jsonString)
 
-            // Initial execution to load functions
-            engine.execute(scriptContent, "", emptyList())
+            val entryFeatureId = manifest!!.entryFeature
+            launchFeature(entryFeatureId)
 
-            // Call initialize if present
-            try {
-                engine.execute(scriptContent, "initialize", emptyList())
-            } catch (e: Exception) {
-                // Ignore if initialize is missing or fails
-                println("Initialize failed or missing: ${e.message}")
-            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun updateValue(id: String, value: String) {
-        _values.update { it + (id to value) }
-    }
+    private suspend fun registerGlobalFunctions(engine: AppJSEngine) {
+        engine.registerFunction("getFeatures") {
+            val featuresList = manifest?.features?.map { (k, v) ->
+                // We might want to add 'name' to definition or just send ID
+                // For now assuming ID is enough or we restructure manifest
+                mapOf("id" to k, "name" to (v.name ?: k))
+            } ?: emptyList()
 
-    suspend fun handleAction(action: String, args: List<String> = emptyList()) {
-        if (action.isNotEmpty()) {
-            engine.execute(scriptContent, action, args)
+            // Should verify if we can serialize map easily or just build JSON string manually/using serialization
+            "[" + featuresList.joinToString(",") {
+                """{"id":"${it["id"]}", "name":"${it["name"]}"}"""
+            } + "]"
+        }
+
+        engine.registerFunction("launchFeature") { args ->
+            val featureId = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'")
+            if (featureId != null) {
+                launchFeature(featureId)
+            }
+            ""
         }
     }
 
+    suspend fun launchFeature(featureId: String) {
+        val featureDef = manifest?.features?.get(featureId)
+        if (featureDef != null) {
+            // Unload previous
+            _currentFeature.value?.close()
+
+            // Create new engine for this feature
+            val engine = engineFactory()
+            registerGlobalFunctions(engine)
+
+            val feature = Feature(featureId, featureDef, engine)
+            feature.load()
+            _currentFeature.value = feature
+        } else {
+            println("Feature '$featureId' not found.")
+        }
+    }
+
+    suspend fun handleAction(action: String, args: List<String> = emptyList()) {
+        if (action.startsWith("launch:")) {
+            val featureId = action.substringAfter("launch:")
+            launchFeature(featureId)
+        } else {
+            _currentFeature.value?.handleAction(action, args)
+        }
+    }
+
+    fun updateValue(id: String, value: String) {
+        _currentFeature.value?.updateValue(id, value)
+    }
+
     fun close() {
-        engine.close()
+        _currentFeature.value?.close()
     }
 }
