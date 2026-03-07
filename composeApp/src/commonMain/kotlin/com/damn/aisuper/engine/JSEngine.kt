@@ -1,11 +1,15 @@
 package com.damn.aisuper.engine
 
+import io.github.alexzhirkevich.keight.Callable
 import io.github.alexzhirkevich.keight.JSEngine
 import io.github.alexzhirkevich.keight.JSRuntime
+import io.github.alexzhirkevich.keight.js.js
+import io.github.alexzhirkevich.keight.set
 import kotlinx.coroutines.Dispatchers
 
 interface AppJSEngine {
     suspend fun execute(script: String, functionName: String, args: List<String>): String
+    suspend fun registerFunction(name: String, callback: suspend (List<String>) -> String)
     fun close()
 }
 
@@ -13,11 +17,15 @@ class KeightJSEngine : AppJSEngine {
 
     private val runtime = JSRuntime(Dispatchers.Default)
     private val engine = JSEngine(runtime)
+    private var loadedScript: String? = null
 
     override suspend fun execute(script: String, functionName: String, args: List<String>): String {
         try {
-            // 1. Evaluate the script definition into the context
-            engine.evaluate(script)
+            // 1. Evaluate the script definition into the context only if changed
+            if (script != loadedScript) {
+                engine.evaluate(script)
+                loadedScript = script
+            }
 
             // 2. Construct the function call
             // Note: Arguments need to be properly escaped in a real app
@@ -32,6 +40,16 @@ class KeightJSEngine : AppJSEngine {
             e.printStackTrace()
             return "Error: ${e.message}"
         }
+    }
+
+    override suspend fun registerFunction(name: String, callback: suspend (List<String>) -> String) {
+        runtime.set(name.js, Callable { args ->
+            // Convert args to String list.
+            // In a robust implementation, we'd check types or use toKotlin()
+            val stringArgs = args.map { it.toString() }
+            val result = callback(stringArgs)
+            result.js
+        })
     }
 
     override fun close() {

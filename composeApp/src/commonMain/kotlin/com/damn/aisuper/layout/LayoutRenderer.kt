@@ -41,7 +41,7 @@ fun RenderWidget(
                 value = value,
                 onValueChange = { newValue ->
                     if (widget.id != null) {
-                        onValueChange(widget.id!!, newValue)
+                        onValueChange(widget.id, newValue)
                     }
                 },
                 placeholder = { Text(widget.hint) }

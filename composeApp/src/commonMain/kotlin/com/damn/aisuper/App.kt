@@ -10,12 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
-import aisuper.composeapp.generated.resources.Res
-import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.engine.KeightJSEngine
-import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.RenderWidget
-import com.damn.aisuper.layout.parseLayout
+import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalResourceApi::class)
@@ -23,26 +20,25 @@ import kotlinx.coroutines.launch
 @Preview
 fun App() {
     MaterialTheme {
-        var layoutRoot by remember { mutableStateOf<LayoutRoot?>(null) }
-        var layoutValues by remember { mutableStateOf(mapOf<String, String>()) }
-        var scriptContent by remember { mutableStateOf("") }
+        // Instantiate the Applet with the Keight engine
+        // wrapped in remember to survive recompositions.
+        val applet = remember { Applet(KeightJSEngine()) }
+
+        DisposableEffect(applet) {
+            onDispose {
+                applet.close()
+            }
+        }
+
+        // Collect state from the Applet
+        val layoutRoot by applet.layoutRoot.collectAsState()
+        val layoutValues by applet.values.collectAsState()
+
         val scope = rememberCoroutineScope()
 
-        // Use KeightJSEngine
-        val engine = remember { KeightJSEngine() }
-
         LaunchedEffect(Unit) {
-            try {
-                // Using string path for resources
-                val bytes = Res.readBytes("files/echo_chat.json")
-                val jsonString = bytes.decodeToString()
-                layoutRoot = parseLayout(jsonString)
-
-                val scriptBytes = Res.readBytes("files/echo_block.js")
-                scriptContent = scriptBytes.decodeToString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // Load the echo chat applet resources
+            applet.load("files/echo_chat.json", "files/echo_block.js")
         }
 
         Column(
@@ -55,21 +51,11 @@ fun App() {
                     widget = layoutRoot!!.layout,
                     values = layoutValues,
                     onValueChange = { id, value ->
-                        layoutValues = layoutValues.toMutableMap().apply { put(id, value) }
+                        applet.updateValue(id, value)
                     },
                     onAction = { action ->
-                        // Placeholder for JS integration
-                        if (action == "processEcho") {
-                            val input = layoutValues["input_field"] ?: ""
-
-                            // Execute JS Block asynchronously
-                            scope.launch {
-                                val result = engine.execute(scriptContent, "process", listOf(input))
-
-                                layoutValues = layoutValues.toMutableMap().apply {
-                                    put("result_text", result)
-                                }
-                            }
+                        scope.launch {
+                            applet.handleAction(action)
                         }
                     }
                 )
