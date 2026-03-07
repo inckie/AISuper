@@ -33,6 +33,16 @@ class Applet(
                 _values.value[cleanKey] ?: ""
             }
 
+            // Register setValue function for the script to use
+            engine.registerFunction("setValue") { args ->
+                if (args.size >= 2) {
+                    val key = args[0].removeSurrounding("\"").removeSurrounding("'")
+                    val value = args[1]
+                    updateValue(key, value)
+                }
+                ""
+            }
+
             val bytes = Res.readBytes(layoutPath)
             val jsonString = bytes.decodeToString()
             _layoutRoot.value = parseLayout(jsonString)
@@ -48,15 +58,9 @@ class Applet(
         _values.update { it + (id to value) }
     }
 
-    suspend fun handleAction(action: String) {
-        // Generalized action handling could go here.
-        // For MVP, we hardcode the specific action logic or delegate to a script
-        // In the full system, action handling might also be driven by the script or configuration.
-
-        if (action == "processEcho") {
-            // No arguments passed, script calls getValue internally
-            val result = engine.execute(scriptContent, "process", emptyList())
-            updateValue("result_text", result)
+    suspend fun handleAction(action: String, args: List<String> = emptyList()) {
+        if (action.isNotEmpty()) {
+            engine.execute(scriptContent, action, args)
         }
     }
 

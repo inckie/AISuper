@@ -1,4 +1,5 @@
 function process() {
     var input = getValue("input_field");
-    return "Echo: " + input;
+    var result = "Echo: " + input;
+    setValue("result_text", result);
 }

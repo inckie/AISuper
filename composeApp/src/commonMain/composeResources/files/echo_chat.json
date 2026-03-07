@@ -15,7 +15,7 @@
       {
         "type": "Button",
         "text": "Send",
-        "action": "processEcho"
+        "action": "process"
       }
     ]
   }
