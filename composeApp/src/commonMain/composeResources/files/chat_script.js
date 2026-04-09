@@ -10,7 +10,7 @@ function refreshMessages() {
         };
         widgets.push(item);
     }
-    setValue("messageList", JSON.stringify(widgets));
+    setValue("messageList", widgets);
 }
 
 function initialize() {

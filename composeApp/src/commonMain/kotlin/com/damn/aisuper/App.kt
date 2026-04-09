@@ -19,6 +19,7 @@ import com.damn.aisuper.layout.RenderWidget
 import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 @OptIn(ExperimentalResourceApi::class)
@@ -65,7 +66,7 @@ fun App() {
                     widget = layoutRoot!!.layout,
                     values = layoutValues,
                     onValueChange = { id, value ->
-                        applet.updateValue(id, value)
+                        applet.updateValue(id, JsonPrimitive(value))
                     },
                     onAction = { action ->
                         scope.launch {

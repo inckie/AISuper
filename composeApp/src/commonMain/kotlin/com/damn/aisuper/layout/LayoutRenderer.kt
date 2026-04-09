@@ -17,25 +17,74 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+
+private val jsonParser = Json { ignoreUnknownKeys = true }
 
 fun parseLayout(jsonString: String): LayoutRoot {
-    val json = Json { ignoreUnknownKeys = true }
-    return json.decodeFromString<LayoutRoot>(jsonString)
+    return jsonParser.decodeFromString<LayoutRoot>(jsonString)
 }
 
 fun parseWidgets(jsonString: String): List<Widget> {
-    val json = Json { ignoreUnknownKeys = true }
     return try {
-        json.decodeFromString<List<Widget>>(jsonString)
+        jsonParser.decodeFromString<List<Widget>>(jsonString)
     } catch (_: Exception) {
         emptyList()
+    }
+}
+
+/**
+ * Decode a list of Widgets from a JsonArray of widget JsonElements.
+ */
+fun parseWidgetsFromJsonArray(array: JsonArray): List<Widget> {
+    return try {
+        array.mapNotNull { element ->
+            try {
+                jsonParser.decodeFromJsonElement(Widget.serializer(), element)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+/**
+ * Resolve dynamic children from a JsonElement value.
+ * Supports JsonArray (direct widget list) or JsonPrimitive string (legacy JSON.stringify).
+ */
+private fun resolveDynamicWidgets(value: JsonElement?): List<Widget> {
+    if (value == null) return emptyList()
+    return when (value) {
+        is JsonArray -> parseWidgetsFromJsonArray(value)
+        is JsonPrimitive -> {
+            val str = value.contentOrNull
+            if (!str.isNullOrBlank()) parseWidgets(str) else emptyList()
+        }
+        else -> emptyList()
+    }
+}
+
+/**
+ * Helper to extract a string from a JsonElement (returns null if not a string primitive).
+ */
+private fun JsonElement.stringOrNull(): String? {
+    return try {
+        this.jsonPrimitive.contentOrNull
+    } catch (_: Exception) {
+        null
     }
 }
 
 @Composable
 fun RenderWidget(
     widget: Widget,
-    values: Map<String, String>,
+    values: Map<String, JsonElement>,
     onValueChange: (String, String) -> Unit,
     onAction: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -53,12 +102,9 @@ fun RenderWidget(
 
                 // Render dynamic children if any
                 if (widget.dynamicChildrenId != null) {
-                    val dynamicContent = values[widget.dynamicChildrenId]
-                    if (!dynamicContent.isNullOrBlank()) {
-                        val dynamicWidgets = parseWidgets(dynamicContent)
-                        dynamicWidgets.forEach { child ->
-                            RenderWidget(child, values, onValueChange, onAction, childModifier(child))
-                        }
+                    val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
+                    dynamicWidgets.forEach { child ->
+                        RenderWidget(child, values, onValueChange, onAction, childModifier(child))
                     }
                 }
             }
@@ -76,14 +122,14 @@ fun RenderWidget(
         }
         is TextWidget -> {
             val displayText = if (widget.id != null && values.containsKey(widget.id)) {
-                values[widget.id]!!
+                values[widget.id]?.stringOrNull() ?: widget.text
             } else {
                 widget.text
             }
             Text(text = displayText, modifier = modifier.then(widget.layoutModifier()))
         }
         is TextFieldWidget -> {
-            val value = if (widget.id != null) values[widget.id] ?: "" else ""
+            val value = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
             TextField(
                 value = value,
                 modifier = modifier.then(widget.layoutModifier()),

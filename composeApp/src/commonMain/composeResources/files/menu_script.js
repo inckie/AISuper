@@ -1,6 +1,5 @@
 function initialize() {
-    var featuresJson = getFeatures();
-    var features = JSON.parse(featuresJson);
+    var features = getFeatures();
 
     var widgets = [];
     for (var i = 0; i < features.length; i++) {
@@ -14,5 +13,5 @@ function initialize() {
         });
     }
 
-    setValue("menuButtons", JSON.stringify(widgets));
+    setValue("menuButtons", widgets);
 }

@@ -1,0 +1,98 @@
+package com.damn.aisuper.engine
+
+import io.github.alexzhirkevich.keight.Callable
+import io.github.alexzhirkevich.keight.ScriptRuntime
+import io.github.alexzhirkevich.keight.Wrapper
+import io.github.alexzhirkevich.keight.js.JsAny
+import io.github.alexzhirkevich.keight.js.JsObject
+import io.github.alexzhirkevich.keight.js.Undefined
+import io.github.alexzhirkevich.keight.js.js
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+
+/**
+ * Convert a keight JsAny? to a kotlinx.serialization JsonElement.
+ * Only JSON-compatible types are supported (strings, numbers, booleans, arrays, objects, null/undefined).
+ * Functions and other JS-specific types are ignored (mapped to JsonNull).
+ */
+suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): JsonElement {
+    return when (value) {
+        null, is Undefined -> JsonNull
+
+        // Callable (functions) — not representable in JSON
+        is Callable -> JsonNull
+
+        // Unwrap wrappers to get the Kotlin value
+        is Wrapper<*> -> {
+            when (val unwrapped = value.value) {
+                is String -> JsonPrimitive(unwrapped)
+                is Boolean -> JsonPrimitive(unwrapped)
+                is Long -> JsonPrimitive(unwrapped)
+                is Int -> JsonPrimitive(unwrapped)
+                is Double -> JsonPrimitive(unwrapped)
+                is Float -> JsonPrimitive(unwrapped)
+                is Number -> JsonPrimitive(unwrapped.toDouble())
+                // Wrapper<MutableList<JsAny?>> — JS arrays
+                is MutableList<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val list = unwrapped as List<JsAny?>
+                    JsonArray(list.map { jsAnyToJsonElement(it, runtime) })
+                }
+                // Nested wrapper
+                is Wrapper<*> -> jsAnyToJsonElement(value as JsAny, runtime)
+                else -> JsonPrimitive(unwrapped.toString())
+            }
+        }
+
+        // JsObject (plain objects with properties) — convert to JsonObject
+        is JsObject -> {
+            val keys = value.keys(runtime, excludeSymbols = true, excludeNonEnumerables = true)
+            val map = mutableMapOf<String, JsonElement>()
+            for (key in keys) {
+                val keyStr = key?.toString() ?: continue
+                val propValue = value.get(key, runtime)
+                map[keyStr] = jsAnyToJsonElement(propValue, runtime)
+            }
+            JsonObject(map)
+        }
+
+        else -> JsonPrimitive(value.toString())
+    }
+}
+
+/**
+ * Convert a kotlinx.serialization JsonElement to a keight JsAny.
+ */
+fun jsonElementToJsAny(element: JsonElement, runtime: ScriptRuntime): JsAny? {
+    return when (element) {
+        is JsonNull -> null
+        is JsonPrimitive -> {
+            if (element.isString) {
+                element.content.js
+            } else {
+                // Try boolean
+                element.content.toBooleanStrictOrNull()?.let { return it.js }
+                // Try number
+                element.content.toLongOrNull()?.let { return it.js }
+                element.content.toDoubleOrNull()?.let { return it.js }
+                // Fallback to string
+                element.content.js
+            }
+        }
+        is JsonArray -> {
+            val list = element.map { jsonElementToJsAny(it, runtime) }.toMutableList()
+            list.js
+        }
+        is JsonObject -> {
+            val map = mutableMapOf<JsAny?, JsAny?>()
+            for ((key, value) in element) {
+                map[key.js] = jsonElementToJsAny(value, runtime)
+            }
+            runtime.makeObject(map)
+        }
+    }
+}
+

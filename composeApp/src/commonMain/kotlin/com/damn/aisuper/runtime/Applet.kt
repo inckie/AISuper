@@ -1,11 +1,18 @@
 package com.damn.aisuper.runtime
 
+import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.compose.resources.ExperimentalResourceApi
-import aisuper.composeapp.generated.resources.Res
 
 class Applet(
     private val engineFactory: () -> AppJSEngine
@@ -37,25 +44,23 @@ class Applet(
 
     private suspend fun registerGlobalFunctions(engine: AppJSEngine) {
         engine.registerFunction("getFeatures") {
-            val featuresList = manifest?.features?.map { (k, v) ->
-                // We might want to add 'name' to definition or just send ID
-                // For now assuming ID is enough, or we restructure manifest
-                mapOf("id" to k, "name" to (v.name ?: k))
-            } ?: emptyList()
-
-            // Manual JSON string construction
-            "[" + featuresList.joinToString(",") {
-                """{"id":"${it["id"]}", "name":"${it["name"]}"}"""
-            } + "]"
+            JsonArray(manifest?.features?.map { (k, v) ->
+                buildJsonObject {
+                    put("id", JsonPrimitive(k))
+                    put("name", JsonPrimitive(v.name ?: k))
+                }
+            } ?: emptyList())
         }
 
         // launchFeature is suspending because it loads resources, so use registerSuspendFunction
         engine.registerSuspendFunction("launchFeature") { args ->
-            val featureId = args.firstOrNull()?.removeSurrounding("\"")?.removeSurrounding("'")
+            val featureId = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            }
             if (featureId != null) {
                 launchFeature(featureId)
             }
-            ""
+            JsonNull
         }
     }
 
@@ -77,7 +82,7 @@ class Applet(
         }
     }
 
-    suspend fun handleAction(action: String, args: List<String> = emptyList()) {
+    suspend fun handleAction(action: String, args: List<JsonElement> = emptyList()) {
         if (action.startsWith("launch:")) {
             val featureId = action.substringAfter("launch:")
             launchFeature(featureId)
@@ -86,7 +91,7 @@ class Applet(
         }
     }
 
-    fun updateValue(id: String, value: String) {
+    fun updateValue(id: String, value: JsonElement) {
         _currentFeature.value?.updateValue(id, value)
     }
 

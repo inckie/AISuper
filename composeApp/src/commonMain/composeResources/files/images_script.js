@@ -12,7 +12,7 @@ async function initialize() {
             widgets.push({ "type": "Text", "text": img["description"] });
         }
 
-        setValue("imageList", JSON.stringify(widgets));
+        setValue("imageList", widgets);
         setValue("status_text", "Images loaded!");
     } catch (e) {
         setValue("status_text", "Error: " + e);
