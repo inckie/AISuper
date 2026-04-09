@@ -1,6 +1,10 @@
 package com.damn.aisuper.layout
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
@@ -23,7 +27,7 @@ fun parseWidgets(jsonString: String): List<Widget> {
     val json = Json { ignoreUnknownKeys = true }
     return try {
         json.decodeFromString<List<Widget>>(jsonString)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         emptyList()
     }
 }
@@ -33,14 +37,18 @@ fun RenderWidget(
     widget: Widget,
     values: Map<String, String>,
     onValueChange: (String, String) -> Unit,
-    onAction: (String) -> Unit
+    onAction: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     when (widget) {
         is ColumnWidget -> {
-            val modifier = if (widget.isScrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
-            Column(modifier = modifier) {
+            var columnModifier = modifier.then(widget.layoutModifier())
+            if (widget.isScrollable) {
+                columnModifier = columnModifier.verticalScroll(rememberScrollState())
+            }
+            Column(modifier = columnModifier) {
                 widget.children.forEach { child ->
-                    RenderWidget(child, values, onValueChange, onAction)
+                    RenderWidget(child, values, onValueChange, onAction, childModifier(child))
                 }
 
                 // Render dynamic children if any
@@ -49,9 +57,20 @@ fun RenderWidget(
                     if (!dynamicContent.isNullOrBlank()) {
                         val dynamicWidgets = parseWidgets(dynamicContent)
                         dynamicWidgets.forEach { child ->
-                            RenderWidget(child, values, onValueChange, onAction)
+                            RenderWidget(child, values, onValueChange, onAction, childModifier(child))
                         }
                     }
+                }
+            }
+        }
+        is RowWidget -> {
+            var rowModifier = modifier.then(widget.layoutModifier())
+            if (widget.isScrollable) {
+                rowModifier = rowModifier.verticalScroll(rememberScrollState())
+            }
+            Row(modifier = rowModifier) {
+                widget.children.forEach { child ->
+                    RenderWidget(child, values, onValueChange, onAction, childModifier(child))
                 }
             }
         }
@@ -61,12 +80,13 @@ fun RenderWidget(
             } else {
                 widget.text
             }
-            Text(text = displayText)
+            Text(text = displayText, modifier = modifier.then(widget.layoutModifier()))
         }
         is TextFieldWidget -> {
             val value = if (widget.id != null) values[widget.id] ?: "" else ""
             TextField(
                 value = value,
+                modifier = modifier.then(widget.layoutModifier()),
                 onValueChange = { newValue ->
                     if (widget.id != null) {
                         onValueChange(widget.id, newValue)
@@ -76,7 +96,10 @@ fun RenderWidget(
             )
         }
         is ButtonWidget -> {
-            Button(onClick = { onAction(widget.action) }) {
+            Button(
+                onClick = { onAction(widget.action) },
+                modifier = modifier.then(widget.layoutModifier())
+            ) {
                 Text(widget.text)
             }
         }
@@ -84,8 +107,23 @@ fun RenderWidget(
             AsyncImage(
                 model = widget.url,
                 contentDescription = widget.description,
-                modifier = Modifier.fillMaxWidth().height(200.dp)
+                modifier = modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
             )
         }
     }
 }
+
+private fun Widget.layoutModifier(): Modifier {
+    return Modifier
+        .let { if (fillMaxSize) it.fillMaxSize() else it }
+        .let { if (fillMaxWidth) it.fillMaxWidth() else it }
+}
+
+private fun ColumnScope.childModifier(widget: Widget): Modifier {
+    return widget.weight?.let { Modifier.weight(it) } ?: Modifier
+}
+
+private fun RowScope.childModifier(widget: Widget): Modifier {
+    return widget.weight?.let { Modifier.weight(it) } ?: Modifier
+}
+

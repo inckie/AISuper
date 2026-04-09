@@ -6,23 +6,24 @@ The AI Super App is a container application designed to load and execute dynamic
 ## Core Components
 
 ### 1. Applet Runtime
-The runtime is the heart of the application. It is responsible for:
-*   Loading Applet artifacts (JSON layouts, JavaScript blocks).
-*   Managing Applet state (Variables, UI tree).
-*   Bridging the UI events to the Scripting Engine.
-*   Exposing native capabilities (Modules) to the Scripting Engine.
+The runtime loads an applet manifest and launches one feature at a time.
+*   Loads applet artifacts (manifest, feature layout JSON, feature JavaScript block).
+*   Manages current feature lifecycle and per-feature state.
+*   Bridges UI events to the active feature scripting engine.
+*   Exposes global and feature-scoped native functions to JavaScript.
 
-**Key Class:** `com.damn.aisuper.runtime.Applet`
-*   Holds `StateFlow` for Layout and Values.
-*   Initializes the JS Engine.
-*   Handles Action dispatching.
+**Key Classes:**
+*   `com.damn.aisuper.runtime.Applet` (manifest loading, feature switching, global actions)
+*   `com.damn.aisuper.runtime.Feature` (layout/script load, feature values, action execution)
 
 ### 2. Layout System
 The UI is driven by a data-driven layout system, not hardcoded Compose utility.
 *   **Format**: JSON.
-*   **Widgets**: `Column`, `Text`, `TextField`, `Button`, `Image`.
+*   **Widgets**: `Column`, `Row`, `Text`, `TextField`, `Button`, `Image`.
+*   **Layout Modifiers (JSON)**: `fillMaxSize`, `fillMaxWidth`, `weight`, `isScrollable`.
 *   **Rendering**: A recursive Compose function (`RenderWidget`) maps the JSON object tree to Compose UI nodes.
 *   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing a JSON string definition of child widgets, allowing runtime UI updates.
+*   **Screen Structure Pattern**: fixed header/footer with a weighted, scrollable middle region (e.g., chat and image list features).
 
 **Key Classes:**
 *   `com.damn.aisuper.layout.LayoutRoot`, `Widget` (Data Models via `kotlinx.serialization`).

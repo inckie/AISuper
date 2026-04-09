@@ -1,7 +1,7 @@
 {
   "layout": {
     "type": "Column",
-    "isScrollable": true,
+    "fillMaxSize": true,
     "children": [
       {
         "type": "Button",
@@ -15,6 +15,8 @@
       },
       {
         "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
         "dynamicChildrenId": "imageList"
       }
     ]

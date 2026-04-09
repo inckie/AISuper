@@ -15,14 +15,31 @@ data class LayoutRoot(
 @JsonClassDiscriminator("type")
 sealed class Widget {
     abstract val id: String?
+    abstract val fillMaxWidth: Boolean
+    abstract val fillMaxSize: Boolean
+    abstract val weight: Float?
 }
 
 @Serializable
 @SerialName("Column")
 data class ColumnWidget(
     override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
     val children: List<Widget> = emptyList(),
     val dynamicChildrenId: String? = null,
+    val isScrollable: Boolean = false
+) : Widget()
+
+@Serializable
+@SerialName("Row")
+data class RowWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    val children: List<Widget> = emptyList(),
     val isScrollable: Boolean = false
 ) : Widget()
 
@@ -30,6 +47,9 @@ data class ColumnWidget(
 @SerialName("Text")
 data class TextWidget(
     override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
     val text: String = ""
 ) : Widget()
 
@@ -37,6 +57,9 @@ data class TextWidget(
 @SerialName("TextField")
 data class TextFieldWidget(
     override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
     val hint: String = ""
 ) : Widget()
 
@@ -44,6 +67,9 @@ data class TextFieldWidget(
 @SerialName("Button")
 data class ButtonWidget(
     override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
     val text: String = "",
     val action: String = ""
 ) : Widget()
@@ -52,6 +78,9 @@ data class ButtonWidget(
 @SerialName("Image")
 data class ImageWidget(
     override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
     val url: String = "",
     val description: String = ""
 ) : Widget()

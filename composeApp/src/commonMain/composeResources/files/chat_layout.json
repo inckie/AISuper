@@ -1,7 +1,7 @@
 {
   "layout": {
     "type": "Column",
-    "isScrollable": true,
+    "fillMaxSize": true,
     "children": [
       {
         "type": "Button",
@@ -10,17 +10,26 @@
       },
       {
         "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
         "dynamicChildrenId": "messageList"
       },
       {
-        "type": "TextField",
-        "id": "input_field",
-        "hint": "Type here..."
-      },
-      {
-        "type": "Button",
-        "text": "Result",
-        "action": "process"
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "TextField",
+            "id": "input_field",
+            "hint": "Type here...",
+            "weight": 1
+          },
+          {
+            "type": "Button",
+            "text": "Result",
+            "action": "process"
+          }
+        ]
       }
     ]
   }
