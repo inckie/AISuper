@@ -1,5 +1,6 @@
 package com.damn.aisuper.layout
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -9,6 +10,7 @@ data class LayoutRoot(
     val layout: Widget
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
 sealed class Widget {

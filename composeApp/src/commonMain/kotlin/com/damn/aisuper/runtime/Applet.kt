@@ -39,7 +39,7 @@ class Applet(
         engine.registerFunction("getFeatures") {
             val featuresList = manifest?.features?.map { (k, v) ->
                 // We might want to add 'name' to definition or just send ID
-                // For now assuming ID is enough or we restructure manifest
+                // For now assuming ID is enough, or we restructure manifest
                 mapOf("id" to k, "name" to (v.name ?: k))
             } ?: emptyList()
 
