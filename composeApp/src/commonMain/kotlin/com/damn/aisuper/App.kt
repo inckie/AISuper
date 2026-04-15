@@ -72,6 +72,9 @@ fun App() {
                         scope.launch {
                             applet.handleAction(action)
                         }
+                    },
+                    onModuleCommand = { moduleType, target, command, args ->
+                        applet.handleModuleCommand(moduleType, target, command, args)
                     }
                 )
             } else {

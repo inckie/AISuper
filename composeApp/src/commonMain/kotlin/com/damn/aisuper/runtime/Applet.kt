@@ -95,6 +95,15 @@ class Applet(
         _currentFeature.value?.updateValue(id, value)
     }
 
+    fun handleModuleCommand(
+        moduleType: String,
+        target: String,
+        command: String,
+        args: List<JsonElement> = emptyList()
+    ) {
+        _currentFeature.value?.handleModuleCommand(moduleType, target, command, args)
+    }
+
     fun close() {
         _currentFeature.value?.close()
     }

@@ -11,6 +11,7 @@ The runtime loads an applet manifest and launches one feature at a time.
 *   Manages current feature lifecycle and per-feature state.
 *   Bridges UI events to the active feature scripting engine.
 *   Exposes global and feature-scoped native functions to JavaScript.
+*   Uses a generic module host/factory system to connect modules on demand from feature manifest declarations.
 
 **Key Classes:**
 *   `com.damn.aisuper.runtime.Applet` (manifest loading, feature switching, global actions)
@@ -45,6 +46,54 @@ Business logic for applets is written in JavaScript. This allows the logic to be
 
 ## Modules
 *   **HttpModule**: Provides HTTP GET functionality via Ktor Client.
+*   **AudioPlayerModule**: Feature-scoped module that manages named players declared in manifest.
+    *   Shared interface: `AudioPlayer` (`load`, `play`, `pause`, `stop`, `seek`, `state`).
+    *   Factory: `createPlatformAudioPlayer(name)` via `expect/actual`.
+    *   Android actual: basic stream playback with `MediaPlayer`.
+    *   JVM/iOS/JS/Wasm actual: `NoopAudioPlayer` fallback for API/state/event wiring.
+
+## Feature Manifest Extensions
+Feature definitions now support module declarations:
+
+```json
+{
+  "layout": "files/radio_layout.json",
+  "script": "files/radio_script.js",
+  "modules": [
+    { "type": "audioPlayer", "name": "radioMain" }
+  ]
+}
+```
+
+This allows one feature to bind multiple independent player instances by name.
+
+## Audio JS Bridge
+Feature runtime registers audio APIs into JS:
+* `getAudioPlayers()`
+* `audioLoad(player, url)`
+* `audioPlay(player)`
+* `audioPause(player)`
+* `audioStop(player)`
+* `audioSeek(player, positionMs)`
+* `audioGetState(player)`
+* `audioSubscribe(player, handlerFunctionName)`
+* `audioUnsubscribe(player, handlerFunctionName?)`
+
+Player state is mirrored into feature values using composite keys:
+* `playerName.media.sourceUrl`
+* `playerName.media.state`
+* `playerName.media.positionMs`
+* `playerName.media.durationMs`
+* `playerName.media.error`
+
+Subscribed handlers receive a JSON object payload with the same fields.
+
+## Native Audio Widget (Optional)
+Layout system includes `AudioPlayer` widget type:
+* Binds directly to a named player (`player` field).
+* Reads mirrored state from `values`.
+* Sends native media commands (`play/pause/stop`) through Applet -> Feature, bypassing JS button actions.
+* JS control remains fully supported, so feature authors can choose either path.
 
 ## Data Flow (MVP - Echo Chat)
 
@@ -77,4 +126,11 @@ composeApp/src/commonMain/kotlin/com/damn/aisuper/
 *   **Navigation**: Support multiple screens and navigation stack.
 *   **Security**: Sandbox the JS engine (timeout, memory limits, restricted imports).
 *   **Validation**: Verify signatures of loaded artifacts.
+
+## Module Runtime Abstraction
+Module logic is no longer hardcoded in `Feature`.
+* `FeatureModuleFactory` creates typed modules from manifest `modules[]` declarations.
+* `FeatureModuleHost` attaches/detaches modules and routes native module commands by type.
+* `FeatureModuleContext` exposes engine registration, value read/write, and script callback execution APIs.
+* Default common factories: `http`, `audioPlayer`; platform-specific factories can be provided via `platformFeatureModuleFactories()`.
 

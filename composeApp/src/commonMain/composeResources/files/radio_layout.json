@@ -1,0 +1,109 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Button",
+        "text": "<< Back",
+        "action": "launch:menu"
+      },
+      {
+        "type": "Text",
+        "id": "current_stream",
+        "text": "Current stream: none"
+      },
+      {
+        "type": "AudioPlayer",
+        "player": "radioMain",
+        "title": "Native Audio Controls",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Button",
+            "text": "Load Plaza",
+            "action": "loadPlaza",
+            "weight": 1
+          },
+          {
+            "type": "Button",
+            "text": "Load Provodach",
+            "action": "loadProvodach",
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Button",
+            "text": "Play (JS)",
+            "action": "playFromJs",
+            "weight": 1
+          },
+          {
+            "type": "Button",
+            "text": "Pause (JS)",
+            "action": "pauseFromJs",
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Button",
+            "text": "Seek -10s",
+            "action": "seekBack10s",
+            "weight": 1
+          },
+          {
+            "type": "Button",
+            "text": "Seek +10s",
+            "action": "seekForward10s",
+            "weight": 1
+          },
+          {
+            "type": "Button",
+            "text": "Stop (JS)",
+            "action": "stopFromJs",
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "type": "Text",
+        "id": "radioMain.media.state",
+        "text": "idle"
+      },
+      {
+        "type": "Text",
+        "id": "radioMain.media.positionMs",
+        "text": "0"
+      },
+      {
+        "type": "Text",
+        "text": "Last error:"
+      },
+      {
+        "type": "Text",
+        "id": "radioMain.media.error",
+        "text": "none"
+      },
+      {
+        "type": "Text",
+        "id": "player_event",
+        "text": "No events yet"
+      }
+    ]
+  }
+}
+

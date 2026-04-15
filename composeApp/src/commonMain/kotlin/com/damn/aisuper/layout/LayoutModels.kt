@@ -84,3 +84,15 @@ data class ImageWidget(
     val url: String = "",
     val description: String = ""
 ) : Widget()
+
+@Serializable
+@SerialName("AudioPlayer")
+data class AudioPlayerWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    val player: String,
+    val title: String = "Audio Player"
+) : Widget()
+

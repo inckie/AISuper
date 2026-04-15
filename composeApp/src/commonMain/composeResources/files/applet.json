@@ -16,7 +16,24 @@
     "images": {
       "layout": "files/images_layout.json",
       "script": "files/images_script.js",
-      "name": "Girl Images"
+      "name": "Girl Images",
+      "modules": [
+        {
+          "type": "http",
+          "name": "httpMain"
+        }
+      ]
+    },
+    "radio": {
+      "layout": "files/radio_layout.json",
+      "script": "files/radio_script.js",
+      "name": "Radio Streams",
+      "modules": [
+        {
+          "type": "audioPlayer",
+          "name": "radioMain"
+        }
+      ]
     }
   }
 }

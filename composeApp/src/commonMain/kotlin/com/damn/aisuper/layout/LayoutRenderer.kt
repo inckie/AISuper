@@ -2,11 +2,13 @@ package com.damn.aisuper.layout
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -87,6 +89,7 @@ fun RenderWidget(
     values: Map<String, JsonElement>,
     onValueChange: (String, String) -> Unit,
     onAction: (String) -> Unit,
+    onModuleCommand: (String, String, String, List<JsonElement>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (widget) {
@@ -97,14 +100,14 @@ fun RenderWidget(
             }
             Column(modifier = columnModifier) {
                 widget.children.forEach { child ->
-                    RenderWidget(child, values, onValueChange, onAction, childModifier(child))
+                    RenderWidget(child, values, onValueChange, onAction, onModuleCommand, childModifier(child))
                 }
 
                 // Render dynamic children if any
                 if (widget.dynamicChildrenId != null) {
                     val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
                     dynamicWidgets.forEach { child ->
-                        RenderWidget(child, values, onValueChange, onAction, childModifier(child))
+                        RenderWidget(child, values, onValueChange, onAction, onModuleCommand, childModifier(child))
                     }
                 }
             }
@@ -116,7 +119,7 @@ fun RenderWidget(
             }
             Row(modifier = rowModifier) {
                 widget.children.forEach { child ->
-                    RenderWidget(child, values, onValueChange, onAction, childModifier(child))
+                    RenderWidget(child, values, onValueChange, onAction, onModuleCommand, childModifier(child))
                 }
             }
         }
@@ -155,6 +158,29 @@ fun RenderWidget(
                 contentDescription = widget.description,
                 modifier = modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
             )
+        }
+        is AudioPlayerWidget -> {
+            val prefix = "${widget.player}.media"
+            val phase = values["$prefix.state"]?.stringOrNull() ?: "idle"
+            val position = values["$prefix.positionMs"]?.stringOrNull() ?: "0"
+
+            Column(modifier = modifier.then(widget.layoutModifier())) {
+                Text("${widget.title}: $phase")
+                Text("Position: ${position}ms")
+                Row {
+                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "play", emptyList()) }) {
+                        Text("Play")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "pause", emptyList()) }) {
+                        Text("Pause")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "stop", emptyList()) }) {
+                        Text("Stop")
+                    }
+                }
+            }
         }
     }
 }

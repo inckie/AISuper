@@ -4,7 +4,13 @@ import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.parseLayout
-import com.damn.aisuper.modules.HttpComponent
+import com.damn.aisuper.modules.FeatureModuleContext
+import com.damn.aisuper.modules.FeatureModuleHost
+import com.damn.aisuper.modules.buildFeatureModuleFactories
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,6 +26,8 @@ class Feature(
     private val definition: FeatureDefinition,
     private val engine: AppJSEngine
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private val _layoutRoot = MutableStateFlow<LayoutRoot?>(null)
     val layoutRoot = _layoutRoot.asStateFlow()
 
@@ -27,6 +35,10 @@ class Feature(
     val values = _values.asStateFlow()
 
     private var scriptContent: String = ""
+    private val moduleHost = FeatureModuleHost(
+        factories = buildFeatureModuleFactories(),
+        definitions = definition.modules
+    )
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
@@ -48,11 +60,38 @@ class Feature(
                 JsonNull
             }
 
-            // Register httpGet function (ASYNC)
-            engine.registerSuspendFunction("httpGet") { args ->
-                val url = args.firstOrNull()?.jsonPrimitiveContentOrNull() ?: return@registerSuspendFunction JsonPrimitive("")
-                JsonPrimitive(HttpComponent.get(url))
-            }
+            moduleHost.attach(
+                object : FeatureModuleContext {
+                    override val scope: CoroutineScope = this@Feature.scope
+
+                    override suspend fun registerFunction(
+                        name: String,
+                        callback: (List<JsonElement>) -> JsonElement
+                    ) {
+                        engine.registerFunction(name, callback)
+                    }
+
+                    override suspend fun registerSuspendFunction(
+                        name: String,
+                        callback: suspend (List<JsonElement>) -> JsonElement
+                    ) {
+                        engine.registerSuspendFunction(name, callback)
+                    }
+
+                    override fun updateValue(id: String, value: JsonElement) {
+                        this@Feature.updateValue(id, value)
+                    }
+
+                    override fun readValue(id: String): JsonElement? {
+                        return values.value[id]
+                    }
+
+                    override suspend fun invokeScript(functionName: String, args: List<JsonElement>): JsonElement {
+                        if (scriptContent.isBlank() || functionName.isBlank()) return JsonNull
+                        return engine.execute(scriptContent, functionName, args)
+                    }
+                }
+            )
 
             // Layout
             val bytes = Res.readBytes(definition.layout)
@@ -88,7 +127,13 @@ class Feature(
         }
     }
 
+    fun handleModuleCommand(moduleType: String, target: String, command: String, args: List<JsonElement> = emptyList()) {
+        moduleHost.handleCommand(moduleType, target, command, args)
+    }
+
     fun close() {
+        moduleHost.detachAll()
+        scope.cancel()
         engine.close()
     }
 }
