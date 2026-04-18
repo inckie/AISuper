@@ -88,7 +88,7 @@ fun RenderWidget(
     widget: Widget,
     values: Map<String, JsonElement>,
     onValueChange: (String, String) -> Unit,
-    onAction: (String) -> Unit,
+    onAction: (String, List<JsonElement>) -> Unit,
     onModuleCommand: (String, String, String, List<JsonElement>) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -146,7 +146,7 @@ fun RenderWidget(
         }
         is ButtonWidget -> {
             Button(
-                onClick = { onAction(widget.action) },
+                onClick = { onAction(widget.action, widget.actionArgs) },
                 modifier = modifier.then(widget.layoutModifier())
             ) {
                 Text(widget.text)

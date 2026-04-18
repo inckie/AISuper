@@ -109,8 +109,8 @@ class Feature(
             try {
                 engine.execute(scriptContent, "initialize", emptyList())
             } catch (e: Exception) {
-                // Ignore if initialize is missing or fails
-                println("Initialize failed or missing: ${e.message}")
+                println("[AISuper][JS][InitializeError] feature=$id message=${e.message}")
+                e.printStackTrace()
             }
         } catch (e: Exception) {
             e.printStackTrace()

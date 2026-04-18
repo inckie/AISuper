@@ -43,6 +43,35 @@ class Applet(
     }
 
     private suspend fun registerGlobalFunctions(engine: AppJSEngine) {
+        engine.registerFunction("consoleLog") { args ->
+            println("[AISuper][JS][Log] ${args.joinToString(" ") { it.toString() }}")
+            JsonNull
+        }
+
+        engine.registerFunction("consoleError") { args ->
+            println("[AISuper][JS][Error] ${args.joinToString(" ") { it.toString() }}")
+            JsonNull
+        }
+
+        engine.registerFunction("jsonParse") { args ->
+            val jsonString = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            } ?: return@registerFunction JsonNull
+            try {
+                Json.parseToJsonElement(jsonString)
+            } catch (e: Exception) {
+                println("[AISuper][JS][jsonParse] Failed to parse JSON: ${e.message}")
+                JsonNull
+            }
+        }
+
+        engine.registerFunction("encodeURIComponent") { args ->
+            val input = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            } ?: ""
+            JsonPrimitive(encodeURIComponentUtf8(input))
+        }
+
         engine.registerFunction("getFeatures") {
             JsonArray(manifest?.features?.map { (k, v) ->
                 buildJsonObject {
@@ -108,3 +137,25 @@ class Applet(
         _currentFeature.value?.close()
     }
 }
+
+private fun encodeURIComponentUtf8(input: String): String {
+    val allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()"
+    val bytes = input.encodeToByteArray()
+    val out = StringBuilder(bytes.size * 3)
+
+    for (byte in bytes) {
+        val intValue = byte.toInt() and 0xFF
+        val charValue = intValue.toChar()
+        if (allowed.indexOf(charValue) >= 0) {
+            out.append(charValue)
+        } else {
+            out.append('%')
+            val hex = intValue.toString(16).uppercase()
+            if (hex.length == 1) out.append('0')
+            out.append(hex)
+        }
+    }
+
+    return out.toString()
+}
+

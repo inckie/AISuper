@@ -68,9 +68,9 @@ fun App() {
                     onValueChange = { id, value ->
                         applet.updateValue(id, JsonPrimitive(value))
                     },
-                    onAction = { action ->
+                    onAction = { action, args ->
                         scope.launch {
-                            applet.handleAction(action)
+                            applet.handleAction(action, args)
                         }
                     },
                     onModuleCommand = { moduleType, target, command, args ->

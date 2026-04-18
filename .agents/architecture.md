@@ -20,10 +20,11 @@ The runtime loads an applet manifest and launches one feature at a time.
 ### 2. Layout System
 The UI is driven by a data-driven layout system, not hardcoded Compose utility.
 *   **Format**: JSON.
-*   **Widgets**: `Column`, `Row`, `Text`, `TextField`, `Button`, `Image`.
+*   **Widgets**: `Column`, `Row`, `Text`, `TextField`, `Button`, `Image`, `AudioPlayer`.
 *   **Layout Modifiers (JSON)**: `fillMaxSize`, `fillMaxWidth`, `weight`, `isScrollable`.
 *   **Rendering**: A recursive Compose function (`RenderWidget`) maps the JSON object tree to Compose UI nodes.
-*   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing a JSON string definition of child widgets, allowing runtime UI updates.
+*   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing widget JSON values, allowing runtime UI updates.
+*   **Action Payloads**: `Button` supports optional `actionArgs` (JSON array) propagated to `Applet.handleAction(action, args)` for per-item actions in dynamic lists.
 *   **Screen Structure Pattern**: fixed header/footer with a weighted, scrollable middle region (e.g., chat and image list features).
 
 **Key Classes:**

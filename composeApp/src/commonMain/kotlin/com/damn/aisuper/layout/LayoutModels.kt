@@ -4,6 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class LayoutRoot(
@@ -71,7 +72,8 @@ data class ButtonWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     val text: String = "",
-    val action: String = ""
+    val action: String = "",
+    val actionArgs: List<JsonElement> = emptyList()
 ) : Widget()
 
 @Serializable

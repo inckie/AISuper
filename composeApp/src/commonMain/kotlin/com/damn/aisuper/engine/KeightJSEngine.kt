@@ -52,8 +52,14 @@ class KeightJSEngine : AppJSEngine {
     ) {
         runtime.set(name.js, Callable { args ->
             val jsonArgs = args.map { jsAnyToJsonElement(it, this) }
-            val result = callback(jsonArgs)
-            jsonElementToJsAny(result, this)
+            try {
+                val result = callback(jsonArgs)
+                jsonElementToJsAny(result, this)
+            } catch (e: Exception) {
+                println("[AISuper][JS][CallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
+                e.printStackTrace()
+                null
+            }
         })
     }
 
@@ -64,8 +70,14 @@ class KeightJSEngine : AppJSEngine {
         runtime.set(name.js, Callable { args ->
             val deferred = runtime.async {
                 val jsonArgs = args.map { jsAnyToJsonElement(it, runtime) }
-                val result = callback(jsonArgs)
-                jsonElementToJsAny(result, runtime)
+                try {
+                    val result = callback(jsonArgs)
+                    jsonElementToJsAny(result, runtime)
+                } catch (e: Exception) {
+                    println("[AISuper][JS][SuspendCallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
+                    e.printStackTrace()
+                    null
+                }
             }
             deferred.js
         })
