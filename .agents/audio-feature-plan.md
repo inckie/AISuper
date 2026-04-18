@@ -1,22 +1,19 @@
 # Audio Feature Description and MVP Plan
 
 ## Feature Goal
-Add a basic radio streaming capability with two stations and modular runtime integration.
+Add searchable radio streaming with modular runtime integration.
 
-## Streams
-- `plaza`: `https://radio.plaza.one/mp3https://plaza.one`
-- `provodach`: `https://station.waveradio.org/provodach`
+## Search API
+- Endpoint: `https://de1.api.radio-browser.info/json/stations/byname/{{name}}`
+- Response: station array with `name`, `url`, `url_resolved`, `favicon`, metadata.
 
 ## Scope (Implemented)
-1. Add an `audioPlayer` module type in feature manifest with explicit player name.
-2. Add abstract `AudioPlayer` interface and `AudioPlayerModule` manager.
-3. Add platform factory (`expect/actual`) for player creation.
-4. Expose player control/state APIs to JS (`audioLoad/play/pause/stop/seek/...`).
-5. Publish player state into feature values as `playerName.media.*` keys.
-6. Add event subscription (`audioSubscribe`) that calls JS handlers when player state changes.
-7. Add optional native `AudioPlayer` widget for direct controls bypassing JS.
-8. Add `radio` feature with layout/script and module declaration.
-9. Extract HTTP/audio wiring from `Feature` into generic module abstractions (`FeatureModule`, `FeatureModuleFactory`, `FeatureModuleHost`) and connect modules by manifest + platform factories.
+1. Add `radio` feature modules: `http` + `audioPlayer` (`radioMain`).
+2. Build search UI: query input + Find button + scrollable dynamic station list.
+3. Fetch station list via `httpGet` and map into dynamic widgets.
+4. Add per-item Play button with `actionArgs: [streamUrl, stationName]`.
+5. On play, call `audioLoad/audioPlay` and render native `AudioPlayer` widget in dynamic `playerPanel`.
+6. Keep audio state/event bridge active for future richer controls.
 
 ## Current Platform Support
 - Android: basic stream playback via native `MediaPlayer`.

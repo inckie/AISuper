@@ -27,8 +27,12 @@
     "radio": {
       "layout": "files/radio_layout.json",
       "script": "files/radio_script.js",
-      "name": "Radio Streams",
+      "name": "Radio Search",
       "modules": [
+        {
+          "type": "http",
+          "name": "httpMain"
+        },
         {
           "type": "audioPlayer",
           "name": "radioMain"

@@ -153,10 +153,15 @@ fun RenderWidget(
             }
         }
         is ImageWidget -> {
+            val imgModifier = if (widget.fillMaxWidth) {
+                modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
+            } else {
+                modifier.then(widget.layoutModifier()).width(64.dp).height(64.dp)
+            }
             AsyncImage(
                 model = widget.url,
                 contentDescription = widget.description,
-                modifier = modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
+                modifier = imgModifier
             )
         }
         is AudioPlayerWidget -> {

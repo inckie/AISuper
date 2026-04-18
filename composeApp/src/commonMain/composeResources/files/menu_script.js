@@ -17,7 +17,7 @@ function initialize() {
 
         var buttonText = f.name;
         if (f.id === "radio") {
-            buttonText = "Radio Streams (Live)";
+            buttonText = "Radio Search";
         }
 
         widgets.push({

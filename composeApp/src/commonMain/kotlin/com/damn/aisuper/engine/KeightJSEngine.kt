@@ -22,10 +22,22 @@ class KeightJSEngine : AppJSEngine {
         functionName: String,
         args: List<JsonElement>
     ): JsonElement {
+        var callString = ""
         try {
             // 1. Evaluate the script definition into the context only if changed
             if (script != loadedScript) {
-                engine.evaluate(script)
+                try {
+                    engine.evaluate(script)
+                } catch (e: Exception) {
+                    logEngineError(
+                        stage = "evaluate",
+                        functionName = functionName,
+                        args = args,
+                        callString = null,
+                        error = e
+                    )
+                    return JsonPrimitive("Error: ${e.message}")
+                }
                 loadedScript = script
             }
 
@@ -33,15 +45,21 @@ class KeightJSEngine : AppJSEngine {
 
             // 2. Construct the function call with JSON-encoded arguments
             val argsString = args.joinToString(",") { jsonElementToJsLiteral(it) }
-            val callString = "$functionName($argsString)"
+            callString = "$functionName($argsString)"
 
             // 3. Evaluate the function call — use compile().invoke() to get JsAny? directly
-            val script = engine.compile(callString)
-            val jsResult = script.invoke()
+            val compiled = engine.compile(callString)
+            val jsResult = compiled.invoke()
 
             return jsAnyToJsonElement(jsResult, runtime)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logEngineError(
+                stage = "execute",
+                functionName = functionName,
+                args = args,
+                callString = callString,
+                error = e
+            )
             return JsonPrimitive("Error: ${e.message}")
         }
     }
@@ -106,5 +124,22 @@ class KeightJSEngine : AppJSEngine {
                 "JSON.parse('${element.toString().replace("\\", "\\\\").replace("'", "\\'")}')"
             }
         }
+    }
+
+    private fun logEngineError(
+        stage: String,
+        functionName: String,
+        args: List<JsonElement>,
+        callString: String?,
+        error: Throwable
+    ) {
+        val fn = if (functionName.isBlank()) "<script-load>" else functionName
+        val callPreview = if (callString.isNullOrBlank()) "<none>" else callString.take(500)
+        println("[AISuper][JS][EngineError] stage=$stage function=$fn args=${safeArgs(args)} call=$callPreview message=${error.message}")
+        error.printStackTrace()
+    }
+
+    private fun safeArgs(args: List<JsonElement>): String {
+        return args.joinToString(prefix = "[", postfix = "]") { it.toString().replace("\n", " ").take(160) }
     }
 }

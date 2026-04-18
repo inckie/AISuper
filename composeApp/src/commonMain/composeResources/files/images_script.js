@@ -2,7 +2,7 @@ async function initialize() {
     setValue("status_text", "Loading images...");
     try {
         var json = await httpGet("https://gist.githubusercontent.com/hiteshsahu/f58bcca95532fde77fd0d9e94a9c3148/raw/4ef7b30240c781341f1994f12453e9e7a5c2c67d/GirlImages.json");
-        var data = JSON.parse(json);
+        var data = jsonParse(json);
         var images = data.GirlImages;
 
         var widgets = [];

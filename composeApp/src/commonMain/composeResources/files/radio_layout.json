@@ -10,98 +10,39 @@
       },
       {
         "type": "Text",
-        "id": "current_stream",
-        "text": "Current stream: none"
-      },
-      {
-        "type": "AudioPlayer",
-        "player": "radioMain",
-        "title": "Native Audio Controls",
-        "fillMaxWidth": true
+        "text": "Find radio stations"
       },
       {
         "type": "Row",
         "fillMaxWidth": true,
         "children": [
           {
-            "type": "Button",
-            "text": "Load Plaza",
-            "action": "loadPlaza",
+            "type": "TextField",
+            "id": "search_query",
+            "hint": "Station name, e.g. nightwave",
             "weight": 1
           },
           {
             "type": "Button",
-            "text": "Load Provodach",
-            "action": "loadProvodach",
-            "weight": 1
-          }
-        ]
-      },
-      {
-        "type": "Row",
-        "fillMaxWidth": true,
-        "children": [
-          {
-            "type": "Button",
-            "text": "Play (JS)",
-            "action": "playFromJs",
-            "weight": 1
-          },
-          {
-            "type": "Button",
-            "text": "Pause (JS)",
-            "action": "pauseFromJs",
-            "weight": 1
-          }
-        ]
-      },
-      {
-        "type": "Row",
-        "fillMaxWidth": true,
-        "children": [
-          {
-            "type": "Button",
-            "text": "Seek -10s",
-            "action": "seekBack10s",
-            "weight": 1
-          },
-          {
-            "type": "Button",
-            "text": "Seek +10s",
-            "action": "seekForward10s",
-            "weight": 1
-          },
-          {
-            "type": "Button",
-            "text": "Stop (JS)",
-            "action": "stopFromJs",
-            "weight": 1
+            "text": "Find",
+            "action": "findStations"
           }
         ]
       },
       {
         "type": "Text",
-        "id": "radioMain.media.state",
-        "text": "idle"
+        "id": "status_text",
+        "text": "Type a station name and press Find"
       },
       {
-        "type": "Text",
-        "id": "radioMain.media.positionMs",
-        "text": "0"
+        "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
+        "dynamicChildrenId": "stationList"
       },
       {
-        "type": "Text",
-        "text": "Last error:"
-      },
-      {
-        "type": "Text",
-        "id": "radioMain.media.error",
-        "text": "none"
-      },
-      {
-        "type": "Text",
-        "id": "player_event",
-        "text": "No events yet"
+        "type": "Column",
+        "dynamicChildrenId": "playerPanel"
       }
     ]
   }

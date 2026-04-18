@@ -96,6 +96,14 @@ Layout system includes `AudioPlayer` widget type:
 * Sends native media commands (`play/pause/stop`) through Applet -> Feature, bypassing JS button actions.
 * JS control remains fully supported, so feature authors can choose either path.
 
+## Radio Search Feature Flow
+`radio` feature now combines text input + HTTP + list rendering + native audio controls:
+1. User types station name and triggers `findStations()`.
+2. Script calls `httpGet("https://de1.api.radio-browser.info/json/stations/byname/{query}")`.
+3. Script maps response to dynamic widgets (`Image`, `Text`, `Button`) in `stationList`.
+4. Per-result `Play` button passes `[streamUrl, stationName]` via `actionArgs` into `playStation(url, name)`.
+5. Script starts playback (`audioLoad`, `audioPlay`) and reveals `AudioPlayer` widget by setting `playerPanel`.
+
 ## Data Flow (MVP - Echo Chat)
 
 1.  **User Action**: User clicks "Send" button in the UI.
