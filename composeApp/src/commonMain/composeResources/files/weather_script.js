@@ -10,6 +10,13 @@ function initialize() {
     setValue("weatherResult", []);
 
     var buttons = [];
+    buttons.push({
+        "type": "Button",
+        "text": "My Location",
+        "action": "loadWeatherCurrent",
+        "fillMaxWidth": true
+    });
+
     for (var i = 0; i < WEATHER_LOCATIONS.length; i = i + 1) {
         var city = WEATHER_LOCATIONS[i];
         buttons.push({
@@ -21,6 +28,33 @@ function initialize() {
         });
     }
     setValue("locationButtons", buttons);
+}
+
+async function loadWeatherCurrent() {
+    setValue("weather_status", "Resolving current location...");
+
+    try {
+        var granted = geoRequestPermission();
+        if (granted !== true) {
+            setValue("weather_status", "Location permission requested. Tap again after granting.");
+            return;
+        }
+
+        var geo = await geoGetCurrent();
+        if (geo == undefined || geo == null || geo.success !== true) {
+            var ge = "Location unavailable";
+            if (geo != undefined && geo != null && geo.error != undefined && geo.error != null && geo.error != "") {
+                ge = geo.error;
+            }
+            setValue("weather_status", "Geolocation error: " + ge);
+            return;
+        }
+
+        await loadWeather(geo.latitude, geo.longitude, "My Location");
+    } catch (e) {
+        consoleError("loadWeatherCurrent failed", e);
+        setValue("weather_status", "Failed to resolve location: " + e);
+    }
 }
 
 async function loadWeather(latitude, longitude, locationName) {

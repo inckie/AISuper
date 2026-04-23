@@ -1,0 +1,34 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Miami Metromover", "weight": 1 }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Refresh", "action": "refreshOverview" },
+          { "type": "Button", "text": "Nearest", "action": "findNearestStation" },
+          { "type": "Button", "text": "Gov Center", "action": "loadArrivals", "actionArgs": ["GVT", "Government Center"] }
+        ]
+      },
+      { "type": "Text", "id": "metromover_status", "text": "Loading Metromover data..." },
+      {
+        "type": "Column",
+        "dynamicChildrenId": "metromoverContent",
+        "fillMaxWidth": true,
+        "weight": 1,
+        "isScrollable": true
+      }
+    ]
+  }
+}
+

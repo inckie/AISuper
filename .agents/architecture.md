@@ -56,6 +56,10 @@ Business logic for applets is written in JavaScript. This allows the logic to be
         *   Configurable per feature/server via module `config` (`url`, optional `groups`).
         *   Supports grouped tools on one server (e.g., `weather`, `miami_metromover`) by exposing `mcpCall(group, tool, args)`.
         *   Exposes `mcpListTools(group?)` and `mcpServerInfo()` into JS.
+        *   **GeolocationModule**:
+            *   JS API: `geoGetCurrent(ipOverride?)` returning normalized JSON with `success`, `latitude`, `longitude`, `source`, `error`.
+            *   Android: uses OS `LocationManager` last-known location (GPS/network/passive) with runtime permission checks.
+            *   Non-Android: GeoIP fallback via HTTP (`ipwho.is` or `hackertarget`) selected by build-time constant in code.
 
 ## Feature Manifest Extensions
 Feature definitions now support module declarations:
@@ -111,10 +115,20 @@ Layout system includes `AudioPlayer` widget type:
 ## Weather MCP Feature Flow
 `weather` feature demonstrates MCP-backed tool invocation from the UI:
 1. `initialize()` renders location buttons with action args `[lat, lon, cityName]`.
-2. Clicking a location triggers JS `loadWeather(lat, lon, name)`.
-3. JS calls `mcpCall("weather", "get_current_weather", {...})` through MCP module.
-4. MCP module sends JSON-RPC `tools/call` to configured server URL and returns parsed payload.
-5. JS maps payload to dynamic widgets in `weatherResult`.
+2. Optional `My Location` action uses `geoGetCurrent()` and then calls weather MCP for resolved coordinates.
+3. Clicking a location triggers JS `loadWeather(lat, lon, name)`.
+4. JS calls `mcpCall("weather", "get_current_weather", {...})` through MCP module.
+5. MCP module sends JSON-RPC `tools/call` to configured server URL and returns parsed payload.
+6. JS maps payload to dynamic widgets in `weatherResult`.
+
+## Metromover MCP Feature Flow
+`metromover` feature uses the same MCP server with the `miami_metromover` tool group:
+1. `initialize()` loads loop IDs and station list via `mcpCall("miami_metromover", ...)`.
+2. Feature renders dynamic station rows with per-row `Arrivals` button.
+3. `loadArrivals(stationId, stationTitle)` fetches ETAs and appends readable loop ETA lines.
+4. `loadLoopSvg(loopId)` requests loop map data and shows status metadata (SVG length) without rendering raw objects.
+5. `findNearestStation()` uses `geoGetCurrent()` + `miami_metromover.find_nearest_station` and renders nearest station text.
+6. All text conversion uses safe helpers to prevent `[object Object]` in widgets.
 
 ## Data Flow (MVP - Echo Chat)
 

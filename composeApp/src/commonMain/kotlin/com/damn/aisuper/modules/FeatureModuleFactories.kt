@@ -4,7 +4,8 @@ fun buildFeatureModuleFactories(): Map<String, FeatureModuleFactory> {
     val factories = mutableListOf(
         HttpFeatureModuleFactory,
         AudioPlayerFeatureModuleFactory,
-        McpHttpFeatureModuleFactory
+        McpHttpFeatureModuleFactory,
+        GeoIpGeolocationFeatureModuleFactory
     )
     factories += platformFeatureModuleFactories()
     return factories.associateBy { it.type }
