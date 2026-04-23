@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,58 +28,63 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 @Preview
 fun App() {
     MaterialTheme {
-        // Instantiate the Applet with the Keight engine factory
-        // wrapped in remember to survive recompositions.
-        val applet = remember { Applet { KeightJSEngine() } }
-
-        DisposableEffect(applet) {
-            onDispose {
-                applet.close()
-            }
-        }
-
-        // Observe the current feature from the Applet
-        val currentFeature by applet.currentFeature.collectAsState()
-
-        // Derive UI state from the current feature
-        val layoutRoot by remember(currentFeature) {
-            currentFeature?.layoutRoot ?: flowOf(null)
-        }.collectAsState(initial = null)
-
-        val layoutValues by remember(currentFeature) {
-            currentFeature?.values ?: flowOf(emptyMap())
-        }.collectAsState(initial = emptyMap())
-
-        val scope = rememberCoroutineScope()
-
-        LaunchedEffect(Unit) {
-            // Load the applet manifest
-            applet.loadApplet("files/applet.json")
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeContentPadding()
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            if (layoutRoot != null) {
-                RenderWidget(
-                    widget = layoutRoot!!.layout,
-                    values = layoutValues,
-                    onValueChange = { id, value ->
-                        applet.updateValue(id, JsonPrimitive(value))
-                    },
-                    onAction = { action, args ->
-                        scope.launch {
-                            applet.handleAction(action, args)
+            // Instantiate the Applet with the Keight engine factory
+            // wrapped in remember to survive recompositions.
+            val applet = remember { Applet { KeightJSEngine() } }
+
+            DisposableEffect(applet) {
+                onDispose {
+                    applet.close()
+                }
+            }
+
+            // Observe the current feature from the Applet
+            val currentFeature by applet.currentFeature.collectAsState()
+
+            // Derive UI state from the current feature
+            val layoutRoot by remember(currentFeature) {
+                currentFeature?.layoutRoot ?: flowOf(null)
+            }.collectAsState(initial = null)
+
+            val layoutValues by remember(currentFeature) {
+                currentFeature?.values ?: flowOf(emptyMap())
+            }.collectAsState(initial = emptyMap())
+
+            val scope = rememberCoroutineScope()
+
+            LaunchedEffect(Unit) {
+                // Load the applet manifest
+                applet.loadApplet("files/applet.json")
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeContentPadding()
+            ) {
+                if (layoutRoot != null) {
+                    RenderWidget(
+                        widget = layoutRoot!!.layout,
+                        values = layoutValues,
+                        onValueChange = { id, value ->
+                            applet.updateValue(id, JsonPrimitive(value))
+                        },
+                        onAction = { action, args ->
+                            scope.launch {
+                                applet.handleAction(action, args)
+                            }
+                        },
+                        onModuleCommand = { moduleType, target, command, args ->
+                            applet.handleModuleCommand(moduleType, target, command, args)
                         }
-                    },
-                    onModuleCommand = { moduleType, target, command, args ->
-                        applet.handleModuleCommand(moduleType, target, command, args)
-                    }
-                )
-            } else {
-                Text(if (currentFeature == null) "Loading Applet..." else "Loading Feature...")
+                    )
+                } else {
+                    Text(if (currentFeature == null) "Loading Applet..." else "Loading Feature...")
+                }
             }
         }
     }
