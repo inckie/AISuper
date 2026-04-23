@@ -52,6 +52,10 @@ Business logic for applets is written in JavaScript. This allows the logic to be
     *   Factory: `createPlatformAudioPlayer(name)` via `expect/actual`.
     *   Android actual: basic stream playback with `MediaPlayer`.
     *   JVM/iOS/JS/Wasm actual: `NoopAudioPlayer` fallback for API/state/event wiring.
+    *   **McpHttpFeatureModule**: Feature-scoped MCP client over HTTP JSON-RPC.
+        *   Configurable per feature/server via module `config` (`url`, optional `groups`).
+        *   Supports grouped tools on one server (e.g., `weather`, `miami_metromover`) by exposing `mcpCall(group, tool, args)`.
+        *   Exposes `mcpListTools(group?)` and `mcpServerInfo()` into JS.
 
 ## Feature Manifest Extensions
 Feature definitions now support module declarations:
@@ -104,6 +108,14 @@ Layout system includes `AudioPlayer` widget type:
 4. Per-result `Play` button passes `[streamUrl, stationName]` via `actionArgs` into `playStation(url, name)`.
 5. Script starts playback (`audioLoad`, `audioPlay`) and reveals `AudioPlayer` widget by setting `playerPanel`.
 
+## Weather MCP Feature Flow
+`weather` feature demonstrates MCP-backed tool invocation from the UI:
+1. `initialize()` renders location buttons with action args `[lat, lon, cityName]`.
+2. Clicking a location triggers JS `loadWeather(lat, lon, name)`.
+3. JS calls `mcpCall("weather", "get_current_weather", {...})` through MCP module.
+4. MCP module sends JSON-RPC `tools/call` to configured server URL and returns parsed payload.
+5. JS maps payload to dynamic widgets in `weatherResult`.
+
 ## Data Flow (MVP - Echo Chat)
 
 1.  **User Action**: User clicks "Send" button in the UI.
@@ -141,5 +153,5 @@ Module logic is no longer hardcoded in `Feature`.
 * `FeatureModuleFactory` creates typed modules from manifest `modules[]` declarations.
 * `FeatureModuleHost` attaches/detaches modules and routes native module commands by type.
 * `FeatureModuleContext` exposes engine registration, value read/write, and script callback execution APIs.
-* Default common factories: `http`, `audioPlayer`; platform-specific factories can be provided via `platformFeatureModuleFactories()`.
+* Default common factories: `http`, `audioPlayer`, `mcpHttp`; platform-specific factories can be provided via `platformFeatureModuleFactories()`.
 

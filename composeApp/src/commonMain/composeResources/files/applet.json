@@ -38,6 +38,21 @@
           "name": "radioMain"
         }
       ]
+    },
+    "weather": {
+      "layout": "files/weather_layout.json",
+      "script": "files/weather_script.js",
+      "name": "Weather (MCP)",
+      "modules": [
+        {
+          "type": "mcpHttp",
+          "name": "mcp-host-http",
+          "config": {
+            "url": "http://127.0.0.1:8000/mcp",
+            "groups": "weather,miami_metromover"
+          }
+        }
+      ]
     }
   }
 }
