@@ -84,6 +84,7 @@ data class ImageWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     val url: String = "",
+    val data: String? = null,
     val description: String = ""
 ) : Widget()
 

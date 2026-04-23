@@ -4,6 +4,7 @@ var selectedArrivals = null;
 var selectedStationTitle = "";
 var loopInfoText = "";
 var nearestStationText = "";
+var loopSvgDataUri = "";
 
 function initialize() {
     setValue("metromover_status", "Loading Metromover data...");
@@ -23,6 +24,7 @@ async function refreshOverview() {
         selectedStationTitle = "";
         loopInfoText = "";
         nearestStationText = "";
+        loopSvgDataUri = "";
 
         renderContent();
         setValue("metromover_status", "Loaded " + stations.length + " stations");
@@ -101,8 +103,10 @@ async function loadLoopSvg(loopId) {
 
         if (svg != "") {
             loopInfoText = "Loop " + loopId + " map received (SVG " + svg.length + " chars)";
+            loopSvgDataUri = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
         } else {
             loopInfoText = "Loop " + loopId + " map not available";
+            loopSvgDataUri = "";
         }
 
         renderContent();
@@ -151,6 +155,15 @@ function renderContent() {
 
     if (loopInfoText != "") {
         widgets.push({ "type": "Text", "text": loopInfoText });
+    }
+
+    if (loopSvgDataUri != "") {
+        widgets.push({
+            "type": "Image",
+            "data": loopSvgDataUri,
+            "description": "Metromover loop map",
+            "fillMaxWidth": true
+        });
     }
 
     if (nearestStationText != "") {

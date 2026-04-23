@@ -24,6 +24,7 @@ The UI is driven by a data-driven layout system, not hardcoded Compose utility.
 *   **Layout Modifiers (JSON)**: `fillMaxSize`, `fillMaxWidth`, `weight`, `isScrollable`.
 *   **Rendering**: A recursive Compose function (`RenderWidget`) maps the JSON object tree to Compose UI nodes.
 *   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing widget JSON values, allowing runtime UI updates.
+*   **Image Sources**: `Image` supports both remote `url` and inline `data` (e.g., `data:image/svg+xml;utf8,...`) for local/generated media.
 *   **Action Payloads**: `Button` supports optional `actionArgs` (JSON array) propagated to `Applet.handleAction(action, args)` for per-item actions in dynamic lists.
 *   **Screen Structure Pattern**: fixed header/footer with a weighted, scrollable middle region (e.g., chat and image list features).
 
@@ -129,6 +130,7 @@ Layout system includes `AudioPlayer` widget type:
 4. `loadLoopSvg(loopId)` requests loop map data and shows status metadata (SVG length) without rendering raw objects.
 5. `findNearestStation()` uses `geoGetCurrent()` + `miami_metromover.find_nearest_station` and renders nearest station text.
 6. All text conversion uses safe helpers to prevent `[object Object]` in widgets.
+7. Loop SVG maps are converted to data URIs and rendered through the `Image` widget.
 
 ## Data Flow (MVP - Echo Chat)
 

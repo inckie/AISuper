@@ -153,13 +153,14 @@ fun RenderWidget(
             }
         }
         is ImageWidget -> {
+            val imageModel = widget.data?.takeIf { it.isNotBlank() } ?: widget.url
             val imgModifier = if (widget.fillMaxWidth) {
                 modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
             } else {
                 modifier.then(widget.layoutModifier()).width(64.dp).height(64.dp)
             }
             AsyncImage(
-                model = widget.url,
+                model = imageModel,
                 contentDescription = widget.description,
                 modifier = imgModifier
             )
