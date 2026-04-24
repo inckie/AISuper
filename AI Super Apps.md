@@ -23,8 +23,10 @@ Rationale: while in theory any functionality provided by applet can be performed
 | Action – abstracted call to the module, widget update, navigation to another screen and so on. Some actions are “embedded”, some are provided by Modules and Features. | Application runtime, applet |
 | Use Case – primitive case of interaction with a system, like “pressing a button on specific screen when in specific state performs specific action” | Applet |
 | Flow – a state machine that implements some Use Case or a group of Use Cases. **Represented as a graph so it can be verified**. | Applet |
+| Pipeline – a chain of actions calls (both native and pure JS) with parameters passed as blobs and dictionaries. **Represented as a graph so it can be verified**. | Applet |
 | Block – a sandboxed script that implements logical parts of the Flows, like calling of the actions or interaction with Modules. Can be run both locally or remotely. | Applet |
 | Flow State – a set of variables and objects that keeps the current state of the Flow and all required data. Can be interacted with using actions. | Applet |
+| Blob – text or binary named piece of data that can be shared/transferred between modules to avoid passing it though interfaces. AI modules should operate with blobs when dealing with data. For example, if large HTTP response must be passed to the Block, it's done wia Blob. Can be permanent (file or database), cache files, or in-memory | Applet |
 | Global State – State that keeps information shared by all Flows. Access can be protected by permissions. | Applet |
 | Feature – a connection of Widgets, Layouts, Screens, Flows | Applet |
 | Permission – receiving user approval to perform specific action using a specific module in the context of the specific Flow or Use Case. Can be one time or permanent. | Applet |
