@@ -133,7 +133,7 @@ class KeightJSEngine : AppJSEngine {
         callString: String?,
         error: Throwable
     ) {
-        val fn = if (functionName.isBlank()) "<script-load>" else functionName
+        val fn = functionName.ifBlank { "<script-load>" }
         val callPreview = if (callString.isNullOrBlank()) "<none>" else callString.take(500)
         println("[AISuper][JS][EngineError] stage=$stage function=$fn args=${safeArgs(args)} call=$callPreview message=${error.message}")
         error.printStackTrace()

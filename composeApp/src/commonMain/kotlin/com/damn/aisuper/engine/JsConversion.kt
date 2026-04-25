@@ -20,7 +20,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * Only JSON-compatible types are supported (strings, numbers, booleans, arrays, objects, null/undefined).
  * Functions and other JS-specific types are ignored (mapped to JsonNull).
  */
-suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): JsonElement {
+internal suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): JsonElement {
     return when (value) {
         null, is Undefined -> JsonNull
 
@@ -92,7 +92,7 @@ suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): JsonEleme
 /**
  * Convert a kotlinx.serialization JsonElement to a keight JsAny.
  */
-fun jsonElementToJsAny(element: JsonElement, runtime: ScriptRuntime): JsAny? {
+internal fun jsonElementToJsAny(element: JsonElement, runtime: ScriptRuntime): JsAny? {
     return when (element) {
         is JsonNull -> null
         is JsonPrimitive -> {
