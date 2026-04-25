@@ -22,8 +22,8 @@ class Applet(
 
     private var manifest: AppletManifest? = null
 
-    // For MVP, we can still load a specific feature directly if needed,
-    // but primary entry point is loading an applet manifest.
+    /** Isolated JS runtimes for each declared jsModule. Keyed by module id. */
+    private val jsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun loadApplet(manifestPath: String) {
@@ -33,6 +33,15 @@ class Applet(
 
             val json = Json { ignoreUnknownKeys = true }
             manifest = json.decodeFromString<AppletManifest>(jsonString)
+
+            // Load isolated JS module VMs
+            jsModuleRuntimes.values.forEach { it.close() }
+            jsModuleRuntimes.clear()
+            manifest!!.jsModules.forEach { (moduleId, moduleDef) ->
+                val runtime = JsModuleRuntime(moduleId, moduleDef, engineFactory)
+                runtime.load(::registerGlobalFunctions)
+                jsModuleRuntimes[moduleId] = runtime
+            }
 
             val entryFeatureId = manifest!!.entryFeature
             launchFeature(entryFeatureId)
@@ -103,7 +112,12 @@ class Applet(
             val engine = engineFactory()
             registerGlobalFunctions(engine)
 
-            val feature = Feature(featureId, featureDef, engine)
+            val feature = Feature(
+                id = featureId,
+                definition = featureDef,
+                jsModuleRuntimes = jsModuleRuntimes,
+                engine = engine
+            )
             feature.load()
             _currentFeature.value = feature
         } else {
@@ -135,6 +149,8 @@ class Applet(
 
     fun close() {
         _currentFeature.value?.close()
+        jsModuleRuntimes.values.forEach { it.close() }
+        jsModuleRuntimes.clear()
     }
 }
 

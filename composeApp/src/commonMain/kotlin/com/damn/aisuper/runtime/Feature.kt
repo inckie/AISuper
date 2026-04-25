@@ -24,6 +24,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
+    private val jsModuleRuntimes: Map<String, JsModuleRuntime>,
     private val engine: AppJSEngine
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -35,10 +36,17 @@ class Feature(
     val values = _values.asStateFlow()
 
     private var scriptContent: String = ""
+    private val nativeModuleDefinitions = definition.modules.filterNot {
+        it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
+    }
+    private val jsModuleImports = definition.modules.filter {
+        it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
+    }
     private val moduleHost = FeatureModuleHost(
         factories = buildFeatureModuleFactories(),
-        definitions = definition.modules
+        definitions = nativeModuleDefinitions
     )
+    private val attachedJsModules = mutableListOf<JsModuleRuntime>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
@@ -46,7 +54,6 @@ class Feature(
             // Register getValue function for the script to use (SYNC)
             engine.registerFunction("getValue") { args ->
                 val key = args.firstOrNull()?.jsonPrimitiveContentOrNull() ?: return@registerFunction JsonNull
-                // Return value from state map or empty string
                 _values.value[key] ?: JsonPrimitive("")
             }
 
@@ -60,39 +67,6 @@ class Feature(
                 JsonNull
             }
 
-            moduleHost.attach(
-                object : FeatureModuleContext {
-                    override val scope: CoroutineScope = this@Feature.scope
-
-                    override suspend fun registerFunction(
-                        name: String,
-                        callback: (List<JsonElement>) -> JsonElement
-                    ) {
-                        engine.registerFunction(name, callback)
-                    }
-
-                    override suspend fun registerSuspendFunction(
-                        name: String,
-                        callback: suspend (List<JsonElement>) -> JsonElement
-                    ) {
-                        engine.registerSuspendFunction(name, callback)
-                    }
-
-                    override fun updateValue(id: String, value: JsonElement) {
-                        this@Feature.updateValue(id, value)
-                    }
-
-                    override fun readValue(id: String): JsonElement? {
-                        return values.value[id]
-                    }
-
-                    override suspend fun invokeScript(functionName: String, args: List<JsonElement>): JsonElement {
-                        if (scriptContent.isBlank() || functionName.isBlank()) return JsonNull
-                        return engine.execute(scriptContent, functionName, args)
-                    }
-                }
-            )
-
             // Layout
             val bytes = Res.readBytes(definition.layout)
             val jsonString = bytes.decodeToString()
@@ -101,6 +75,40 @@ class Feature(
             // Script
             val scriptBytes = Res.readBytes(definition.script)
             scriptContent = scriptBytes.decodeToString()
+
+            val moduleContext = object : FeatureModuleContext {
+                override val scope: CoroutineScope = this@Feature.scope
+
+                override suspend fun registerFunction(
+                    name: String,
+                    callback: (List<JsonElement>) -> JsonElement
+                ) {
+                    engine.registerFunction(name, callback)
+                }
+
+                override suspend fun registerSuspendFunction(
+                    name: String,
+                    callback: suspend (List<JsonElement>) -> JsonElement
+                ) {
+                    engine.registerSuspendFunction(name, callback)
+                }
+
+                override fun updateValue(id: String, value: JsonElement) {
+                    this@Feature.updateValue(id, value)
+                }
+
+                override fun readValue(id: String): JsonElement? {
+                    return values.value[id]
+                }
+
+                override suspend fun invokeScript(functionName: String, args: List<JsonElement>): JsonElement {
+                    if (scriptContent.isBlank() || functionName.isBlank()) return JsonNull
+                    return engine.execute(scriptContent, functionName, args)
+                }
+            }
+
+            moduleHost.attach(moduleContext)
+            attachJsModules(moduleContext)
 
             // Initial execution to load functions
             engine.execute(scriptContent, "", emptyList())
@@ -114,6 +122,23 @@ class Feature(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private suspend fun attachJsModules(context: FeatureModuleContext) {
+        attachedJsModules.clear()
+        val importsByName = jsModuleImports.associateBy { it.name }
+
+        for ((moduleName, importDefinition) in importsByName) {
+            val runtime = jsModuleRuntimes[moduleName]
+            if (runtime == null) {
+                println("[AISuper][JsModule] Module '$moduleName' not found for feature '$id'")
+                continue
+            }
+
+            runtime.configureForFeature(importDefinition, nativeModuleDefinitions)
+            runtime.attach(context)
+            attachedJsModules += runtime
         }
     }
 
@@ -132,6 +157,8 @@ class Feature(
     }
 
     fun close() {
+        attachedJsModules.forEach { it.detach() }
+        attachedJsModules.clear()
         moduleHost.detachAll()
         scope.cancel()
         engine.close()
@@ -148,4 +175,3 @@ private fun JsonElement.jsonPrimitiveContentOrNull(): String? {
         null
     }
 }
-

@@ -77,6 +77,31 @@ Feature definitions now support module declarations:
 
 This allows one feature to bind multiple independent player instances by name.
 
+Applet manifest also supports reusable JavaScript modules declared once and imported by features:
+
+```json
+{
+  "jsModules": {
+    "onlineRadioBrowser": {
+      "script": "files/online_radio_browser_module.js"
+    }
+  },
+  "features": {
+    "radio": {
+      "modules": [
+        { "type": "jsModule", "name": "onlineRadioBrowser" },
+        { "type": "http", "name": "httpMain" }
+      ]
+    }
+  }
+}
+```
+
+Runtime behavior:
+* `jsModule` imports are resolved from top-level `jsModules` by `name`.
+* Imported JS module scripts are prepended to the feature script before evaluation.
+* Native modules (`http`, `audioPlayer`, `mcpHttp`, `geolocation`) continue using the module host/factory path.
+
 ## Audio JS Bridge
 Feature runtime registers audio APIs into JS:
 * `getAudioPlayers()`

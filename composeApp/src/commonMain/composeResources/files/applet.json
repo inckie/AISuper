@@ -2,6 +2,12 @@
   "id": "com.damn.aisuper.demo",
   "name": "Super Demo",
   "entryFeature": "menu",
+  "jsModules": {
+    "onlineRadioBrowser": {
+      "name": "Online Radio Browser",
+      "script": "files/online_radio_browser_module.js"
+    }
+  },
   "features": {
     "menu": {
       "layout": "files/menu_layout.json",
@@ -29,6 +35,10 @@
       "script": "files/radio_script.js",
       "name": "Radio Search",
       "modules": [
+        {
+          "type": "jsModule",
+          "name": "onlineRadioBrowser"
+        },
         {
           "type": "http",
           "name": "httpMain"

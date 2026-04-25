@@ -7,7 +7,14 @@ data class AppletManifest(
     val id: String,
     val name: String,
     val entryFeature: String,
+    val jsModules: Map<String, JsModuleDefinition> = emptyMap(),
     val features: Map<String, FeatureDefinition>
+)
+
+@Serializable
+data class JsModuleDefinition(
+    val script: String,
+    val name: String? = null
 )
 
 @Serializable

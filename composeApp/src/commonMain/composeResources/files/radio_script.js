@@ -12,77 +12,36 @@ function initialize() {
 
 async function findStations() {
     var query = getValue("search_query");
-    if (query == undefined || query == null || query == "") {
-        setValue("status_text", "Please enter station name");
-        setValue("stationList", []);
-        return;
-    }
-
     setValue("status_text", "Searching for: " + query);
 
     try {
-        var url = stationApiBase + encodeURIComponent(query) + "?limit=" + stationLimit;
-        var body = await httpGet(url);
-        if (body == undefined || body == null || body == "") {
-            setValue("status_text", "Empty response");
+        var result = await onlineRadioBrowser_search(stationApiBase, stationLimit, query);
+        if (!result.ok) {
+            setValue("status_text", result.error || "Search failed");
             setValue("stationList", []);
             return;
         }
 
-        if (body.indexOf("Error:") == 0) {
-            setValue("status_text", body);
-            setValue("stationList", []);
-            return;
-        }
-
-        var stations = jsonParse(body);
+        var stations = result.stations;
         var widgets = [];
 
-        var maxItems = stations.length;
-
-        for (var i = 0; i < maxItems; i = i + 1) {
+        for (var i = 0; i < stations.length; i = i + 1) {
             var s = stations[i];
-            var name = s.name;
-            if (name == undefined || name == null || name == "") {
-                name = "Unnamed station";
-            }
-
-            var streamUrl = s.url_resolved;
-            if (streamUrl == undefined || streamUrl == null || streamUrl == "") {
-                streamUrl = s.url;
-            }
-
-            if (streamUrl == undefined || streamUrl == null || streamUrl == "") {
-                continue;
-            }
-
-            var subtitle = "";
-            if (s.country != undefined && s.country != null && s.country != "") {
-                subtitle = s.country;
-            }
-            if (s.codec != undefined && s.codec != null && s.codec != "") {
-                if (subtitle == "") {
-                    subtitle = s.codec;
-                } else {
-                    subtitle = subtitle + " | " + s.codec;
-                }
-            }
-
             var rowChildren = [];
 
             if (s.favicon != undefined && s.favicon != null && s.favicon != "") {
                 rowChildren.push({
                     "type": "Image",
                     "url": s.favicon,
-                    "description": name
+                    "description": s.name
                 });
             }
 
             var infoChildren = [
-                { "type": "Text", "text": name }
+                { "type": "Text", "text": s.name }
             ];
-            if (subtitle != "") {
-                infoChildren.push({ "type": "Text", "text": subtitle });
+            if (s.subtitle != "") {
+                infoChildren.push({ "type": "Text", "text": s.subtitle });
             }
 
             rowChildren.push({
@@ -95,7 +54,7 @@ async function findStations() {
                 "type": "Button",
                 "text": "Play",
                 "action": "playStation",
-                "actionArgs": [streamUrl, name]
+                "actionArgs": [s.streamUrl, s.name]
             });
 
             widgets.push({
@@ -106,7 +65,7 @@ async function findStations() {
         }
 
         setValue("stationList", widgets);
-        setValue("status_text", "Found " + stations.length + " stations");
+        setValue("status_text", "Found " + result.total + " stations");
     } catch (e) {
         consoleError("findStations failed", e);
         setValue("status_text", "Search failed: " + e);
@@ -147,4 +106,3 @@ function onAudioEvent(event) {
         setValue("radioMain.media.state", state);
     }
 }
-

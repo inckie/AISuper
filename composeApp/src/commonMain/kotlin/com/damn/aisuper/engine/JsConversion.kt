@@ -7,6 +7,8 @@ import io.github.alexzhirkevich.keight.js.JsAny
 import io.github.alexzhirkevich.keight.js.JsObject
 import io.github.alexzhirkevich.keight.js.Undefined
 import io.github.alexzhirkevich.keight.js.js
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -24,6 +26,30 @@ suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): JsonEleme
 
         // Callable (functions) — not representable in JSON
         is Callable -> JsonNull
+
+        // JS Promise — Keight may expose it as Job + Wrapper(Job/Deferred).
+        is Job -> {
+            val resolved: JsAny? = try {
+                val deferred = when (value) {
+                    is Deferred<*> -> value
+                    is Wrapper<*> if value.value is Deferred<*> -> value.value as Deferred<*>
+                    else -> null
+                }
+
+                if (deferred != null) {
+                    @Suppress("UNCHECKED_CAST")
+                    deferred.await() as JsAny?
+                } else {
+                    // Non-deferred Job: wait for completion, no resolved payload available.
+                    value.join()
+                    null
+                }
+            } catch (e: Exception) {
+                println("[AISuper][JS][PromiseError] ${e.message}")
+                return JsonPrimitive("Error: Promise rejected: ${e.message}")
+            }
+            jsAnyToJsonElement(resolved, runtime)
+        }
 
         // Unwrap wrappers to get the Kotlin value
         is Wrapper<*> -> {
@@ -95,4 +121,3 @@ fun jsonElementToJsAny(element: JsonElement, runtime: ScriptRuntime): JsAny? {
         }
     }
 }
-
