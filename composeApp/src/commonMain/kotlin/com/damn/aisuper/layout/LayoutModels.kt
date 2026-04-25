@@ -61,7 +61,15 @@ data class TextFieldWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
-    val hint: String = ""
+    val hint: String = "",
+    // single line input (default true)
+    val singleLine: Boolean = true,
+    // IME action to request (e.g. "Search", "Next", "Done")
+    val imeAction: String? = null,
+    // action to call when IME action is triggered (JS action name)
+    val onImeAction: String? = null,
+    // id of the next focusable widget for Next action
+    val nextFocusId: String? = null
 ) : Widget()
 
 @Serializable

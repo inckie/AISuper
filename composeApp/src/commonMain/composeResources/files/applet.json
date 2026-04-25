@@ -76,6 +76,11 @@
           "name": "geoMain"
         }
       ]
+    },
+    "form": {
+      "layout": "files/form_layout.json",
+      "script": "files/form_script.js",
+      "name": "Form Demo"
     }
   }
 }

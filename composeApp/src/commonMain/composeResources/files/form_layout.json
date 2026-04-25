@@ -1,0 +1,21 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Form Demo", "weight": 1 }
+        ]
+      },
+      { "type": "TextField", "id": "first_field", "hint": "First value", "singleLine": true, "imeAction": "Next", "nextFocusId": "second_field" },
+      { "type": "TextField", "id": "second_field", "hint": "Second value", "singleLine": true, "imeAction": "Done", "onImeAction": "submitForm" },
+      { "type": "Row", "fillMaxWidth": true, "children": [ { "type": "Button", "text": "Submit", "action": "submitForm" } ] },
+      { "type": "Column", "dynamicChildrenId": "formResult", "fillMaxWidth": true, "isScrollable": true, "weight": 1 }
+    ]
+  }
+}
+

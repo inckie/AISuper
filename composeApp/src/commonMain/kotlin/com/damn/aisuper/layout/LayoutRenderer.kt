@@ -14,6 +14,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,6 +32,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 private val jsonParser = Json { ignoreUnknownKeys = true }
+
+// Simple registry for focus requesters by widget id. This allows IME Next to move focus to
+// the target field identified by `nextFocusId`.
+private val focusRegistry: MutableMap<String, FocusRequester> = mutableMapOf()
 
 fun parseLayout(jsonString: String): LayoutRoot {
     return jsonParser.decodeFromString<LayoutRoot>(jsonString)
@@ -133,15 +143,57 @@ fun RenderWidget(
         }
         is TextFieldWidget -> {
             val value = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
+            // Create focus requester for this field and register it if we have an id
+            val focusRequester = remember { FocusRequester() }
+            if (widget.id != null) {
+                focusRegistry[widget.id] = focusRequester
+            }
+
+            // Map string action to ImeAction
+            val ime = when ((widget.imeAction ?: "").lowercase()) {
+                "search" -> ImeAction.Search
+                "next" -> ImeAction.Next
+                "done" -> ImeAction.Done
+                else -> ImeAction.Default
+            }
+
             TextField(
                 value = value,
-                modifier = modifier.then(widget.layoutModifier()),
+                singleLine = widget.singleLine,
+                modifier = modifier.then(widget.layoutModifier()).focusRequester(focusRequester),
                 onValueChange = { newValue ->
                     if (widget.id != null) {
                         onValueChange(widget.id, newValue)
                     }
                 },
-                placeholder = { Text(widget.hint) }
+                placeholder = { Text(widget.hint) },
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ime),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        val actionName = widget.onImeAction ?: widget.imeAction
+                        if (!actionName.isNullOrBlank()) {
+                            onAction(actionName, emptyList())
+                        }
+                    },
+                    onNext = {
+                        // Prefer explicit next focus id
+                        val target = widget.nextFocusId
+                        if (!target.isNullOrBlank()) {
+                            focusRegistry[target]?.requestFocus()
+                        } else {
+                            val actionName = widget.onImeAction
+                            if (!actionName.isNullOrBlank()) {
+                                onAction(actionName, emptyList())
+                            }
+                        }
+                    },
+                    onDone = {
+                        val actionName = widget.onImeAction ?: widget.imeAction
+                        if (!actionName.isNullOrBlank()) {
+                            onAction(actionName, emptyList())
+                        }
+                    }
+                )
             )
         }
         is ButtonWidget -> {

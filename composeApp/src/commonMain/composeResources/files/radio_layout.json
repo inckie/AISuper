@@ -20,7 +20,10 @@
             "type": "TextField",
             "id": "search_query",
             "hint": "Station name, e.g. nightwave",
-            "weight": 1
+            "weight": 1,
+            "singleLine": true,
+            "imeAction": "Search",
+            "onImeAction": "findStations"
           },
           {
             "type": "Button",
