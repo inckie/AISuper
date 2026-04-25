@@ -1,10 +1,12 @@
 package com.damn.aisuper.modules
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.damn.aisuper.runtime.ModuleDefinition
@@ -37,6 +39,7 @@ class AndroidGeolocationFeatureModule : FeatureModule {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
             ?: return locationError("LocationManager is not available")
 
+        @SuppressLint("MissingPermission")
         val location = findBestLastKnownLocation(locationManager)
             ?: return locationError("No last known location available")
 
@@ -52,6 +55,7 @@ class AndroidGeolocationFeatureModule : FeatureModule {
         }
     }
 
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun findBestLastKnownLocation(locationManager: LocationManager): Location? {
         val providers = listOf(
             LocationManager.GPS_PROVIDER,
