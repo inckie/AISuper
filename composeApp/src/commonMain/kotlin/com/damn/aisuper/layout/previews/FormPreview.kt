@@ -65,9 +65,9 @@ fun RenderWidgetPreviewForm() {
     RenderWidget(
         widget = root,
         values = values,
+        styleSheet = PreviewThemes.byId["light"] ?: PreviewThemes.default,
         onValueChange = { id, value -> println("[Preview] onValueChange: $id -> $value") },
         onAction = { name, args -> println("[Preview] onAction: $name args=$args") },
         onModuleCommand = { module, target, command, args -> println("[Preview] onModuleCommand: $module.$command target=$target args=$args") }
     )
 }
-

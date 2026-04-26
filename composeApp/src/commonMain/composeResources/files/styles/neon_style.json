@@ -1,0 +1,21 @@
+{
+  "name": "Neon",
+  "defaults": {
+    "Column": { "padding": 8 },
+    "Row": { "paddingVertical": 4 },
+    "Text": { "textColor": "#67E8F9" },
+    "TextField": { "containerColor": "#111827", "textColor": "#A7F3D0", "cornerRadius": 10, "paddingVertical": 2 },
+    "Button": { "containerColor": "#22D3EE", "textColor": "#0F172A", "cornerRadius": 10, "padding": 2 },
+    "Dropdown": { "containerColor": "#0F172A", "textColor": "#22D3EE", "cornerRadius": 10 },
+    "AudioPlayer": { "backgroundColor": "#020617", "cornerRadius": 12, "padding": 10 }
+  },
+  "classes": {
+    "screen": { "backgroundColor": "#000000", "padding": 12 },
+    "header_text": { "textColor": "#A3E635", "paddingVertical": 6 },
+    "section_title": { "textColor": "#F472B6", "paddingVertical": 6 },
+    "menu_button": { "containerColor": "#A3E635", "textColor": "#052E16", "cornerRadius": 12 },
+    "back_button": { "containerColor": "#F472B6", "textColor": "#111827" },
+    "theme_dropdown": { "containerColor": "#020617", "textColor": "#22D3EE", "cornerRadius": 10 }
+  }
+}
+

@@ -19,6 +19,7 @@ sealed class Widget {
     abstract val fillMaxWidth: Boolean
     abstract val fillMaxSize: Boolean
     abstract val weight: Float?
+    abstract val classes: List<String>
 }
 
 @Serializable
@@ -28,6 +29,7 @@ data class ColumnWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val children: List<Widget> = emptyList(),
     val dynamicChildrenId: String? = null,
     val isScrollable: Boolean = false
@@ -40,6 +42,7 @@ data class RowWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val children: List<Widget> = emptyList(),
     val isScrollable: Boolean = false
 ) : Widget()
@@ -51,6 +54,7 @@ data class TextWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val text: String = ""
 ) : Widget()
 
@@ -61,6 +65,7 @@ data class TextFieldWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val hint: String = "",
     // single line input (default true)
     val singleLine: Boolean = true,
@@ -79,6 +84,7 @@ data class ButtonWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val text: String = "",
     val action: String = "",
     val actionArgs: List<JsonElement> = emptyList()
@@ -91,6 +97,7 @@ data class ImageWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val url: String = "",
     val data: String? = null,
     val description: String = ""
@@ -103,7 +110,27 @@ data class AudioPlayerWidget(
     override val fillMaxWidth: Boolean = false,
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
     val player: String,
     val title: String = "Audio Player"
 ) : Widget()
 
+@Serializable
+data class DropdownOption(
+    val value: String,
+    val label: String = value
+)
+
+@Serializable
+@SerialName("Dropdown")
+data class DropdownWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    val hint: String = "Select",
+    val options: List<DropdownOption> = emptyList(),
+    val optionsValueId: String? = null,
+    val onChangeAction: String? = null
+) : Widget()

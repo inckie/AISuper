@@ -2,8 +2,11 @@ package com.damn.aisuper.runtime
 
 import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
+import com.damn.aisuper.layout.NamedStyleSheet
+import com.damn.aisuper.layout.StyleSheet
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -20,10 +23,16 @@ class Applet(
     private val _currentFeature = MutableStateFlow<Feature?>(null)
     val currentFeature = _currentFeature.asStateFlow()
 
+    private val _currentStyleId = MutableStateFlow<String?>(null)
+
+    private val _currentStyleSheet = MutableStateFlow<StyleSheet?>(null)
+    val currentStyleSheet = _currentStyleSheet.asStateFlow()
+
     private var manifest: AppletManifest? = null
 
     /** Isolated JS runtimes for each declared jsModule. Keyed by module id. */
     private val jsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
+    private val stylesById = linkedMapOf<String, NamedStyleSheet>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun loadApplet(manifestPath: String) {
@@ -33,6 +42,8 @@ class Applet(
 
             val json = Json { ignoreUnknownKeys = true }
             manifest = json.decodeFromString<AppletManifest>(jsonString)
+
+            loadStyleSheets(json)
 
             // Load isolated JS module VMs
             jsModuleRuntimes.values.forEach { it.close() }
@@ -49,6 +60,32 @@ class Applet(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    @OptIn(ExperimentalResourceApi::class)
+    private suspend fun loadStyleSheets(json: Json) {
+        stylesById.clear()
+
+        manifest?.styles?.forEach { (styleId, definition) ->
+            try {
+                val bytes = Res.readBytes(definition.file)
+                val text = bytes.decodeToString()
+                val sheet = json.decodeFromString<StyleSheet>(text)
+                val displayName = definition.name ?: sheet.name ?: styleId
+                stylesById[styleId] = NamedStyleSheet(styleId, displayName, sheet)
+            } catch (e: Exception) {
+                println("[AISuper][Style] failed to load '$styleId' from ${definition.file}: ${e.message}")
+            }
+        }
+
+        val preferred = manifest?.defaultStyle
+        val selectedId = when {
+            !preferred.isNullOrBlank() && stylesById.containsKey(preferred) -> preferred
+            stylesById.isNotEmpty() -> stylesById.keys.first()
+            else -> null
+        }
+
+        setCurrentTheme(selectedId)
     }
 
     private suspend fun registerGlobalFunctions(engine: AppJSEngine) {
@@ -90,6 +127,27 @@ class Applet(
             } ?: emptyList())
         }
 
+        engine.registerFunction("getAvailableThemes") {
+            JsonArray(stylesById.values.map { style ->
+                buildJsonObject {
+                    put("id", JsonPrimitive(style.id))
+                    put("name", JsonPrimitive(style.name))
+                }
+            })
+        }
+
+        engine.registerFunction("getCurrentTheme") {
+            JsonPrimitive(_currentStyleId.value ?: "")
+        }
+
+        engine.registerFunction("setCurrentTheme") { args ->
+            val styleId = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            }
+            val changed = setCurrentTheme(styleId)
+            JsonPrimitive(changed)
+        }
+
         // launchFeature is suspending because it loads resources, so use registerSuspendFunction
         engine.registerSuspendFunction("launchFeature") { args ->
             val featureId = args.firstOrNull()?.let {
@@ -100,6 +158,19 @@ class Applet(
             }
             JsonNull
         }
+    }
+
+    private fun setCurrentTheme(styleId: String?): Boolean {
+        if (styleId.isNullOrBlank()) {
+            _currentStyleId.update { null }
+            _currentStyleSheet.update { null }
+            return true
+        }
+
+        val style = stylesById[styleId] ?: return false
+        _currentStyleId.update { styleId }
+        _currentStyleSheet.update { style.sheet }
+        return true
     }
 
     suspend fun launchFeature(featureId: String) {

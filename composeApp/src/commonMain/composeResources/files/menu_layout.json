@@ -1,9 +1,21 @@
 {
   "layout": {
     "type": "Column",
+    "fillMaxSize": true,
+    "classes": ["screen"],
     "children": [
-      { "type": "Text", "text": "AI Super App Menu" },
-      { "type": "Column", "dynamicChildrenId": "menuButtons" }
+      { "type": "Text", "text": "AI Super App Menu", "classes": ["header_text"] },
+      {
+        "type": "Dropdown",
+        "id": "themePicker",
+        "hint": "Choose theme",
+        "fillMaxWidth": true,
+        "classes": ["theme_dropdown"],
+        "optionsValueId": "themeOptions",
+        "onChangeAction": "changeTheme"
+      },
+      { "type": "Text", "text": "Features", "classes": ["section_title"] },
+      { "type": "Column", "dynamicChildrenId": "menuButtons", "fillMaxWidth": true }
     ]
   }
 }

@@ -8,6 +8,8 @@ data class AppletManifest(
     val name: String,
     val entryFeature: String,
     val jsModules: Map<String, JsModuleDefinition> = emptyMap(),
+    val styles: Map<String, StyleDefinition> = emptyMap(),
+    val defaultStyle: String? = null,
     val features: Map<String, FeatureDefinition>
 )
 
@@ -30,4 +32,10 @@ data class ModuleDefinition(
     val type: String,
     val name: String,
     val config: Map<String, String> = emptyMap()
+)
+
+@Serializable
+data class StyleDefinition(
+    val file: String,
+    val name: String? = null
 )

@@ -2,6 +2,29 @@
   "id": "com.damn.aisuper.demo",
   "name": "Super Demo",
   "entryFeature": "menu",
+  "styles": {
+    "light": {
+      "name": "Light",
+      "file": "files/styles/light_style.json"
+    },
+    "dark": {
+      "name": "Dark",
+      "file": "files/styles/dark_style.json"
+    },
+    "pink": {
+      "name": "Pink",
+      "file": "files/styles/pink_style.json"
+    },
+    "blueOrange": {
+      "name": "Blue / Orange",
+      "file": "files/styles/blue_orange_style.json"
+    },
+    "neon": {
+      "name": "Neon",
+      "file": "files/styles/neon_style.json"
+    }
+  },
+  "defaultStyle": "light",
   "jsModules": {
     "onlineRadioBrowser": {
       "name": "Online Radio Browser",

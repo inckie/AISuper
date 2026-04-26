@@ -1,0 +1,21 @@
+{
+  "name": "Light",
+  "defaults": {
+    "Column": { "padding": 8 },
+    "Row": { "paddingVertical": 4 },
+    "Text": { "textColor": "#1F2937" },
+    "TextField": { "containerColor": "#F3F4F6", "textColor": "#111827", "cornerRadius": 12, "paddingVertical": 2 },
+    "Button": { "containerColor": "#2563EB", "textColor": "#FFFFFF", "cornerRadius": 12, "padding": 2 },
+    "Dropdown": { "containerColor": "#FFFFFF", "textColor": "#111827", "cornerRadius": 12 },
+    "AudioPlayer": { "backgroundColor": "#E5E7EB", "cornerRadius": 14, "padding": 10 }
+  },
+  "classes": {
+    "screen": { "backgroundColor": "#F8FAFC", "padding": 12 },
+    "header_text": { "textColor": "#0F172A", "paddingVertical": 6 },
+    "section_title": { "textColor": "#334155", "paddingVertical": 6 },
+    "menu_button": { "containerColor": "#1D4ED8", "textColor": "#FFFFFF", "cornerRadius": 14, "paddingVertical": 4 },
+    "back_button": { "containerColor": "#64748B", "textColor": "#FFFFFF" },
+    "theme_dropdown": { "containerColor": "#FFFFFF", "textColor": "#0F172A", "cornerRadius": 12 }
+  }
+}
+

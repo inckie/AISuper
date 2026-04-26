@@ -1,0 +1,21 @@
+{
+  "name": "Blue / Orange",
+  "defaults": {
+    "Column": { "padding": 8 },
+    "Row": { "paddingVertical": 4 },
+    "Text": { "textColor": "#0C4A6E" },
+    "TextField": { "containerColor": "#E0F2FE", "textColor": "#0C4A6E", "cornerRadius": 12, "paddingVertical": 2 },
+    "Button": { "containerColor": "#F97316", "textColor": "#FFFFFF", "cornerRadius": 12, "padding": 2 },
+    "Dropdown": { "containerColor": "#E0F2FE", "textColor": "#075985", "cornerRadius": 12 },
+    "AudioPlayer": { "backgroundColor": "#BAE6FD", "cornerRadius": 14, "padding": 10 }
+  },
+  "classes": {
+    "screen": { "backgroundColor": "#F0F9FF", "padding": 12 },
+    "header_text": { "textColor": "#0C4A6E", "paddingVertical": 6 },
+    "section_title": { "textColor": "#EA580C", "paddingVertical": 6 },
+    "menu_button": { "containerColor": "#FB923C", "textColor": "#082F49", "cornerRadius": 14 },
+    "back_button": { "containerColor": "#0EA5E9", "textColor": "#FFFFFF" },
+    "theme_dropdown": { "containerColor": "#E0F2FE", "textColor": "#075985", "cornerRadius": 12 }
+  }
+}
+

@@ -20,8 +20,11 @@ The runtime loads an applet manifest and launches one feature at a time.
 ### 2. Layout System
 The UI is driven by a data-driven layout system, not hardcoded Compose utility.
 *   **Format**: JSON.
-*   **Widgets**: `Column`, `Row`, `Text`, `TextField`, `Button`, `Image`, `AudioPlayer`.
+*   **Widgets**: `Column`, `Row`, `Text`, `TextField`, `Button`, `Image`, `AudioPlayer`, `Dropdown`.
 *   **Layout Modifiers (JSON)**: `fillMaxSize`, `fillMaxWidth`, `weight`, `isScrollable`.
+*   **Styling**: class-based style rules loaded from separate style JSON files (`styles/*.json`) and resolved at render time.
+*   **Class Names**: each widget supports `classes: []` similar to CSS classes for targeted style overrides.
+*   **Style Capabilities**: text color, container/background color, paddings, and corner radius.
 *   **Rendering**: A recursive Compose function (`RenderWidget`) maps the JSON object tree to Compose UI nodes.
 *   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing widget JSON values, allowing runtime UI updates.
 *   **Image Sources**: `Image` supports both remote `url` and inline `data` (e.g., `data:image/svg+xml;utf8,...`) for local/generated media.
@@ -62,6 +65,28 @@ Business logic for applets is written in JavaScript. This allows the logic to be
             *   Android: uses OS `LocationManager` last-known location (GPS/network/passive) with runtime permission checks.
             *   Non-Android: GeoIP fallback via HTTP (`ipwho.is` or `hackertarget`) selected by build-time constant in code.
 
+## Applet Styles and Themes
+Applet manifest can declare reusable style files and default style:
+
+```json
+{
+  "styles": {
+    "light": { "file": "files/styles/light_style.json" },
+    "dark": { "file": "files/styles/dark_style.json" }
+  },
+  "defaultStyle": "light"
+}
+```
+
+Runtime behavior:
+* `Applet` loads all declared style files at startup.
+* Active style is exposed as `currentStyleSheet` flow and passed to `RenderWidget`.
+* JavaScript can query and switch styles using global functions:
+  * `getAvailableThemes()`
+  * `getCurrentTheme()`
+  * `setCurrentTheme(themeId)`
+* `menu` feature uses `Dropdown` to switch style at runtime.
+
 ## Feature Manifest Extensions
 Feature definitions now support module declarations:
 
@@ -99,7 +124,7 @@ Applet manifest also supports reusable JavaScript modules declared once and impo
 
 Runtime behavior:
 * `jsModule` imports are resolved from top-level `jsModules` by `name`.
-* Imported JS module scripts are prepended to the feature script before evaluation.
+* Imported JS modules run in isolated JS VMs and expose declared exports through Kotlin-registered proxy functions.
 * Native modules (`http`, `audioPlayer`, `mcpHttp`, `geolocation`) continue using the module host/factory path.
 
 ## Audio JS Bridge

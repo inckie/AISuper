@@ -1,4 +1,19 @@
 function initialize() {
+    var themes = getAvailableThemes();
+    var currentTheme = getCurrentTheme();
+
+    var themeOptions = [];
+    for (var t = 0; t < themes.length; t++) {
+        var theme = themes[t];
+        themeOptions.push({
+            "value": theme.id,
+            "label": theme.name
+        });
+    }
+
+    setValue("themeOptions", themeOptions);
+    setValue("themePicker", currentTheme);
+
     var features = getFeatures();
 
     var widgets = [];
@@ -10,7 +25,8 @@ function initialize() {
         if (f.id === "radio" && !mediaHeaderAdded) {
             widgets.push({
                 "type": "Text",
-                "text": "Media"
+                "text": "Media",
+                "classes": ["section_title"]
             });
             mediaHeaderAdded = true;
         }
@@ -24,9 +40,21 @@ function initialize() {
             "type": "Button",
             "text": buttonText,
             "action": "launch:" + f.id,
-            "fillMaxWidth": true
+            "fillMaxWidth": true,
+            "classes": ["menu_button"]
         });
     }
 
     setValue("menuButtons", widgets);
+}
+
+function changeTheme(themeId) {
+    if (themeId == undefined || themeId == null || themeId == "") {
+        return;
+    }
+
+    var applied = setCurrentTheme(themeId);
+    if (applied) {
+        setValue("themePicker", themeId);
+    }
 }
