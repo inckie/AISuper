@@ -38,7 +38,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import coil3.compose.AsyncImage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -297,19 +300,25 @@ fun RenderWidget(
             } else {
                 widget.text
             }
-            val textColor = parseColorOrNull(style.textColor)
-            if (textColor != null) {
-                Text(
-                    text = displayText,
-                    color = textColor,
-                    modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
-                )
-            } else {
-                Text(
-                    text = displayText,
-                    modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
-                )
+
+            val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
+            val fontSize = style.fontSize?.let { it.sp } ?: TextUnit.Unspecified
+            val textAlign = when ((style.textAlign ?: "").lowercase()) {
+                "center" -> TextAlign.Center
+                "right" -> TextAlign.Right
+                "end" -> TextAlign.End
+                "start" -> TextAlign.Start
+                "justify" -> TextAlign.Justify
+                else -> null
             }
+
+            Text(
+                text = displayText,
+                color = textColor,
+                fontSize = fontSize,
+                textAlign = textAlign,
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+            )
         }
 
         is TextFieldWidget -> {

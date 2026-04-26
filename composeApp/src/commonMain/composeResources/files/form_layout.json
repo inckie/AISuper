@@ -8,7 +8,7 @@
         "fillMaxWidth": true,
         "children": [
           { "type": "Button", "text": "<< Back", "action": "launch:menu" },
-          { "type": "Text", "text": "Form Demo", "weight": 1 }
+          { "type": "Text", "text": "Form Demo", "weight": 1, "classes": ["header_text"] }
         ]
       },
       { "type": "TextField", "id": "first_field", "hint": "First value", "singleLine": true, "imeAction": "Next", "nextFocusId": "second_field" },

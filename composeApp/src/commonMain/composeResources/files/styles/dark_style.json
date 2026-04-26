@@ -11,7 +11,7 @@
   },
   "classes": {
     "screen": { "backgroundColor": "#030712", "padding": 12 },
-    "header_text": { "textColor": "#FFFFFF", "paddingVertical": 6 },
+    "header_text": { "textColor": "#FFFFFF", "paddingVertical": 12, "fontSize": 28, "textAlign": "center" },
     "section_title": { "textColor": "#93C5FD", "paddingVertical": 6 },
     "menu_button": { "containerColor": "#1D4ED8", "textColor": "#E0E7FF", "cornerRadius": 14 },
     "back_button": { "containerColor": "#334155", "textColor": "#E2E8F0" },
