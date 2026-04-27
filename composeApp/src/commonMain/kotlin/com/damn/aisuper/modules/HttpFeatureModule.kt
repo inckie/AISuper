@@ -1,6 +1,7 @@
 package com.damn.aisuper.modules
 
 import com.damn.aisuper.runtime.ModuleDefinition
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -24,7 +25,7 @@ object HttpFeatureModuleFactory : FeatureModuleFactory {
     }
 }
 
-private fun kotlinx.serialization.json.JsonElement.jsonPrimitiveContentOrNull(): String? {
+private fun JsonElement.jsonPrimitiveContentOrNull(): String? {
     return try {
         this.jsonPrimitive.contentOrNull
     } catch (_: Exception) {

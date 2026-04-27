@@ -154,7 +154,7 @@ private fun resolveDropdownOptions(
         }
         ?: emptyList()
 
-    return if (optionsFromValues.isNotEmpty()) optionsFromValues else widget.options
+    return optionsFromValues.ifEmpty { widget.options }
 }
 
 /**
@@ -167,8 +167,6 @@ private fun JsonElement.stringOrNull(): String? {
         null
     }
 }
-
-
 
 private fun Widget.typeKey(): String {
     return when (this) {
@@ -302,7 +300,7 @@ fun RenderWidget(
             }
 
             val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
-            val fontSize = style.fontSize?.let { it.sp } ?: TextUnit.Unspecified
+            val fontSize = style.fontSize?.sp ?: TextUnit.Unspecified
             val textAlign = when ((style.textAlign ?: "").lowercase()) {
                 "center" -> TextAlign.Center
                 "right" -> TextAlign.Right
