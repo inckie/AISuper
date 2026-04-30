@@ -1,0 +1,6 @@
+{
+  "id": "miamiMetromover",
+  "entry": "index.ts",
+  "output": "miami_metromover_module.js"
+}
+

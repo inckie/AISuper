@@ -29,6 +29,10 @@
     "onlineRadioBrowser": {
       "name": "Online Radio Browser",
       "script": "files/online_radio_browser_module.js"
+    },
+    "miamiMetromover": {
+      "name": "Miami Metromover",
+      "script": "files/miami_metromover_module.js"
     }
   },
   "features": {
@@ -103,6 +107,25 @@
             "url": "http://127.0.0.1:8000/mcp",
             "groups": "miami_metromover"
           }
+        },
+        {
+          "type": "geolocation",
+          "name": "geoMain"
+        }
+      ]
+    },
+    "metromoverJs": {
+      "layout": "files/metromover_layout.json",
+      "script": "files/metromover_js_script.js",
+      "name": "Miami Metromover (JS Module)",
+      "modules": [
+        {
+          "type": "jsModule",
+          "name": "miamiMetromover"
+        },
+        {
+          "type": "http",
+          "name": "httpMain"
         },
         {
           "type": "geolocation",

@@ -76,16 +76,31 @@ internal suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): 
         // JsObject (plain objects with properties) — convert to JsonObject
         is JsObject -> {
             val keys = value.keys(runtime, excludeSymbols = true, excludeNonEnumerables = true)
+
+            // Special case: if this object has only "#text" key, unwrap it
+            if (keys.size == 1) {
+                val singleKey = keys[0]
+                if (singleKey?.toString() == "#text") {
+                    val textValue = value.get(singleKey, runtime)
+                    return jsAnyToJsonElement(textValue, runtime)
+                }
+            }
+
             val map = mutableMapOf<String, JsonElement>()
             for (key in keys) {
                 val keyStr = key?.toString() ?: continue
                 val propValue = value.get(key, runtime)
+
+
                 map[keyStr] = jsAnyToJsonElement(propValue, runtime)
             }
             JsonObject(map)
         }
 
-        else -> JsonPrimitive(value.toString())
+        else -> {
+            println("[AISuper][JS][Conversion] Unknown type: ${value.toString().take(100)}")
+            JsonPrimitive(value.toString())
+        }
     }
 }
 

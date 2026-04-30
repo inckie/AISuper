@@ -1,0 +1,17 @@
+{
+  "name": "aisuper-js-modules",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node ./scripts/build-modules.mjs",
+    "typecheck": "tsc --noEmit",
+    "build:check": "npm run typecheck && npm run build",
+    "watch": "node ./scripts/build-modules.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.4",
+    "typescript": "^5.8.3"
+  }
+}
+

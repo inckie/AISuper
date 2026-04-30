@@ -111,6 +111,18 @@ class Applet(
             }
         }
 
+        engine.registerFunction("xmlParse") { args ->
+            val xmlString = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            } ?: return@registerFunction JsonNull
+            try {
+                XmlJsonParser.parse(xmlString)
+            } catch (e: Exception) {
+                println("[AISuper][JS][xmlParse] Failed to parse XML: ${e.message}")
+                JsonNull
+            }
+        }
+
         engine.registerFunction("encodeURIComponent") { args ->
             val input = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
@@ -148,7 +160,18 @@ class Applet(
             JsonPrimitive(changed)
         }
 
-        // launchFeature is suspending because it loads resources, so use registerSuspendFunction
+        // Helper function to safely parse strings to numbers, bypassing Keight VM conversion issues
+        engine.registerFunction("stringToNumber") { args ->
+            val input = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            } ?: ""
+            
+            val result = when {
+                input.isBlank() -> 0.0
+                else -> input.toDoubleOrNull() ?: 0.0
+            }
+            JsonPrimitive(result)
+        }
         engine.registerSuspendFunction("launchFeature") { args ->
             val featureId = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }

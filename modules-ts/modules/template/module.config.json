@@ -1,0 +1,6 @@
+{
+  "id": "exampleModule",
+  "entry": "index.ts",
+  "output": "example_module.js"
+}
+

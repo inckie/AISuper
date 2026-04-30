@@ -16,14 +16,13 @@ kotlin {
         namespace = "com.damn.aisuper"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
 
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
-    }
 
-    androidLibrary {
-        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
+        withHostTest {}
     }
 
     listOf(
@@ -76,6 +75,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
