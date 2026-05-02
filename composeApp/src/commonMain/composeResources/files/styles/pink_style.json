@@ -1,21 +1,20 @@
 {
   "name": "Pink",
   "defaults": {
-    "Column": { "padding": 8 },
-    "Row": { "paddingVertical": 4 },
-    "Text": { "textColor": "#831843" },
-    "TextField": { "containerColor": "#FCE7F3", "textColor": "#831843", "cornerRadius": 16, "paddingVertical": 2 },
-    "Button": { "containerColor": "#EC4899", "textColor": "#FFFFFF", "cornerRadius": 16, "padding": 2 },
-    "Dropdown": { "containerColor": "#FDF2F8", "textColor": "#9D174D", "cornerRadius": 14 },
-    "AudioPlayer": { "backgroundColor": "#FBCFE8", "cornerRadius": 16, "padding": 10 }
+    "Column": { "padding": 16 },
+    "Row": { "paddingVertical": 8 },
+    "Text": { "textColor": "#D645B5", "fontSize": 16 },
+    "TextField": { "containerColor": "#FFE8F5", "textColor": "#D645B5", "cornerRadius": 24, "paddingVertical": 12 },
+    "Button": { "containerColor": "#F066B3", "textColor": "#FFFFFF", "cornerRadius": 24, "padding": 16 },
+    "Dropdown": { "containerColor": "#FFEBF5", "textColor": "#B3559F", "cornerRadius": 20 },
+    "AudioPlayer": { "backgroundColor": "#FFD7E7", "cornerRadius": 24, "padding": 16 }
   },
   "classes": {
-    "screen": { "backgroundColor": "#FFF1F7", "padding": 12 },
-    "header_text": { "textColor": "#9D174D", "paddingVertical": 12, "fontSize": 28, "textAlign": "center" },
-    "section_title": { "textColor": "#BE185D", "paddingVertical": 6 },
-    "menu_button": { "containerColor": "#DB2777", "textColor": "#FFF7FB", "cornerRadius": 18 },
-    "back_button": { "containerColor": "#F472B6", "textColor": "#4A044E" },
-    "theme_dropdown": { "containerColor": "#FDF2F8", "textColor": "#9D174D", "cornerRadius": 14 }
+    "screen": { "backgroundColor": "#FFF0F9", "padding": 24 },
+    "header_text": { "textColor": "#B3559F", "paddingVertical": 16, "fontSize": 24, "textAlign": "center", "fontWeight": "bold" },
+    "section_title": { "textColor": "#D645B5", "paddingVertical": 8, "fontSize": 20, "fontWeight": "bold" },
+    "menu_button": { "containerColor": "#F066B3", "textColor": "#FFF7FB", "cornerRadius": 32 },
+    "back_button": { "containerColor": "#F472B6", "textColor": "#4A044E", "cornerRadius": 32 },
+    "theme_dropdown": { "containerColor": "#FFEBF5", "textColor": "#B3559F", "cornerRadius": 20 }
   }
 }
-
