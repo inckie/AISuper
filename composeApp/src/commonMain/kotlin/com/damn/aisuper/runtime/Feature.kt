@@ -37,13 +37,9 @@ class Feature(
     private val _values = MutableStateFlow<Map<String, JsonElement>>(emptyMap())
     val values = _values.asStateFlow()
 
-    private val nativeModuleDefinitions = definition.modules.filterNot {
-        it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
-    }
-
     private val moduleHost = FeatureModuleHost(
         factories = buildFeatureModuleFactories() + mapOf(
-            "jsModule" to JsModuleFeatureModuleFactory(appletJsModuleRuntimes, nativeModuleDefinitions)
+            "jsModule" to JsModuleFeatureModuleFactory(appletJsModuleRuntimes, definition.modules.withoutJsModules())
         ),
         definitions = definition.modules
     )
@@ -152,4 +148,8 @@ private fun JsonElement.jsonPrimitiveContentOrNull(): String? {
     } catch (_: Exception) {
         null
     }
+}
+
+private fun List<ModuleDefinition>.withoutJsModules(): List<ModuleDefinition> = filterNot {
+    it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
 }
