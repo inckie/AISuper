@@ -28,7 +28,7 @@ class JsModuleRuntime(
     engineFactory: () -> AppJSEngine
 ) : FeatureModule {
     private val engine: AppJSEngine = engineFactory()
-    private var scriptContent: String = ""
+    private var isScriptLoaded: Boolean = false
 
     /** Exported function names declared by the module via registerExports(). */
     val exports: MutableList<String> = mutableListOf()
@@ -71,10 +71,11 @@ class JsModuleRuntime(
         }
 
         val bytes = Res.readBytes(definition.script)
-        scriptContent = bytes.decodeToString()
+        val scriptContent = bytes.decodeToString()
 
         // Evaluate script — this will trigger registerExports() call
-        engine.execute(scriptContent, "", emptyList())
+        engine.loadScript(scriptContent)
+        isScriptLoaded = true
 
         println("[AISuper][JsModule][$id] loaded, exports: $exports")
     }
@@ -114,10 +115,12 @@ class JsModuleRuntime(
      * Call a named function inside this module's isolated VM.
      */
     suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
-        return engine.execute(scriptContent, functionName, args)
+        if (!isScriptLoaded) return JsonNull
+        return engine.callFunction(functionName, args)
     }
 
     fun close() {
+        isScriptLoaded = false
         engine.close()
     }
 

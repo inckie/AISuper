@@ -17,28 +17,35 @@ class KeightJSEngine : AppJSEngine {
     private val engine = JSEngine(runtime)
     private var loadedScript: String? = null
 
-    override suspend fun execute(
-        script: String,
+    override suspend fun loadScript(script: String) {
+        if (loadedScript != null) {
+            if (loadedScript == script) return
+            throw IllegalStateException("JS script is already loaded in this engine instance")
+        }
+
+        try {
+            engine.evaluate(script)
+            loadedScript = script
+        } catch (e: Exception) {
+            logEngineError(
+                stage = "evaluate",
+                functionName = "",
+                args = emptyList(),
+                callString = null,
+                error = e
+            )
+            throw e
+        }
+    }
+
+    override suspend fun callFunction(
         functionName: String,
         args: List<JsonElement>
     ): JsonElement {
         var callString = ""
         try {
-            // 1. Evaluate the script definition into the context only if changed
-            if (script != loadedScript) {
-                try {
-                    engine.evaluate(script)
-                } catch (e: Exception) {
-                    logEngineError(
-                        stage = "evaluate",
-                        functionName = functionName,
-                        args = args,
-                        callString = null,
-                        error = e
-                    )
-                    return JsonPrimitive("Error: ${e.message}")
-                }
-                loadedScript = script
+            if (loadedScript == null) {
+                return JsonPrimitive("Error: Script is not loaded")
             }
 
             if (functionName.isEmpty()) return JsonNull

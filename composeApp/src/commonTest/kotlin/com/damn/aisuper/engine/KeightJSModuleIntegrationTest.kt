@@ -21,9 +21,14 @@ import kotlin.test.assertTrue
  */
 class KeightJSModuleIntegrationTest {
 
-    private val appEngine: KeightJSEngine = KeightJSEngine()
+    private lateinit var appEngine: KeightJSEngine
     // Single engine approach: register everything through appEngine which has its own runtime
     private var moduleCode = ""
+
+    private fun resetEngine() {
+        appEngine = KeightJSEngine()
+        moduleCode = ""
+    }
 
     /**
      * Mock httpGet function that returns test XML responses
@@ -149,17 +154,15 @@ class KeightJSModuleIntegrationTest {
         }
     }
 
-    private suspend fun evalResolved(script: String): JsonElement {
-        // Execute script in the context of already-loaded module
-        return appEngine.execute(moduleCode + "\n" + script, "", emptyList())
-    }
-
     private suspend fun setupModuleRuntime() {
+        if (!::appEngine.isInitialized) resetEngine()
+
         // Register xmlParse first using the app engine - this uses REAL XmlJsonParser!
         registerXmlParseFunction()
 
         // Then load all the module code through appEngine
         moduleCode = mockHttpGet + "\n" + loggingUtility + "\n" + runtimeShims + "\n" + readModuleScript("keight_compatible.js")
+        appEngine.loadScript(moduleCode)
     }
 
     // ...existing test methods...
@@ -167,21 +170,25 @@ class KeightJSModuleIntegrationTest {
     @Test
     fun testXmlParseRegistered() {
         runTest {
+        resetEngine()
         println("\n=== TEST: xmlParse is registered and callable ===")
 
         registerXmlParseFunction()
 
         // Test that xmlParse is callable
         val code = """
-            var testXml = '<root><item>value</item></root>';
-            console.log("Calling xmlParse with: " + testXml);
-            var parsed = xmlParse(testXml);
-            console.log("Got parsed: " + JSON.stringify(parsed));
-            JSON.stringify(parsed);
+            async function __testXmlParseRegistered() {
+                var testXml = '<root><item>value</item></root>';
+                console.log("Calling xmlParse with: " + testXml);
+                var parsed = xmlParse(testXml);
+                console.log("Got parsed: " + JSON.stringify(parsed));
+                return JSON.stringify(parsed);
+            }
         """.trimIndent()
 
         println("Executing code: $code")
-        val result = appEngine.execute(code, "", emptyList())
+        appEngine.loadScript(code)
+        val result = appEngine.callFunction("__testXmlParseRegistered", emptyList())
 
         println("xmlParse result: $result")
         println("Result type: ${result::class.simpleName}")
@@ -193,15 +200,17 @@ class KeightJSModuleIntegrationTest {
     @Test
     fun testHttpGetMock() {
         runTest {
+        resetEngine()
         println("\n=== TEST: httpGet Mock ===")
 
         try {
-            val result = appEngine.execute(mockHttpGet + "\n" + """
-                (async function() {
+            appEngine.loadScript(mockHttpGet + "\n" + """
+                async function __testHttpGetMock() {
                     var result = await httpGet('http://miamidade.gov/transit/WebServices/MoverStations/');
                     return result.substring(0, 50);
-                })();
-            """.trimIndent(), "", emptyList())
+                }
+            """.trimIndent())
+            val result = appEngine.callFunction("__testHttpGetMock", emptyList())
 
             println("httpGet mock result: $result")
             assertTrue(result is JsonPrimitive, "Result should be JsonPrimitive but got ${result::class.simpleName}")
@@ -217,6 +226,7 @@ class KeightJSModuleIntegrationTest {
     @Test
     fun testKeightCompatibleModule() {
         runTest {
+        resetEngine()
         println("\n=== TEST: Module can use xmlParse ===")
 
         setupModuleRuntime()

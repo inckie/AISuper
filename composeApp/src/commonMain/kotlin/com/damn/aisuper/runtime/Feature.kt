@@ -37,8 +37,6 @@ class Feature(
     private val _values = MutableStateFlow<Map<String, JsonElement>>(emptyMap())
     val values = _values.asStateFlow()
 
-    private var scriptContent: String = ""
-
     private val nativeModuleDefinitions = definition.modules.filterNot {
         it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
     }
@@ -76,7 +74,8 @@ class Feature(
 
             // Script
             val scriptBytes = Res.readBytes(definition.script)
-            scriptContent = scriptBytes.decodeToString()
+            val scriptContent = scriptBytes.decodeToString()
+            engine.loadScript(scriptContent)
 
             val moduleContext = object : FeatureModuleContext {
                 override val scope: CoroutineScope = this@Feature.scope
@@ -104,19 +103,17 @@ class Feature(
                 }
 
                 override suspend fun invokeScript(functionName: String, args: List<JsonElement>): JsonElement {
-                    if (scriptContent.isBlank() || functionName.isBlank()) return JsonNull
-                    return engine.execute(scriptContent, functionName, args)
+                    if (functionName.isBlank()) return JsonNull
+                    return engine.callFunction(functionName, args)
                 }
             }
 
             moduleHost.attach(moduleContext)
 
             // Initial execution to load functions
-            engine.execute(scriptContent, "", emptyList())
-
             // Call initialize if present
             try {
-                engine.execute(scriptContent, "initialize", emptyList())
+                engine.callFunction("initialize", emptyList())
             } catch (e: Exception) {
                 println("[AISuper][JS][InitializeError] feature=$id message=${e.message}")
                 e.printStackTrace()
@@ -137,9 +134,8 @@ class Feature(
     }
 
     suspend fun handleAction(action: String, args: List<JsonElement> = emptyList()) {
-        if (action.isNotEmpty()) {
-            engine.execute(scriptContent, action, args)
-        }
+        if (action.isEmpty()) return
+        engine.callFunction(action, args)
     }
 
     fun handleModuleCommand(moduleType: String, target: String, command: String, args: List<JsonElement> = emptyList()) {
