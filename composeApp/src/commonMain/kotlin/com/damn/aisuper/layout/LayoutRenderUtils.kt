@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 private val renderJsonParser = Json { ignoreUnknownKeys = true }
@@ -103,6 +104,15 @@ fun JsonElement.booleanOrNull(): Boolean? {
     }
 }
 
+fun JsonElement.floatOrNull(): Float? {
+    return try {
+        val primitive = this.jsonPrimitive
+        primitive.floatOrNull ?: primitive.contentOrNull?.trim()?.toFloatOrNull()
+    } catch (_: Exception) {
+        null
+    }
+}
+
 fun Widget.typeKey(): String {
     return when (this) {
         is ColumnWidget -> "Column"
@@ -114,6 +124,8 @@ fun Widget.typeKey(): String {
         is AudioPlayerWidget -> "AudioPlayer"
         is DropdownWidget -> "Dropdown"
         is SwitchWidget -> "Switch"
+        is SpinnerWidget -> "Spinner"
+        is ProgressWidget -> "Progress"
     }
 }
 

@@ -22,6 +22,11 @@
       },
       { "type": "Text", "id": "metromover_status", "text": "Loading Metromover data..." },
       {
+        "type": "Spinner",
+        "id": "metromover_spinner",
+        "visibilityId": "metromover_spinner_visible"
+      },
+      {
         "type": "Column",
         "dynamicChildrenId": "metromoverContent",
         "fillMaxWidth": true,

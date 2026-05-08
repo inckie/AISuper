@@ -38,6 +38,11 @@
         "text": "Type a station name and press Find"
       },
       {
+        "type": "Spinner",
+        "id": "search_spinner",
+        "visibilityId": "search_spinner_visible"
+      },
+      {
         "type": "Column",
         "weight": 1,
         "isScrollable": true,
@@ -46,8 +51,13 @@
       {
         "type": "Column",
         "dynamicChildrenId": "playerPanel"
+      },
+      {
+        "type": "Progress",
+        "id": "playback_progress",
+        "progressId": "radioMain.media.progress",
+        "fillMaxWidth": true
       }
     ]
   }
 }
-

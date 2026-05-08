@@ -9,11 +9,13 @@ var loopSvgDataUri = "";
 function initialize() {
     setValue("metromover_status", "Loading Metromover data...");
     setValue("metromoverContent", []);
+    setValue("metromover_spinner_visible", true);
     refreshOverview();
 }
 
 async function refreshOverview() {
     setValue("metromover_status", "Fetching loops and stations...");
+    setValue("metromover_spinner_visible", true);
     try {
         var loopResponse = await mcpCall("miami_metromover", "list_loops", {});
         var stationResponse = await mcpCall("miami_metromover", "list_stations", {});
@@ -28,20 +30,24 @@ async function refreshOverview() {
 
         renderContent();
         setValue("metromover_status", "Loaded " + stations.length + " stations");
+        setValue("metromover_spinner_visible", false);
     } catch (e) {
         consoleError("refreshOverview failed", e);
         setValue("metromover_status", "Failed to load Metromover data: " + stringifySafe(e));
         setValue("metromoverContent", []);
+        setValue("metromover_spinner_visible", false);
     }
 }
 
 async function findNearestStation() {
     setValue("metromover_status", "Resolving your location...");
+    setValue("metromover_spinner_visible", true);
 
     try {
         var granted = geoRequestPermission();
         if (granted !== true) {
             setValue("metromover_status", "Location permission requested. Tap Nearest again after granting.");
+            setValue("metromover_spinner_visible", false);
             return;
         }
 
@@ -52,6 +58,7 @@ async function findNearestStation() {
                 ge = geo.error;
             }
             setValue("metromover_status", "Geolocation error: " + ge);
+            setValue("metromover_spinner_visible", false);
             return;
         }
 
@@ -69,20 +76,24 @@ async function findNearestStation() {
 
         if (nearestId == "") {
             setValue("metromover_status", "No nearby station found");
+            setValue("metromover_spinner_visible", false);
             return;
         }
 
         nearestStationText = "Nearest: " + nearestTitle + " (" + nearestId + ")";
         renderContent();
         setValue("metromover_status", "Nearest station resolved");
+        setValue("metromover_spinner_visible", false);
     } catch (e) {
         consoleError("findNearestStation failed", e);
         setValue("metromover_status", "Failed to find nearest station: " + stringifySafe(e));
+        setValue("metromover_spinner_visible", false);
     }
 }
 
 async function loadLoopSvg(loopId) {
     setValue("metromover_status", "Loading loop map: " + loopId + "...");
+    setValue("metromover_spinner_visible", true);
 
     try {
         var result = await mcpCall("miami_metromover", "get_loop_svg", {
@@ -111,14 +122,17 @@ async function loadLoopSvg(loopId) {
 
         renderContent();
         setValue("metromover_status", "Loop " + loopId + " loaded");
+        setValue("metromover_spinner_visible", false);
     } catch (e) {
         consoleError("loadLoopSvg failed", e);
         setValue("metromover_status", "Failed to load loop map: " + stringifySafe(e));
+        setValue("metromover_spinner_visible", false);
     }
 }
 
 async function loadArrivals(stationId, stationTitle) {
     setValue("metromover_status", "Loading arrivals for " + stationTitle + "...");
+    setValue("metromover_spinner_visible", true);
 
     try {
         var result = await mcpCall("miami_metromover", "get_station_arrivals", {
@@ -129,9 +143,11 @@ async function loadArrivals(stationId, stationTitle) {
         selectedStationTitle = stationTitle;
         renderContent();
         setValue("metromover_status", "Arrivals updated for " + stationTitle);
+        setValue("metromover_spinner_visible", false);
     } catch (e) {
         consoleError("loadArrivals failed", e);
         setValue("metromover_status", "Failed to load arrivals: " + stringifySafe(e));
+        setValue("metromover_spinner_visible", false);
     }
 }
 

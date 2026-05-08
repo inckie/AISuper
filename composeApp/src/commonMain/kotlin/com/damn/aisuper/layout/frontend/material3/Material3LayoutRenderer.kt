@@ -12,12 +12,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -42,7 +44,9 @@ import com.damn.aisuper.layout.ButtonWidget
 import com.damn.aisuper.layout.ColumnWidget
 import com.damn.aisuper.layout.DropdownWidget
 import com.damn.aisuper.layout.ImageWidget
+import com.damn.aisuper.layout.ProgressWidget
 import com.damn.aisuper.layout.RowWidget
+import com.damn.aisuper.layout.SpinnerWidget
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.SwitchWidget
 import com.damn.aisuper.layout.TextFieldWidget
@@ -51,6 +55,7 @@ import com.damn.aisuper.layout.Widget
 import com.damn.aisuper.layout.applyStyleRule
 import com.damn.aisuper.layout.booleanOrNull
 import com.damn.aisuper.layout.childModifier
+import com.damn.aisuper.layout.floatOrNull
 import com.damn.aisuper.layout.layoutModifier
 import com.damn.aisuper.layout.parseColorOrNull
 import kotlinx.serialization.json.JsonElement
@@ -352,6 +357,32 @@ fun RenderWidget(
                         }
                     }
                 )
+            }
+        }
+
+        is SpinnerWidget -> {
+            val visible = widget.visibilityId
+                ?.let { values[it]?.booleanOrNull() }
+                ?: true
+
+            if (visible) {
+                CircularProgressIndicator(
+                    modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+                )
+            }
+        }
+
+        is ProgressWidget -> {
+            val resolvedProgress = widget.progressId
+                ?.let { values[it]?.floatOrNull() }
+                ?: widget.progress
+            val indicatorModifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+
+            if (widget.indeterminate || resolvedProgress == null) {
+                LinearProgressIndicator(modifier = indicatorModifier)
+            } else {
+                val clamped = resolvedProgress.coerceIn(0f, 1f)
+                LinearProgressIndicator(progress = { clamped }, modifier = indicatorModifier)
             }
         }
     }

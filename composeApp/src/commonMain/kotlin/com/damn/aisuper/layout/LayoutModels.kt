@@ -147,3 +147,27 @@ data class SwitchWidget(
     val checked: Boolean = false
 ) : Widget()
 
+@Serializable
+@SerialName("Spinner")
+data class SpinnerWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    val visibilityId: String? = null
+) : Widget()
+
+@Serializable
+@SerialName("Progress")
+data class ProgressWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    val progress: Float? = null,
+    val progressId: String? = null,
+    val indeterminate: Boolean = false
+) : Widget()
+
