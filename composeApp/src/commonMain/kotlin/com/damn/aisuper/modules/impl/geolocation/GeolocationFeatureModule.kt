@@ -1,5 +1,8 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.geolocation
 
+import com.damn.aisuper.modules.FeatureModule
+import com.damn.aisuper.modules.FeatureModuleContext
+import com.damn.aisuper.modules.FeatureModuleFactory
 import com.damn.aisuper.runtime.ModuleDefinition
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -206,4 +209,5 @@ private fun JsonObject.boolean(key: String): Boolean? {
         }
     }
 }
+
 

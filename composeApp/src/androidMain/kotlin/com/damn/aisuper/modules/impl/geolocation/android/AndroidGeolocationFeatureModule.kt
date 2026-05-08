@@ -1,4 +1,4 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.geolocation.android
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -9,6 +9,10 @@ import android.location.LocationManager
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.damn.aisuper.modules.FeatureModule
+import com.damn.aisuper.modules.FeatureModuleContext
+import com.damn.aisuper.modules.FeatureModuleFactory
+import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
 import com.damn.aisuper.runtime.ModuleDefinition
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -123,4 +127,5 @@ object AndroidGeolocationFeatureModuleFactory : FeatureModuleFactory {
         return AndroidGeolocationFeatureModule()
     }
 }
+
 

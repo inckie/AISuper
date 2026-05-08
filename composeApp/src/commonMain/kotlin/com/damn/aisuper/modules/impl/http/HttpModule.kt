@@ -1,4 +1,4 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.http
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -15,3 +15,4 @@ object HttpComponent {
         }
     }
 }
+

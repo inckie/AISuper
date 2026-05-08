@@ -1,5 +1,8 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.http
 
+import com.damn.aisuper.modules.FeatureModule
+import com.damn.aisuper.modules.FeatureModuleContext
+import com.damn.aisuper.modules.FeatureModuleFactory
 import com.damn.aisuper.runtime.ModuleDefinition
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -32,4 +35,5 @@ private fun JsonElement.jsonPrimitiveContentOrNull(): String? {
         null
     }
 }
+
 

@@ -1,4 +1,4 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.audio
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,4 +121,5 @@ class AudioPlayerModule(
         players.values.forEach { it.release() }
     }
 }
+
 

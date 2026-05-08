@@ -1,4 +1,4 @@
-package com.damn.aisuper.modules
+package com.damn.aisuper.modules.impl.audio
 
 import android.media.MediaPlayer
 import kotlinx.coroutines.CoroutineScope
@@ -187,4 +187,5 @@ private class AndroidAudioPlayer(
         }
     }
 }
+
 
