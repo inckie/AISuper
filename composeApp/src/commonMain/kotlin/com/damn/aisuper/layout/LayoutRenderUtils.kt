@@ -22,6 +22,34 @@ import kotlinx.serialization.json.jsonPrimitive
 
 private val renderJsonParser = Json { ignoreUnknownKeys = true }
 
+fun parseLayout(jsonString: String): LayoutRoot =
+    renderJsonParser.decodeFromString<LayoutRoot>(jsonString)
+
+private fun parseWidgets(jsonString: String): List<Widget> {
+    return try {
+        renderJsonParser.decodeFromString<List<Widget>>(jsonString)
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+/**
+ * Decode a list of Widgets from a JsonArray of widget JsonElements.
+ */
+private fun parseWidgetsFromJsonArray(array: JsonArray): List<Widget> {
+    return try {
+        array.mapNotNull { element ->
+            try {
+                renderJsonParser.decodeFromJsonElement(Widget.serializer(), element)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
 private fun parseDropdownOptionsFromJsonArray(array: JsonArray): List<DropdownOption> =
     array.mapNotNull { element ->
         when (element) {
@@ -201,4 +229,3 @@ fun ColumnScope.childModifier(widget: Widget): Modifier {
 fun RowScope.childModifier(widget: Widget): Modifier {
     return widget.weight?.let { Modifier.weight(it) } ?: Modifier
 }
-
