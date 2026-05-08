@@ -151,7 +151,7 @@ class AudioPlayerFeatureModule(
         handlers.forEach { handler ->
             context.scope.launch {
                 runCatching {
-                    context.invokeScript(handler, listOf(payload))
+                    context.call(handler, listOf(payload))
                 }
             }
         }

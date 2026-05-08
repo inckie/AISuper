@@ -81,7 +81,7 @@ class JsModuleRuntime(
     }
 
     override suspend fun attach(context: FeatureModuleContext) {
-        hostInvoker = { functionName, args -> context.invokeScript(functionName, args) }
+        hostInvoker = { functionName, args -> context.call(functionName, args) }
 
         val functionsToBridge = resolveHostFunctionsForCurrentFeature()
         for (hostFunction in functionsToBridge) {

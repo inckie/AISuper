@@ -27,7 +27,7 @@ interface FeatureModuleContext {
     fun updateValue(id: String, value: JsonElement)
     fun readValue(id: String): JsonElement?
 
-    suspend fun invokeScript(functionName: String, args: List<JsonElement> = emptyList()): JsonElement
+    suspend fun call(functionName: String, args: List<JsonElement> = emptyList()): JsonElement
 }
 
 class FeatureModuleHost(

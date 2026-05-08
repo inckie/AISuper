@@ -79,26 +79,19 @@ class Feature(
                 override suspend fun registerFunction(
                     name: String,
                     callback: (List<JsonElement>) -> JsonElement
-                ) {
-                    engine.registerFunction(name, callback)
-                }
+                ) = engine.registerFunction(name, callback)
 
                 override suspend fun registerSuspendFunction(
                     name: String,
                     callback: suspend (List<JsonElement>) -> JsonElement
-                ) {
-                    engine.registerSuspendFunction(name, callback)
-                }
+                ) = engine.registerSuspendFunction(name, callback)
 
-                override fun updateValue(id: String, value: JsonElement) {
+                override fun updateValue(id: String, value: JsonElement) =
                     this@Feature.updateValue(id, value)
-                }
 
-                override fun readValue(id: String): JsonElement? {
-                    return values.value[id]
-                }
+                override fun readValue(id: String): JsonElement? = values.value[id]
 
-                override suspend fun invokeScript(functionName: String, args: List<JsonElement>): JsonElement {
+                override suspend fun call(functionName: String, args: List<JsonElement>): JsonElement {
                     if (functionName.isBlank()) return JsonNull
                     return engine.callFunction(functionName, args)
                 }
