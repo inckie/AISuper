@@ -29,6 +29,9 @@ class Applet(
     private val _currentStyleSheet = MutableStateFlow<StyleSheet?>(null)
     val currentStyleSheet = _currentStyleSheet.asStateFlow()
 
+    private val _currentFramework = MutableStateFlow<String>("Rikka")
+    val currentFramework = _currentFramework.asStateFlow()
+
     private var manifest: AppletManifest? = null
 
     /** Isolated JS runtimes for each declared jsModule. Keyed by module id. */
@@ -174,6 +177,31 @@ class Applet(
             JsonPrimitive(changed)
         }
 
+        engine.registerFunction("getAvailableFrameworks") {
+            JsonArray(listOf(
+                buildJsonObject {
+                    put("id", JsonPrimitive("Material3"))
+                    put("name", JsonPrimitive("Material3"))
+                },
+                buildJsonObject {
+                    put("id", JsonPrimitive("Rikka"))
+                    put("name", JsonPrimitive("Rikka"))
+                }
+            ))
+        }
+
+        engine.registerFunction("getCurrentFramework") {
+            JsonPrimitive(_currentFramework.value)
+        }
+
+        engine.registerFunction("setCurrentFramework") { args ->
+            val frameworkId = args.firstOrNull()?.let {
+                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
+            }
+            val changed = setCurrentFramework(frameworkId)
+            JsonPrimitive(changed)
+        }
+
         // Helper function to safely parse strings to numbers, bypassing Keight VM conversion issues
         engine.registerFunction("stringToNumber") { args ->
             val input = args.firstOrNull()?.let {
@@ -207,6 +235,21 @@ class Applet(
         val style = stylesById[styleId] ?: return false
         _currentStyleId.update { styleId }
         _currentStyleSheet.update { style.sheet }
+        return true
+    }
+
+    private fun setCurrentFramework(frameworkId: String?): Boolean {
+        if (frameworkId.isNullOrBlank()) {
+            return false
+        }
+
+        // Validate framework ID
+        val validFrameworks = listOf("Material3", "Rikka")
+        if (!validFrameworks.contains(frameworkId)) {
+            return false
+        }
+
+        _currentFramework.update { frameworkId }
         return true
     }
 

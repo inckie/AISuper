@@ -14,6 +14,21 @@ function initialize() {
     setValue("themeOptions", themeOptions);
     setValue("themePicker", currentTheme);
 
+    var frameworks = getAvailableFrameworks();
+    var currentFramework = getCurrentFramework();
+
+    var frameworkOptions = [];
+    for (var f = 0; f < frameworks.length; f++) {
+        var framework = frameworks[f];
+        frameworkOptions.push({
+            "value": framework.id,
+            "label": framework.name
+        });
+    }
+
+    setValue("frameworkOptions", frameworkOptions);
+    setValue("frameworkPicker", currentFramework);
+
     var features = getFeatures();
 
     var widgets = [];
@@ -58,3 +73,15 @@ function changeTheme(themeId) {
         setValue("themePicker", themeId);
     }
 }
+
+function changeFramework(frameworkId) {
+    if (frameworkId == undefined || frameworkId == null || frameworkId == "") {
+        return;
+    }
+
+    var applied = setCurrentFramework(frameworkId);
+    if (applied) {
+        setValue("frameworkPicker", frameworkId);
+    }
+}
+

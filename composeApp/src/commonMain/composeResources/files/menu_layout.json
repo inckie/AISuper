@@ -5,13 +5,28 @@
     "children": [
       { "type": "Text", "text": "AI Super App Menu", "classes": ["header_text"] },
       {
-        "type": "Dropdown",
-        "id": "themePicker",
-        "hint": "Choose theme",
+        "type": "Row",
         "fillMaxWidth": true,
-        "classes": ["theme_dropdown"],
-        "optionsValueId": "themeOptions",
-        "onChangeAction": "changeTheme"
+        "children": [
+          {
+            "type": "Dropdown",
+            "id": "frameworkPicker",
+            "hint": "Choose UI framework",
+            "weight": 1,
+            "classes": ["framework_dropdown"],
+            "optionsValueId": "frameworkOptions",
+            "onChangeAction": "changeFramework"
+          },
+          {
+            "type": "Dropdown",
+            "id": "themePicker",
+            "hint": "Choose theme",
+            "weight": 1,
+            "classes": ["theme_dropdown"],
+            "optionsValueId": "themeOptions",
+            "onChangeAction": "changeTheme"
+          }
+        ]
       },
       { "type": "Text", "text": "Features", "classes": ["section_title"] },
       {

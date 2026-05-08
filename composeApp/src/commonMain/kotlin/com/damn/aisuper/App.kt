@@ -33,8 +33,6 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 @Composable
 @Preview
 fun App() {
-    val frontend = remember { LayoutFrontend.Rikka }
-
     // Instantiate the Applet with the Keight engine factory
     // wrapped in remember to survive recompositions.
     val applet = remember { Applet { KeightJSEngine() } }
@@ -48,6 +46,12 @@ fun App() {
         // Observe the current feature from the Applet
         val currentFeature by applet.currentFeature.collectAsState()
         val styleSheet by applet.currentStyleSheet.collectAsState()
+        val frameworkName by applet.currentFramework.collectAsState()
+        val frontend = try {
+            LayoutFrontend.valueOf(frameworkName)
+        } catch (_: Exception) {
+            LayoutFrontend.Rikka
+        }
 
         // Derive UI state from the current feature
         val layoutRoot by remember(currentFeature) {
