@@ -13,6 +13,7 @@
       },
       { "type": "TextField", "id": "first_field", "hint": "First value", "singleLine": true, "imeAction": "Next", "nextFocusId": "second_field" },
       { "type": "TextField", "id": "second_field", "hint": "Second value", "singleLine": true, "imeAction": "Done", "onImeAction": "submitForm" },
+      { "type": "Switch", "id": "agree_toggle", "text": "Agree to terms", "fillMaxWidth": true },
       { "type": "Row", "fillMaxWidth": true, "children": [ { "type": "Button", "text": "Submit", "action": "submitForm" } ] },
       { "type": "Column", "dynamicChildrenId": "formResult", "fillMaxWidth": true, "isScrollable": true, "weight": 1 }
     ]

@@ -134,3 +134,16 @@ data class DropdownWidget(
     val optionsValueId: String? = null,
     val onChangeAction: String? = null
 ) : Widget()
+
+@Serializable
+@SerialName("Switch")
+data class SwitchWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    val text: String = "",
+    val checked: Boolean = false
+) : Widget()
+

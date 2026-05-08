@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -48,6 +49,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -168,6 +170,22 @@ private fun JsonElement.stringOrNull(): String? {
     }
 }
 
+private fun JsonElement.booleanOrNull(): Boolean? {
+    return try {
+        val primitive = this.jsonPrimitive
+        primitive.booleanOrNull
+            ?: primitive.contentOrNull?.trim()?.lowercase()?.let {
+                when (it) {
+                    "true" -> true
+                    "false" -> false
+                    else -> null
+                }
+            }
+    } catch (_: Exception) {
+        null
+    }
+}
+
 private fun Widget.typeKey(): String {
     return when (this) {
         is ColumnWidget -> "Column"
@@ -178,6 +196,7 @@ private fun Widget.typeKey(): String {
         is ImageWidget -> "Image"
         is AudioPlayerWidget -> "AudioPlayer"
         is DropdownWidget -> "Dropdown"
+        is SwitchWidget -> "Switch"
     }
 }
 
@@ -550,6 +569,34 @@ fun RenderWidget(
                         )
                     }
                 }
+            }
+        }
+
+        is SwitchWidget -> {
+            val checked = if (widget.id != null) {
+                values[widget.id]?.booleanOrNull() ?: widget.checked
+            } else {
+                widget.checked
+            }
+
+            Row(modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)) {
+                if (widget.text.isNotBlank()) {
+                    val textColor = parseColorOrNull(style.textColor)
+                    if (textColor != null) {
+                        Text(widget.text, color = textColor, modifier = Modifier.weight(1f))
+                    } else {
+                        Text(widget.text, modifier = Modifier.weight(1f))
+                    }
+                }
+
+                Switch(
+                    checked = checked,
+                    onCheckedChange = { newValue ->
+                        if (widget.id != null) {
+                            onValueChange(widget.id, newValue.toString())
+                        }
+                    }
+                )
             }
         }
     }
