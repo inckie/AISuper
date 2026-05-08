@@ -1,4 +1,4 @@
-package com.damn.aisuper.layout.material3
+package com.damn.aisuper.layout.rikka
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,18 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,9 +21,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.damn.aisuper.layout.AudioPlayerWidget
 import com.damn.aisuper.layout.ButtonWidget
@@ -53,17 +39,23 @@ import com.damn.aisuper.layout.booleanOrNull
 import com.damn.aisuper.layout.childModifier
 import com.damn.aisuper.layout.layoutModifier
 import com.damn.aisuper.layout.parseColorOrNull
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
-import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.resolveDropdownOptions
+import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.resolveStyleRule
 import com.damn.aisuper.layout.stringOrNull
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import zed.rainxch.rikkaui.components.ui.button.Button
+import zed.rainxch.rikkaui.components.ui.input.Input
+import zed.rainxch.rikkaui.components.ui.select.Select
+import zed.rainxch.rikkaui.components.ui.select.SelectOption
+import zed.rainxch.rikkaui.components.ui.text.Text
+import zed.rainxch.rikkaui.components.ui.text.TextVariant
+import zed.rainxch.rikkaui.components.ui.toggle.Toggle
 
 private val focusRegistry: MutableMap<String, FocusRequester> = mutableMapOf()
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RenderWidget(
     widget: Widget,
@@ -116,7 +108,6 @@ fun RenderWidget(
             }
 
             val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
-            val fontSize = style.fontSize?.sp ?: TextUnit.Unspecified
             val textAlign = when ((style.textAlign ?: "").lowercase()) {
                 "center" -> TextAlign.Center
                 "right" -> TextAlign.Right
@@ -128,8 +119,8 @@ fun RenderWidget(
 
             Text(
                 text = displayText,
+                variant = TextVariant.P,
                 color = textColor,
-                fontSize = fontSize,
                 textAlign = textAlign,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
             )
@@ -149,38 +140,21 @@ fun RenderWidget(
                 else -> ImeAction.Default
             }
 
-            val textColor = parseColorOrNull(style.textColor)
-            val containerColor = parseColorOrNull(style.containerColor ?: style.backgroundColor)
-            val colors = if (textColor != null || containerColor != null) {
-                TextFieldDefaults.colors(
-                    focusedTextColor = textColor ?: Color.Unspecified,
-                    unfocusedTextColor = textColor ?: Color.Unspecified,
-                    disabledTextColor = textColor ?: Color.Unspecified,
-                    focusedContainerColor = containerColor ?: Color.Unspecified,
-                    unfocusedContainerColor = containerColor ?: Color.Unspecified,
-                    disabledContainerColor = containerColor ?: Color.Unspecified
-                )
-            } else {
-                TextFieldDefaults.colors()
-            }
-
-            TextField(
+            Input(
                 value = value,
-                singleLine = widget.singleLine,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style).focusRequester(focusRequester),
                 onValueChange = { newValue ->
                     if (widget.id != null) {
                         onValueChange(widget.id, newValue)
                     }
                 },
-                placeholder = { Text(widget.hint) },
+                placeholder = widget.hint,
+                singleLine = widget.singleLine,
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ime),
                 keyboardActions = KeyboardActions(
                     onSearch = {
                         val actionName = widget.onImeAction ?: widget.imeAction
-                        if (!actionName.isNullOrBlank()) {
-                            onAction(actionName, emptyList())
-                        }
+                        if (!actionName.isNullOrBlank()) onAction(actionName, emptyList())
                     },
                     onNext = {
                         val target = widget.nextFocusId
@@ -188,41 +162,23 @@ fun RenderWidget(
                             focusRegistry[target]?.requestFocus()
                         } else {
                             val actionName = widget.onImeAction
-                            if (!actionName.isNullOrBlank()) {
-                                onAction(actionName, emptyList())
-                            }
+                            if (!actionName.isNullOrBlank()) onAction(actionName, emptyList())
                         }
                     },
                     onDone = {
                         val actionName = widget.onImeAction ?: widget.imeAction
-                        if (!actionName.isNullOrBlank()) {
-                            onAction(actionName, emptyList())
-                        }
+                        if (!actionName.isNullOrBlank()) onAction(actionName, emptyList())
                     }
-                ),
-                colors = colors
+                )
             )
         }
 
         is ButtonWidget -> {
-            val textColor = parseColorOrNull(style.textColor)
-            val containerColor = parseColorOrNull(style.containerColor ?: style.backgroundColor)
-            val buttonColors = if (textColor != null || containerColor != null) {
-                ButtonDefaults.buttonColors(
-                    containerColor = containerColor ?: Color.Unspecified,
-                    contentColor = textColor ?: Color.Unspecified
-                )
-            } else {
-                ButtonDefaults.buttonColors()
-            }
-
             Button(
+                text = widget.text,
                 onClick = { onAction(widget.action, widget.actionArgs) },
-                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
-                colors = buttonColors
-            ) {
-                Text(widget.text)
-            }
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+            )
         }
 
         is ImageWidget -> {
@@ -239,28 +195,17 @@ fun RenderWidget(
             val prefix = "${widget.player}.media"
             val phase = values["$prefix.state"]?.stringOrNull() ?: "idle"
             val position = values["$prefix.positionMs"]?.stringOrNull() ?: "0"
-            val textColor = parseColorOrNull(style.textColor)
+            val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
 
             Column(modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)) {
-                if (textColor != null) {
-                    Text("${widget.title}: $phase", color = textColor)
-                    Text("Position: ${position}ms", color = textColor)
-                } else {
-                    Text("${widget.title}: $phase")
-                    Text("Position: ${position}ms")
-                }
+                Text("${widget.title}: $phase", color = textColor)
+                Text("Position: ${position}ms", color = textColor)
                 Row {
-                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "play", emptyList()) }) {
-                        Text("Play")
-                    }
+                    Button(text = "Play", onClick = { onModuleCommand("audioPlayer", widget.player, "play", emptyList()) })
                     Spacer(modifier = Modifier.width(4.dp))
-                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "pause", emptyList()) }) {
-                        Text("Pause")
-                    }
+                    Button(text = "Pause", onClick = { onModuleCommand("audioPlayer", widget.player, "pause", emptyList()) })
                     Spacer(modifier = Modifier.width(4.dp))
-                    Button(onClick = { onModuleCommand("audioPlayer", widget.player, "stop", emptyList()) }) {
-                        Text("Stop")
-                    }
+                    Button(text = "Stop", onClick = { onModuleCommand("audioPlayer", widget.player, "stop", emptyList()) })
                 }
             }
         }
@@ -268,63 +213,24 @@ fun RenderWidget(
         is DropdownWidget -> {
             val options = resolveDropdownOptions(widget, values)
             val selectedValue = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
-            val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label ?: selectedValue
-            var expanded by remember { mutableStateOf(false) }
+            var selected by remember(selectedValue) { mutableStateOf(selectedValue) }
 
-            val textColor = parseColorOrNull(style.textColor)
-            val containerColor = parseColorOrNull(style.containerColor ?: style.backgroundColor)
-            val textFieldColors = if (textColor != null || containerColor != null) {
-                TextFieldDefaults.colors(
-                    focusedTextColor = textColor ?: Color.Unspecified,
-                    unfocusedTextColor = textColor ?: Color.Unspecified,
-                    disabledTextColor = textColor ?: Color.Unspecified,
-                    focusedContainerColor = containerColor ?: Color.Unspecified,
-                    unfocusedContainerColor = containerColor ?: Color.Unspecified,
-                    disabledContainerColor = containerColor ?: Color.Unspecified
-                )
-            } else {
-                TextFieldDefaults.colors()
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
-            ) {
-                TextField(
-                    value = selectedLabel.ifBlank { widget.hint },
-                    onValueChange = {},
-                    readOnly = true,
-                    singleLine = true,
-                    colors = textFieldColors,
-                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-                )
-
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    containerColor = containerColor ?: Color.Unspecified
-                ) {
-                    options.forEach { option ->
-                        DropdownMenuItem(
-                            text = {
-                                if (textColor != null) Text(option.label, color = textColor) else Text(option.label)
-                            },
-                            onClick = {
-                                expanded = false
-                                if (widget.id != null) {
-                                    onValueChange(widget.id, option.value)
-                                }
-                                val action = widget.onChangeAction
-                                if (!action.isNullOrBlank()) {
-                                    onAction(action, listOf(JsonPrimitive(option.value)))
-                                }
-                            }
-                        )
+            Select(
+                selectedValue = selected,
+                options = options.map { SelectOption(value = it.value, label = it.label) },
+                placeholder = widget.hint,
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
+                onValueChange = { newValue ->
+                    selected = newValue
+                    if (widget.id != null) {
+                        onValueChange(widget.id, newValue)
+                    }
+                    val action = widget.onChangeAction
+                    if (!action.isNullOrBlank()) {
+                        onAction(action, listOf(JsonPrimitive(newValue)))
                     }
                 }
-            }
+            )
         }
 
         is SwitchWidget -> {
@@ -336,15 +242,11 @@ fun RenderWidget(
 
             Row(modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)) {
                 if (widget.text.isNotBlank()) {
-                    val textColor = parseColorOrNull(style.textColor)
-                    if (textColor != null) {
-                        Text(widget.text, color = textColor, modifier = Modifier.weight(1f))
-                    } else {
-                        Text(widget.text, modifier = Modifier.weight(1f))
-                    }
+                    val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
+                    Text(widget.text, color = textColor, modifier = Modifier.weight(1f))
                 }
 
-                Switch(
+                Toggle(
                     checked = checked,
                     onCheckedChange = { newValue ->
                         if (widget.id != null) {
@@ -356,4 +258,5 @@ fun RenderWidget(
         }
     }
 }
+
 

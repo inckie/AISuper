@@ -16,19 +16,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.damn.aisuper.engine.KeightJSEngine
-import com.damn.aisuper.layout.material3.RenderWidget
+import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.StyleSheet
+import com.damn.aisuper.layout.material3.RenderWidget as Material3RenderWidget
 import com.damn.aisuper.layout.parseColorOrNull
+import com.damn.aisuper.layout.rikka.RenderWidget as RikkaRenderWidget
 import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import zed.rainxch.rikkaui.foundation.RikkaPalette
+import zed.rainxch.rikkaui.foundation.RikkaStylePreset
+import zed.rainxch.rikkaui.foundation.RikkaTheme
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 @Preview
 fun App() {
+    val frontend = remember { LayoutFrontend.Rikka }
+
     // Instantiate the Applet with the Keight engine factory
     // wrapped in remember to survive recompositions.
     val applet = remember { Applet { KeightJSEngine() } }
@@ -64,29 +71,62 @@ fun App() {
                 .fillMaxSize()
                 .background(resolveAppBackground(styleSheet, Color.White))
         ) {
-            if (layoutRoot != null) {
-                RenderWidget(
-                    widget = layoutRoot!!.layout,
-                    values = layoutValues,
-                    styleSheet = styleSheet,
-                    onValueChange = { id, value ->
-                        applet.updateValue(id, JsonPrimitive(value))
-                    },
-                    onAction = { action, args ->
-                        scope.launch {
-                            applet.handleAction(action, args)
-                        }
-                    },
-                    onModuleCommand = { moduleType, target, command, args ->
-                        applet.handleModuleCommand(moduleType, target, command, args)
-                    },
-                    modifier = Modifier.fillMaxSize().safeContentPadding()
-                )
-            } else {
+            if (layoutRoot == null) {
                 BasicText(
                     if (currentFeature == null) "Loading Applet..." else "Loading Feature...",
                     modifier = Modifier.safeContentPadding()
                 )
+            } else {
+                val widget = layoutRoot!!.layout
+                val renderModifier = Modifier.fillMaxSize().safeContentPadding()
+
+                when (frontend) {
+                    LayoutFrontend.Material3 -> {
+                        Material3RenderWidget(
+                            widget = widget,
+                            values = layoutValues,
+                            styleSheet = styleSheet,
+                            onValueChange = { id, value ->
+                                applet.updateValue(id, JsonPrimitive(value))
+                            },
+                            onAction = { action, args ->
+                                scope.launch {
+                                    applet.handleAction(action, args)
+                                }
+                            },
+                            onModuleCommand = { moduleType, target, command, args ->
+                                applet.handleModuleCommand(moduleType, target, command, args)
+                            },
+                            modifier = renderModifier
+                        )
+                    }
+
+                    LayoutFrontend.Rikka -> {
+                        RikkaTheme(
+                            palette = RikkaPalette.Zinc,
+                            isDark = false,
+                            preset = RikkaStylePreset.Default
+                        ) {
+                            RikkaRenderWidget(
+                                widget = widget,
+                                values = layoutValues,
+                                styleSheet = styleSheet,
+                                onValueChange = { id, value ->
+                                    applet.updateValue(id, JsonPrimitive(value))
+                                },
+                                onAction = { action, args ->
+                                    scope.launch {
+                                        applet.handleAction(action, args)
+                                    }
+                                },
+                                onModuleCommand = { moduleType, target, command, args ->
+                                    applet.handleModuleCommand(moduleType, target, command, args)
+                                },
+                                modifier = renderModifier
+                            )
+                        }
+                    }
+                }
             }
         }
 }
