@@ -7,6 +7,8 @@ import com.damn.aisuper.layout.parseLayout
 import com.damn.aisuper.modules.FeatureModuleContext
 import com.damn.aisuper.modules.FeatureModuleHost
 import com.damn.aisuper.modules.buildFeatureModuleFactories
+import com.damn.aisuper.modules.impl.js.JsModuleFeatureModuleFactory
+import com.damn.aisuper.modules.impl.js.JsModuleRuntime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +26,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
-    private val jsModuleRuntimes: Map<String, JsModuleRuntime>,
+    appletJsModuleRuntimes: Map<String, JsModuleRuntime>,
     private val engine: AppJSEngine
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -36,17 +38,17 @@ class Feature(
     val values = _values.asStateFlow()
 
     private var scriptContent: String = ""
+
     private val nativeModuleDefinitions = definition.modules.filterNot {
         it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
     }
-    private val jsModuleImports = definition.modules.filter {
-        it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
-    }
+
     private val moduleHost = FeatureModuleHost(
-        factories = buildFeatureModuleFactories(),
-        definitions = nativeModuleDefinitions
+        factories = buildFeatureModuleFactories() + mapOf(
+            "jsModule" to JsModuleFeatureModuleFactory(appletJsModuleRuntimes, nativeModuleDefinitions)
+        ),
+        definitions = definition.modules
     )
-    private val attachedJsModules = mutableListOf<JsModuleRuntime>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
@@ -108,7 +110,6 @@ class Feature(
             }
 
             moduleHost.attach(moduleContext)
-            attachJsModules(moduleContext)
 
             // Initial execution to load functions
             engine.execute(scriptContent, "", emptyList())
@@ -125,21 +126,10 @@ class Feature(
         }
     }
 
-    private suspend fun attachJsModules(context: FeatureModuleContext) {
-        attachedJsModules.clear()
-        val importsByName = jsModuleImports.associateBy { it.name }
-
-        for ((moduleName, importDefinition) in importsByName) {
-            val runtime = jsModuleRuntimes[moduleName]
-            if (runtime == null) {
-                println("[AISuper][JsModule] Module '$moduleName' not found for feature '$id'")
-                continue
-            }
-
-            runtime.configureForFeature(importDefinition, nativeModuleDefinitions)
-            runtime.attach(context)
-            attachedJsModules += runtime
-        }
+    fun close() {
+        moduleHost.detachAll()
+        scope.cancel()
+        engine.close()
     }
 
     fun updateValue(id: String, value: JsonElement) {
@@ -154,14 +144,6 @@ class Feature(
 
     fun handleModuleCommand(moduleType: String, target: String, command: String, args: List<JsonElement> = emptyList()) {
         moduleHost.handleCommand(moduleType, target, command, args)
-    }
-
-    fun close() {
-        attachedJsModules.forEach { it.detach() }
-        attachedJsModules.clear()
-        moduleHost.detachAll()
-        scope.cancel()
-        engine.close()
     }
 }
 

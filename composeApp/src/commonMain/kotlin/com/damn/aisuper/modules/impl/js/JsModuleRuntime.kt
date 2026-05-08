@@ -1,9 +1,12 @@
-package com.damn.aisuper.runtime
+package com.damn.aisuper.modules.impl.js
 
 import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.modules.FeatureModule
 import com.damn.aisuper.modules.FeatureModuleContext
+import com.damn.aisuper.modules.FeatureModuleFactory
+import com.damn.aisuper.runtime.JsModuleDefinition
+import com.damn.aisuper.runtime.ModuleDefinition
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
@@ -13,6 +16,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 /**
  * Isolated JS module runtime with its own VM.
+ *
+ * Lifetime: created and loaded at Applet scope; attached/detached per Feature.
  *
  * Script contract:
  *   registerExports("moduleName", ["fn1", "fn2", ...])
@@ -35,6 +40,7 @@ class JsModuleRuntime(
 
     /**
      * Prepare per-feature import context before attach().
+     * Called by [JsModuleFeatureModuleFactory] when building the module for a feature.
      */
     fun configureForFeature(importDefinition: ModuleDefinition, nativeModuleDefinitions: List<ModuleDefinition>) {
         currentImport = importDefinition
@@ -134,3 +140,49 @@ class JsModuleRuntime(
         return names
     }
 }
+
+/**
+ * Factory for [JsModuleRuntime] modules.
+ *
+ * Holds applet-level runtimes (already loaded). For each feature that declares jsModule imports,
+ * locates the corresponding runtime, configures it per-feature context, then returns it for
+ * attachment via [FeatureModuleHost] — unified with all other module types.
+ *
+ * [nativeModuleDefinitions] are provided so the runtime can bridge native host functions
+ * (e.g. httpGet bridging when an http module is also present in the feature).
+ */
+class JsModuleFeatureModuleFactory(
+    private val appletRuntimes: Map<String, JsModuleRuntime>,
+    private val nativeModuleDefinitions: List<ModuleDefinition>
+) : FeatureModuleFactory {
+    override val type: String = "jsModule"
+
+    override fun create(definitions: List<ModuleDefinition>): FeatureModule {
+        // Each definition is one jsModule import for this feature; wrap all in a composite.
+        val modules = definitions.mapNotNull { importDef ->
+            val runtime = appletRuntimes[importDef.name]
+            if (runtime == null) {
+                println("[AISuper][JsModule] Runtime '${importDef.name}' not found in applet runtimes")
+                return@mapNotNull null
+            }
+            runtime.configureForFeature(importDef, nativeModuleDefinitions)
+            runtime
+        }
+        return CompositeJsModule(modules)
+    }
+}
+
+/**
+ * Composes multiple [JsModuleRuntime] instances into a single [FeatureModule]
+ * so the factory's create() stays compatible with the single-module contract.
+ */
+private class CompositeJsModule(private val modules: List<JsModuleRuntime>) : FeatureModule {
+    override suspend fun attach(context: FeatureModuleContext) {
+        modules.forEach { it.attach(context) }
+    }
+
+    override fun detach() {
+        modules.forEach { it.detach() }
+    }
+}
+

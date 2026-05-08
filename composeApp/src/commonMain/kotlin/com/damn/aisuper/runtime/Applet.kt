@@ -4,6 +4,7 @@ import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.NamedStyleSheet
 import com.damn.aisuper.layout.StyleSheet
+import com.damn.aisuper.modules.impl.js.JsModuleRuntime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -45,10 +46,23 @@ class Applet(
 
             loadStyleSheets(json)
 
-            // Load isolated JS module VMs
+            // Build unified JS module definition map:
+            // 1. Start with applet-level jsModules declarations (shared / pre-declared).
+            // 2. Merge in inline jsModule entries from feature module lists (feature-inline wins on name conflict).
             jsModuleRuntimes.values.forEach { it.close() }
             jsModuleRuntimes.clear()
-            manifest!!.jsModules.forEach { (moduleId, moduleDef) ->
+
+            val appletLevelDefs: Map<String, JsModuleDefinition> = manifest!!.jsModules
+
+            val featureInlineDefs: Map<String, JsModuleDefinition> = manifest!!.features.values
+                .flatMap { it.modules }
+                .filter { it.type.equals("jsModule", ignoreCase = true) && !it.script.isNullOrBlank() }
+                .distinctBy { it.name }
+                .associate { it.name to JsModuleDefinition(script = it.script!!, name = it.name) }
+
+            val allJsModuleDefs: Map<String, JsModuleDefinition> = appletLevelDefs + featureInlineDefs
+
+            allJsModuleDefs.forEach { (moduleId, moduleDef) ->
                 val runtime = JsModuleRuntime(moduleId, moduleDef, engineFactory)
                 runtime.load(::registerGlobalFunctions)
                 jsModuleRuntimes[moduleId] = runtime
@@ -209,7 +223,7 @@ class Applet(
             val feature = Feature(
                 id = featureId,
                 definition = featureDef,
-                jsModuleRuntimes = jsModuleRuntimes,
+                appletJsModuleRuntimes = jsModuleRuntimes,
                 engine = engine
             )
             feature.load()

@@ -25,16 +25,6 @@
     }
   },
   "defaultStyle": "light",
-  "jsModules": {
-    "onlineRadioBrowser": {
-      "name": "Online Radio Browser",
-      "script": "files/online_radio_browser_module.js"
-    },
-    "miamiMetromover": {
-      "name": "Miami Metromover",
-      "script": "files/miami_metromover_module.js"
-    }
-  },
   "features": {
     "menu": {
       "layout": "files/menu_layout.json",
@@ -64,7 +54,8 @@
       "modules": [
         {
           "type": "jsModule",
-          "name": "onlineRadioBrowser"
+          "name": "onlineRadioBrowser",
+          "script": "files/online_radio_browser_module.js"
         },
         {
           "type": "http",
@@ -121,7 +112,8 @@
       "modules": [
         {
           "type": "jsModule",
-          "name": "miamiMetromover"
+          "name": "miamiMetromover",
+          "script": "files/miami_metromover_module.js"
         },
         {
           "type": "http",
