@@ -18,11 +18,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.damn.aisuper.engine.KeightJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.StyleSheet
-import com.damn.aisuper.layout.material3.Material3FrontendTheme
-import com.damn.aisuper.layout.material3.RenderWidget as Material3RenderWidget
+import com.damn.aisuper.layout.frontend.material3.Material3FrontendTheme
+import com.damn.aisuper.layout.frontend.material3.RenderWidget as Material3RenderWidget
 import com.damn.aisuper.layout.parseColorOrNull
-import com.damn.aisuper.layout.rikka.RikkaFrontendTheme
-import com.damn.aisuper.layout.rikka.RenderWidget as RikkaRenderWidget
+import com.damn.aisuper.layout.frontend.rikka.RikkaFrontendTheme
+import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
 import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch

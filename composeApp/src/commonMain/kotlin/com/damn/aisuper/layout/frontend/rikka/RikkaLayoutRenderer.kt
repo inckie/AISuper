@@ -1,4 +1,4 @@
-package com.damn.aisuper.layout.rikka
+package com.damn.aisuper.layout.frontend.rikka
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

@@ -1,4 +1,4 @@
-package com.damn.aisuper.layout.material3
+package com.damn.aisuper.layout.frontend.material3
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
