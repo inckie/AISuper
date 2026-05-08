@@ -22,8 +22,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 private val renderJsonParser = Json { ignoreUnknownKeys = true }
 
-fun parseDropdownOptionsFromJsonArray(array: JsonArray): List<DropdownOption> {
-    return array.mapNotNull { element ->
+private fun parseDropdownOptionsFromJsonArray(array: JsonArray): List<DropdownOption> =
+    array.mapNotNull { element ->
         when (element) {
             is JsonPrimitive -> {
                 val content = element.contentOrNull
@@ -39,7 +39,6 @@ fun parseDropdownOptionsFromJsonArray(array: JsonArray): List<DropdownOption> {
             else -> null
         }
     }
-}
 
 fun resolveDynamicWidgets(value: JsonElement?): List<Widget> {
     if (value == null) return emptyList()
@@ -113,20 +112,18 @@ fun JsonElement.floatOrNull(): Float? {
     }
 }
 
-fun Widget.typeKey(): String {
-    return when (this) {
-        is ColumnWidget -> "Column"
-        is RowWidget -> "Row"
-        is TextWidget -> "Text"
-        is TextFieldWidget -> "TextField"
-        is ButtonWidget -> "Button"
-        is ImageWidget -> "Image"
-        is AudioPlayerWidget -> "AudioPlayer"
-        is DropdownWidget -> "Dropdown"
-        is SwitchWidget -> "Switch"
-        is SpinnerWidget -> "Spinner"
-        is ProgressWidget -> "Progress"
-    }
+private fun Widget.typeKey(): String = when (this) {
+    is ColumnWidget -> "Column"
+    is RowWidget -> "Row"
+    is TextWidget -> "Text"
+    is TextFieldWidget -> "TextField"
+    is ButtonWidget -> "Button"
+    is ImageWidget -> "Image"
+    is AudioPlayerWidget -> "AudioPlayer"
+    is DropdownWidget -> "Dropdown"
+    is SwitchWidget -> "Switch"
+    is SpinnerWidget -> "Spinner"
+    is ProgressWidget -> "Progress"
 }
 
 fun resolveStyleRule(widget: Widget, styleSheet: StyleSheet?): StyleRule {
