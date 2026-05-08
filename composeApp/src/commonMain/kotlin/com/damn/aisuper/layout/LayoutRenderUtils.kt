@@ -124,7 +124,32 @@ fun resolveStyleRule(widget: Widget, styleSheet: StyleSheet?): StyleRule {
     for (name in widget.classes) {
         merged = merged.mergedWith(styleSheet.classes[name])
     }
-    return merged
+    return applyTokenFallbacks(widget, merged, styleSheet.tokens)
+}
+
+private fun applyTokenFallbacks(widget: Widget, rule: StyleRule, tokens: StyleTokens): StyleRule {
+    val needsActionColors = widget is ButtonWidget || widget is DropdownWidget || widget is SwitchWidget
+    if (!needsActionColors) return rule
+
+    if (!rule.containerColor.isNullOrBlank() && !rule.textColor.isNullOrBlank()) return rule
+
+    val hasDestructiveClass = widget.classes.any {
+        it.equals("destructive", ignoreCase = true) ||
+            it.equals("danger", ignoreCase = true) ||
+            it.equals("delete", ignoreCase = true)
+    }
+
+    val containerFromToken = if (hasDestructiveClass) {
+        tokens.destructiveColor ?: tokens.values["destructiveColor"]
+    } else {
+        tokens.accentColor ?: tokens.values["accentColor"]
+    }
+
+    return if (containerFromToken.isNullOrBlank()) {
+        rule
+    } else {
+        rule.copy(containerColor = rule.containerColor ?: containerFromToken)
+    }
 }
 
 fun Modifier.applyStyleRule(style: StyleRule): Modifier {

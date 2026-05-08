@@ -5,8 +5,17 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class StyleSheet(
     val name: String? = null,
+    val scheme: String = "light",
+    val tokens: StyleTokens = StyleTokens(),
     val defaults: Map<String, StyleRule> = emptyMap(),
     val classes: Map<String, StyleRule> = emptyMap()
+)
+
+@Serializable
+data class StyleTokens(
+    val accentColor: String? = null,
+    val destructiveColor: String? = null,
+    val values: Map<String, String> = emptyMap()
 )
 
 @Serializable

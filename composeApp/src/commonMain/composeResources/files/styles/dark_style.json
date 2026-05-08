@@ -1,5 +1,10 @@
 {
   "name": "Dark",
+  "scheme": "dark",
+  "tokens": {
+    "accentColor": "#4F46E5",
+    "destructiveColor": "#EF4444"
+  },
   "defaults": {
     "Column": { "padding": 8 },
     "Row": { "paddingVertical": 4 },

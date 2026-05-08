@@ -1,5 +1,10 @@
 {
   "name": "Pink",
+  "scheme": "light",
+  "tokens": {
+    "accentColor": "#F066B3",
+    "destructiveColor": "#DC2626"
+  },
   "defaults": {
     "Column": { "padding": 16 },
     "Row": { "paddingVertical": 8 },

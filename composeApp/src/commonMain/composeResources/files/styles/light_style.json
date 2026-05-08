@@ -1,5 +1,10 @@
 {
   "name": "Light",
+  "scheme": "light",
+  "tokens": {
+    "accentColor": "#2563EB",
+    "destructiveColor": "#DC2626"
+  },
   "defaults": {
     "Column": { "padding": 8 },
     "Row": { "paddingVertical": 4 },

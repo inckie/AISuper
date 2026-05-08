@@ -1,5 +1,10 @@
 {
   "name": "Blue / Orange",
+  "scheme": "light",
+  "tokens": {
+    "accentColor": "#F97316",
+    "destructiveColor": "#DC2626"
+  },
   "defaults": {
     "Column": { "padding": 8 },
     "Row": { "paddingVertical": 4 },

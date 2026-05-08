@@ -1,5 +1,10 @@
 {
   "name": "Neon",
+  "scheme": "dark",
+  "tokens": {
+    "accentColor": "#22D3EE",
+    "destructiveColor": "#F43F5E"
+  },
   "defaults": {
     "Column": { "padding": 8 },
     "Row": { "paddingVertical": 4 },
