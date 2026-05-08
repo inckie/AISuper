@@ -2,6 +2,7 @@ package com.damn.aisuper.runtime
 
 import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
+import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.NamedStyleSheet
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.modules.impl.js.JsModuleRuntime
@@ -29,7 +30,7 @@ class Applet(
     private val _currentStyleSheet = MutableStateFlow<StyleSheet?>(null)
     val currentStyleSheet = _currentStyleSheet.asStateFlow()
 
-    private val _currentFramework = MutableStateFlow<String>("Rikka")
+    private val _currentFramework = MutableStateFlow<String>(LayoutFrontend.Rikka.name)
     val currentFramework = _currentFramework.asStateFlow()
 
     private var manifest: AppletManifest? = null
@@ -178,16 +179,14 @@ class Applet(
         }
 
         engine.registerFunction("getAvailableFrameworks") {
-            JsonArray(listOf(
-                buildJsonObject {
-                    put("id", JsonPrimitive("Material3"))
-                    put("name", JsonPrimitive("Material3"))
-                },
-                buildJsonObject {
-                    put("id", JsonPrimitive("Rikka"))
-                    put("name", JsonPrimitive("Rikka"))
+            JsonArray(
+                LayoutFrontend.entries.map { frontend ->
+                    buildJsonObject {
+                        put("id", JsonPrimitive(frontend.name))
+                        put("name", JsonPrimitive(frontend.name))
+                    }
                 }
-            ))
+            )
         }
 
         engine.registerFunction("getCurrentFramework") {
@@ -244,8 +243,7 @@ class Applet(
         }
 
         // Validate framework ID
-        val validFrameworks = listOf("Material3", "Rikka")
-        if (!validFrameworks.contains(frameworkId)) {
+        if (LayoutFrontend.entries.none { it.name == frameworkId }) {
             return false
         }
 
