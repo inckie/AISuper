@@ -172,8 +172,13 @@ class AudioPlayerFeatureModule(
 object AudioPlayerFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "audioPlayer"
 
-    override fun create(definitions: List<ModuleDefinition>): FeatureModule {
-        val names = definitions.map { it.name }.distinct()
+    override fun create(definition: ModuleDefinition): FeatureModule {
+        val names = definition.config["players"]
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.takeIf { it.isNotEmpty() }
+            ?: listOf(definition.name)
         return AudioPlayerFeatureModule(names)
     }
 }

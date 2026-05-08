@@ -147,9 +147,9 @@ class JsModuleRuntime(
 /**
  * Factory for [JsModuleRuntime] modules.
  *
- * Holds applet-level runtimes (already loaded). For each feature that declares jsModule imports,
- * locates the corresponding runtime, configures it per-feature context, then returns it for
- * attachment via [FeatureModuleHost] — unified with all other module types.
+ * Holds applet-level runtimes (already loaded). For each feature that declares a jsModule import,
+ * locates the corresponding runtime, configures it per-feature context, and returns it directly
+ * for attachment via [FeatureModuleHost] — unified with all other module types.
  *
  * [nativeModuleDefinitions] are provided so the runtime can bridge native host functions
  * (e.g. httpGet bridging when an http module is also present in the feature).
@@ -160,32 +160,11 @@ class JsModuleFeatureModuleFactory(
 ) : FeatureModuleFactory {
     override val type: String = "jsModule"
 
-    override fun create(definitions: List<ModuleDefinition>): FeatureModule {
-        // Each definition is one jsModule import for this feature; wrap all in a composite.
-        val modules = definitions.mapNotNull { importDef ->
-            val runtime = appletRuntimes[importDef.name]
-            if (runtime == null) {
-                println("[AISuper][JsModule] Runtime '${importDef.name}' not found in applet runtimes")
-                return@mapNotNull null
-            }
-            runtime.configureForFeature(importDef, nativeModuleDefinitions)
-            runtime
-        }
-        return CompositeJsModule(modules)
-    }
-}
-
-/**
- * Composes multiple [JsModuleRuntime] instances into a single [FeatureModule]
- * so the factory's create() stays compatible with the single-module contract.
- */
-private class CompositeJsModule(private val modules: List<JsModuleRuntime>) : FeatureModule {
-    override suspend fun attach(context: FeatureModuleContext) {
-        modules.forEach { it.attach(context) }
-    }
-
-    override fun detach() {
-        modules.forEach { it.detach() }
+    override fun create(definition: ModuleDefinition): FeatureModule {
+        val runtime = appletRuntimes[definition.name]
+            ?: error("[AISuper][JsModule] Runtime '${definition.name}' not found in applet runtimes")
+        runtime.configureForFeature(definition, nativeModuleDefinitions)
+        return runtime
     }
 }
 

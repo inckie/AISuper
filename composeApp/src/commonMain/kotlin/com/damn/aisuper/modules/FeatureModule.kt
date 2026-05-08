@@ -15,7 +15,7 @@ interface NativeCommandFeatureModule {
 
 interface FeatureModuleFactory {
     val type: String
-    fun create(definitions: List<ModuleDefinition>): FeatureModule
+    fun create(definition: ModuleDefinition): FeatureModule
 }
 
 interface FeatureModuleContext {
@@ -32,22 +32,21 @@ interface FeatureModuleContext {
 
 class FeatureModuleHost(
     private val factories: Map<String, FeatureModuleFactory>,
-    definitions: List<ModuleDefinition>
+    private val definitions: List<ModuleDefinition>
 ) {
-    private val definitionsByType = definitions.groupBy { it.type }
-    private val modulesByType = mutableMapOf<String, FeatureModule>()
+    private val modulesByName = mutableMapOf<String, FeatureModule>()
 
     suspend fun attach(context: FeatureModuleContext) {
-        for ((type, typedDefinitions) in definitionsByType) {
-            val factory = factories[type] ?: continue
-            val module = factory.create(typedDefinitions)
+        for (definition in definitions) {
+            val factory = factories[definition.type] ?: continue
+            val module = factory.create(definition)
             module.attach(context)
-            modulesByType[type] = module
+            modulesByName[definition.name] = module
         }
     }
 
     fun handleCommand(moduleType: String, target: String, command: String, args: List<JsonElement>): Boolean {
-        val module = modulesByType[moduleType]
+        val module = modulesByName[target]
         if (module is NativeCommandFeatureModule) {
             return module.handleCommand(target, command, args)
         }
@@ -55,8 +54,7 @@ class FeatureModuleHost(
     }
 
     fun detachAll() {
-        modulesByType.values.forEach { it.detach() }
-        modulesByType.clear()
+        modulesByName.values.forEach { it.detach() }
+        modulesByName.clear()
     }
 }
-

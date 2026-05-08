@@ -161,14 +161,7 @@ class McpHttpFeatureModule(
 object McpHttpFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "mcpHttp"
 
-    override fun create(definitions: List<ModuleDefinition>): FeatureModule {
-        val definition = definitions.firstOrNull()
-            ?: return McpHttpFeatureModule(
-                serverName = "mcp",
-                url = "",
-                allowedGroups = emptySet()
-            )
-
+    override fun create(definition: ModuleDefinition): FeatureModule {
         val serverName = definition.name
         val config = definition.config
         val url = resolveServerUrl(config, serverName)

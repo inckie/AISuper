@@ -49,7 +49,7 @@ class GeoIpGeolocationFeatureModule : FeatureModule {
 object GeoIpGeolocationFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "geolocation"
 
-    override fun create(definitions: List<ModuleDefinition>): FeatureModule {
+    override fun create(definition: ModuleDefinition): FeatureModule {
         return GeoIpGeolocationFeatureModule()
     }
 }
