@@ -23,8 +23,8 @@ ktor = "3.4.3"
 coil = "3.4.0"
 
 [libraries]
-components = { module = "dev.rikkaui:components", version.ref = "rikkaui" }
-foundation = { module = "dev.rikkaui:foundation", version.ref = "rikkaui" }
+rikka-components = { module = "dev.rikkaui:components", version.ref = "rikkaui" }
+rikka-foundation = { module = "dev.rikkaui:foundation", version.ref = "rikkaui" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

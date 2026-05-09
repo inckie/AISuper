@@ -73,8 +73,8 @@ kotlin {
             implementation(libs.coil.network.ktor)
             implementation(libs.coil.svg)
 
-            implementation(libs.foundation) // theme system
-            implementation(libs.components) // all components
+            implementation(libs.rikka.foundation) // theme system
+            implementation(libs.rikka.components) // all components
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
