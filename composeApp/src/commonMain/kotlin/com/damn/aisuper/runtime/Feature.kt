@@ -26,8 +26,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
-    appletJsModuleRuntimes: Map<String, JsModuleRuntime>,
-    private val engine: AppJSEngine
+    private val appletJsModuleRuntimes: Map<String, JsModuleRuntime>,
+    private val engineFactory: suspend () -> AppJSEngine
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -37,16 +37,25 @@ class Feature(
     private val _values = MutableStateFlow<Map<String, JsonElement>>(emptyMap())
     val values = _values.asStateFlow()
 
-    private val moduleHost = FeatureModuleHost(
-        factories = buildFeatureModuleFactories() + mapOf(
-            "jsModule" to JsModuleFeatureModuleFactory(appletJsModuleRuntimes, definition.modules.withoutJsModules())
-        ),
-        definitions = definition.modules
-    )
+    private lateinit var engine: AppJSEngine
+
+    private val featureJsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
+    private var moduleHost: FeatureModuleHost? = null
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
         try {
+            engine = engineFactory()
+            loadFeatureJsModuleRuntimes()
+
+            val resolvedJsModuleRuntimes = appletJsModuleRuntimes + featureJsModuleRuntimes
+            moduleHost = FeatureModuleHost(
+                factories = buildFeatureModuleFactories() + mapOf(
+                    "jsModule" to JsModuleFeatureModuleFactory(resolvedJsModuleRuntimes, definition.modules.withoutJsModules())
+                ),
+                definitions = definition.modules
+            )
+
             // Register getValue function for the script to use (SYNC)
             engine.registerFunction("getValue") { args ->
                 val key = args.firstOrNull()?.jsonPrimitiveContentOrNull() ?: return@registerFunction JsonNull
@@ -97,7 +106,7 @@ class Feature(
                 }
             }
 
-            moduleHost.attach(moduleContext)
+            moduleHost?.attach(moduleContext)
 
             // Initial execution to load functions
             // Call initialize if present
@@ -113,9 +122,16 @@ class Feature(
     }
 
     fun close() {
-        moduleHost.detachAll()
+        moduleHost?.detachAll()
+        moduleHost = null
+
+        featureJsModuleRuntimes.values.forEach { it.close() }
+        featureJsModuleRuntimes.clear()
+
         scope.cancel()
-        engine.close()
+        if (this::engine.isInitialized) {
+            engine.close()
+        }
     }
 
     fun updateValue(id: String, value: JsonElement) {
@@ -128,7 +144,25 @@ class Feature(
     }
 
     fun handleModuleCommand(moduleType: String, target: String, command: String, args: List<JsonElement> = emptyList()) {
-        moduleHost.handleCommand(moduleType, target, command, args)
+        moduleHost?.handleCommand(moduleType, target, command, args)
+    }
+
+    private suspend fun loadFeatureJsModuleRuntimes() {
+        featureJsModuleRuntimes.values.forEach { it.close() }
+        featureJsModuleRuntimes.clear()
+
+        val inlineJsModules = definition.modules
+            .filter { it.type.equals("jsModule", ignoreCase = true) && !it.script.isNullOrBlank() }
+
+        for (module in inlineJsModules) {
+            val runtime = JsModuleRuntime(
+                id = module.name,
+                definition = JsModuleDefinition(script = module.script!!, name = module.name),
+                engine = engineFactory()
+            )
+            runtime.load()
+            featureJsModuleRuntimes[module.name] = runtime
+        }
     }
 }
 

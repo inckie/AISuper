@@ -25,9 +25,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class JsModuleRuntime(
     val id: String,
     private val definition: JsModuleDefinition,
-    engineFactory: () -> AppJSEngine
+    private val engine: AppJSEngine
 ) : FeatureModule {
-    private val engine: AppJSEngine = engineFactory()
     private var isScriptLoaded: Boolean = false
 
     /** Exported function names declared by the module via registerExports(). */
@@ -48,10 +47,7 @@ class JsModuleRuntime(
     }
 
     @OptIn(ExperimentalResourceApi::class)
-    suspend fun load(registerGlobalFunctions: suspend (AppJSEngine) -> Unit) {
-        // Provide global helpers (httpGet, jsonParse, encodeURIComponent, etc.)
-        registerGlobalFunctions(engine)
-
+    suspend fun load() {
         // Register the export declaration callback
         engine.registerFunction("registerExports") { args ->
             // args[0] = module name (ignored, we already know it as 'id')
@@ -149,7 +145,7 @@ class JsModuleRuntime(
  *
  * Holds applet-level runtimes (already loaded). For each feature that declares a jsModule import,
  * locates the corresponding runtime, configures it per-feature context, and returns it directly
- * for attachment via [FeatureModuleHost] — unified with all other module types.
+ * for attachment via the feature module host, unified with all other module types.
  *
  * [nativeModuleDefinitions] are provided so the runtime can bridge native host functions
  * (e.g. httpGet bridging when an http module is also present in the feature).

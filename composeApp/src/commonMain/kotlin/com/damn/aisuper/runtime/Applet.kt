@@ -35,7 +35,10 @@ class Applet(
 
     private var manifest: AppletManifest? = null
 
-    /** Isolated JS runtimes for each declared jsModule. Keyed by module id. */
+    /**
+     * Reserved for future applet-lifetime jsModules.
+     * Feature-level jsModules are instantiated and owned by Feature.
+     */
     private val jsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
     private val stylesById = linkedMapOf<String, NamedStyleSheet>()
 
@@ -50,27 +53,10 @@ class Applet(
 
             loadStyleSheets(json)
 
-            // Build unified JS module definition map:
-            // 1. Start with applet-level jsModules declarations (shared / pre-declared).
-            // 2. Merge in inline jsModule entries from feature module lists (feature-inline wins on name conflict).
+            // Keep applet-level jsModule runtimes map lifecycle for now.
+            // It remains intentionally empty until applet-lifetime modules are enabled.
             jsModuleRuntimes.values.forEach { it.close() }
             jsModuleRuntimes.clear()
-
-            val appletLevelDefs: Map<String, JsModuleDefinition> = manifest!!.jsModules
-
-            val featureInlineDefs: Map<String, JsModuleDefinition> = manifest!!.features.values
-                .flatMap { it.modules }
-                .filter { it.type.equals("jsModule", ignoreCase = true) && !it.script.isNullOrBlank() }
-                .distinctBy { it.name }
-                .associate { it.name to JsModuleDefinition(script = it.script!!, name = it.name) }
-
-            val allJsModuleDefs: Map<String, JsModuleDefinition> = appletLevelDefs + featureInlineDefs
-
-            allJsModuleDefs.forEach { (moduleId, moduleDef) ->
-                val runtime = JsModuleRuntime(moduleId, moduleDef, engineFactory)
-                runtime.load(::registerGlobalFunctions)
-                jsModuleRuntimes[moduleId] = runtime
-            }
 
             val entryFeatureId = manifest!!.entryFeature
             launchFeature(entryFeatureId)
@@ -106,7 +92,7 @@ class Applet(
         setCurrentTheme(selectedId)
     }
 
-    private suspend fun registerGlobalFunctions(engine: AppJSEngine) {
+    private suspend fun registerGlobalFunctions(engine: AppJSEngine): AppJSEngine {
         engine.registerFunction("consoleLog") { args ->
             println("[AISuper][JS][Log] ${args.joinToString(" ") { it.toString() }}")
             JsonNull
@@ -222,6 +208,7 @@ class Applet(
             }
             JsonNull
         }
+        return engine
     }
 
     private fun setCurrentTheme(styleId: String?): Boolean {
@@ -257,15 +244,16 @@ class Applet(
             // Unload previous
             _currentFeature.value?.close()
 
-            // Create new engine for this feature
-            val engine = engineFactory()
-            registerGlobalFunctions(engine)
+            // Decorate engine creation so global functions are always available.
+            val decoratedEngineFactory: suspend () -> AppJSEngine = {
+                registerGlobalFunctions(engineFactory())
+            }
 
             val feature = Feature(
                 id = featureId,
                 definition = featureDef,
                 appletJsModuleRuntimes = jsModuleRuntimes,
-                engine = engine
+                engineFactory = decoratedEngineFactory
             )
             feature.load()
             _currentFeature.value = feature
