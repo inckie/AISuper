@@ -7,6 +7,8 @@ import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceModifier
 import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.lazy.LazyColumn
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
@@ -27,6 +29,7 @@ import com.damn.aisuper.layout.TextFieldWidget
 import com.damn.aisuper.layout.TextWidget
 import com.damn.aisuper.layout.Widget
 import com.damn.aisuper.layout.booleanOrNull
+import com.damn.aisuper.layout.floatOrNull
 import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.stringOrNull
 import com.damn.aisuper.widget.KEY_ACTION
@@ -40,9 +43,10 @@ import kotlinx.serialization.json.JsonElement
  * Glance-based layout renderer. Mirrors the Material3/Rikka RenderWidget pattern
  * but uses Glance composables so it can be used inside GlanceAppWidget.
  *
- * Unsupported interactive widgets (TextField, Dropdown, AudioPlayer) are silently skipped.
- * Buttons are rendered as tappable text rows.
+ * Scrollable Column → LazyColumn (backed by RemoteViews ListView, supports scrolling).
+ * Interactive widgets not renderable in widget context (TextField, Dropdown, AudioPlayer) are skipped.
  */
+@Suppress("DEPRECATION")
 @OptIn(ExperimentalGlanceApi::class)
 @androidx.compose.runtime.Composable
 fun RenderWidget(
@@ -52,13 +56,21 @@ fun RenderWidget(
 ) {
     when (widget) {
         is ColumnWidget -> {
-            Column(modifier = modifier.then(widget.glanceLayoutModifier())) {
-                widget.children.forEach { child ->
-                    RenderWidget(child, values)
-                }
+            val allChildren: List<Widget> = buildList {
+                addAll(widget.children)
                 if (widget.dynamicChildrenId != null) {
-                    val dynamic = resolveDynamicWidgets(values[widget.dynamicChildrenId])
-                    dynamic.forEach { child ->
+                    addAll(resolveDynamicWidgets(values[widget.dynamicChildrenId]))
+                }
+            }
+            if (widget.isScrollable) {
+                LazyColumn(modifier = modifier.then(widget.glanceLayoutModifier())) {
+                    items(allChildren) { child ->
+                        RenderWidget(child, values)
+                    }
+                }
+            } else {
+                Column(modifier = modifier.then(widget.glanceLayoutModifier())) {
+                    allChildren.forEach { child ->
                         RenderWidget(child, values)
                     }
                 }
@@ -66,6 +78,7 @@ fun RenderWidget(
         }
 
         is RowWidget -> {
+            // Glance Row does not support horizontal scrolling in RemoteViews
             Row(modifier = modifier.then(widget.glanceLayoutModifier())) {
                 widget.children.forEach { child ->
                     RenderWidget(child, values)
@@ -121,18 +134,21 @@ fun RenderWidget(
                 ?.let { values[it]?.booleanOrNull() }
                 ?: true
             if (visible) {
-                // Glance has no built-in spinner; show a text indicator
+                // Glance has no built-in indeterminate spinner; show a text indicator
                 Text(
                     "Loading…",
-                    style = TextStyle(color = ColorProvider(Color(0xFFFFCC80)), fontSize = 11.sp),
+                    style = TextStyle(color = ColorProvider(Color(0xFFFFCC80.toInt())), fontSize = 11.sp),
                     modifier = modifier
                 )
             }
         }
 
         is ProgressWidget -> {
+            // Resolve progress value from values map if progressId is set
+            val progress = widget.progressId?.let { values[it]?.floatOrNull() } ?: widget.progress
+            val label = if (progress != null) "${"%.0f".format(progress * 100)}%" else "…"
             Text(
-                "Loading…",
+                "▶ $label",
                 style = TextStyle(color = ColorProvider(Color(0x80FFFFFF.toInt())), fontSize = 10.sp),
                 modifier = modifier
             )
