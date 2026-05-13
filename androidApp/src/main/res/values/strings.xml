@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AISuper</string>
+    <string name="widget_description">AISuper feature widget</string>
+    <string name="widget_config_title">Choose Widget Feature</string>
 </resources>

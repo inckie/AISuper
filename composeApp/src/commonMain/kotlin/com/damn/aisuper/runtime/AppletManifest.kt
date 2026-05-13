@@ -25,7 +25,9 @@ data class FeatureDefinition(
     val layout: String,
     val script: String,
     val name: String? = null,
-    val modules: List<ModuleDefinition> = emptyList()
+    val modules: List<ModuleDefinition> = emptyList(),
+    /** If true, this feature can be presented as an Android home screen widget. */
+    val supportsWidget: Boolean = false
 )
 
 @Serializable

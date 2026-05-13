@@ -53,6 +53,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain
+            implementation(libs.glance.appwidget)
+            implementation(libs.glance.material3)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

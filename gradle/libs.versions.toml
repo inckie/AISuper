@@ -21,6 +21,7 @@ material3 = "1.11.0-alpha07"
 keight = "0.0.05"
 ktor = "3.4.3"
 coil = "3.4.0"
+glance = "1.2.0-rc01"
 
 [libraries]
 rikka-components = { module = "dev.rikkaui:components", version.ref = "rikkaui" }
@@ -53,6 +54,8 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
+glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

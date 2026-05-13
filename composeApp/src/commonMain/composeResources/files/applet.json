@@ -134,6 +134,7 @@
       "layout": "files/weather_local_layout.json",
       "script": "files/weather_local_script.js",
       "name": "Weather (Local)",
+      "supportsWidget": true,
       "modules": [
         {
           "type": "jsModule",
