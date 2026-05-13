@@ -129,6 +129,26 @@
       "layout": "files/form_layout.json",
       "script": "files/form_script.js",
       "name": "Form Demo"
+    },
+    "weatherLocal": {
+      "layout": "files/weather_local_layout.json",
+      "script": "files/weather_local_script.js",
+      "name": "Weather (Local)",
+      "modules": [
+        {
+          "type": "jsModule",
+          "name": "weather",
+          "script": "files/weather_module.js"
+        },
+        {
+          "type": "http",
+          "name": "httpMain"
+        },
+        {
+          "type": "geolocation",
+          "name": "geoMain"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,49 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Weather (Local)", "weight": 1 }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "My Location", "action": "loadWeatherCurrent" },
+          { "type": "Button", "text": "Refresh", "action": "refreshCurrent" }
+        ]
+      },
+      { "type": "Text", "id": "weather_status", "text": "Pick a location to fetch weather" },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "isScrollable": true,
+        "children": [
+          {
+            "type": "Column",
+            "weight": 1,
+            "children": [
+              { "type": "Button", "text": "Miami", "action": "loadWeather", "actionArgs": [25.7743, -80.1937, "Miami"], "fillMaxWidth": true },
+              { "type": "Button", "text": "New York", "action": "loadWeather", "actionArgs": [40.7128, -74.0060, "New York"], "fillMaxWidth": true },
+              { "type": "Button", "text": "London", "action": "loadWeather", "actionArgs": [51.5074, -0.1278, "London"], "fillMaxWidth": true },
+              { "type": "Button", "text": "Tokyo", "action": "loadWeather", "actionArgs": [35.6762, 139.6503, "Tokyo"], "fillMaxWidth": true }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
+        "dynamicChildrenId": "weatherResult"
+      }
+    ]
+  }
+}
+

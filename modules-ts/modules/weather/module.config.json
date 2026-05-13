@@ -1,0 +1,6 @@
+{
+  "id": "weather",
+  "entry": "index.ts",
+  "output": "weather_module.js"
+}
+
