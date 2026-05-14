@@ -19,6 +19,8 @@ import com.damn.aisuper.runtime.AppletManifest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import aisuper.composeapp.generated.resources.Res
+import androidx.compose.ui.res.stringResource
+import com.damn.aisuper.R
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 class WidgetConfigurationActivity : ComponentActivity() {
@@ -100,7 +102,7 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Add AISuper Widget",
+                text = stringResource(R.string.lbl_add_aisuper_widget),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -122,7 +124,7 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
                         value = selectedLabel,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Theme") },
+                        label = { Text(stringResource(R.string.lbl_theme)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = styleDropdownExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                     )
@@ -141,7 +143,7 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
             }
 
             Text(
-                text = "Choose Feature",
+                text = stringResource(R.string.lbl_choose_feature),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )

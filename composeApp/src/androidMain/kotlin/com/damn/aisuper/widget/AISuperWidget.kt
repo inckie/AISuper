@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -27,6 +28,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.damn.aisuper.R
 import com.damn.aisuper.engine.KeightJSEngine
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.LayoutRoot
@@ -60,6 +62,8 @@ val PREF_STYLE_JSON = stringPreferencesKey("style_json")
 
 private val json = Json { ignoreUnknownKeys = true }
 
+private const val TAG = "AISuperWidget"
+
 @OptIn(ExperimentalGlanceApi::class)
 class AISuperWidget : GlanceAppWidget() {
 
@@ -82,7 +86,7 @@ class AISuperWidget : GlanceAppWidget() {
                 try {
                     json.decodeFromString<StyleSheet>(it)
                 } catch (e: Exception) {
-                    Log.e("AISuperWidget", "Failed to parse style JSON: ${e.message}")
+                    Log.e(TAG, "Failed to parse style JSON: ${e.message}")
                     null
                 }
             }
@@ -97,7 +101,7 @@ class AISuperWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.Horizontal.CenterHorizontally
                 ) {
                     Text(
-                        "Tap + hold to configure",
+                        stringResource(R.string.lbl_tap_hold_to_configure),
                         style = TextStyle(color = ColorProvider(Color.White), fontSize = 13.sp)
                     )
                 }
@@ -161,11 +165,11 @@ private fun WidgetPreviewContent() {
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally
     ) {
         Text(
-            "AISuper Widget",
+            stringResource(R.string.lbl_aisuper_widget),
             style = TextStyle(color = ColorProvider(Color.White), fontSize = 16.sp)
         )
         Text(
-            "Tap + hold to configure",
+            stringResource(R.string.lbl_tap_hold_to_configure),
             style = TextStyle(color = ColorProvider(Color(0xFFBBDEFB)), fontSize = 12.sp)
         )
     }
@@ -190,10 +194,10 @@ class AISuperWidgetReceiver : GlanceAppWidgetReceiver() {
                     ) { prefs ->
                         prefs.toMutablePreferences().apply { clear() }
                     }
-                    Log.d("AISuperWidget", "Cleared state for widget $appWidgetId")
+                    Log.d(TAG, "Cleared state for widget $appWidgetId")
                 } catch (e: Exception) {
                     Log.w(
-                        "AISuperWidget",
+                        TAG,
                         "Could not delete state for widget $appWidgetId: ${e.message}"
                     )
                 }
@@ -344,12 +348,12 @@ private suspend fun loadStyleJson(context: Context, styleId: String): String? {
         val manifest = json
             .decodeFromString<AppletManifest>(manifestBytes.decodeToString())
         val styleFile = manifest.styles[styleId]?.file ?: run {
-            Log.w("AISuperWidget", "Style '$styleId' not found in manifest")
+            Log.w(TAG, "Style '$styleId' not found in manifest")
             return null
         }
         Res.readBytes(styleFile).decodeToString()
     } catch (e: Exception) {
-        Log.e("AISuperWidget", "Failed to load style '$styleId': ${e.message}")
+        Log.e(TAG, "Failed to load style '$styleId': ${e.message}")
         null
     }
 }
