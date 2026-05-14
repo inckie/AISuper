@@ -67,18 +67,19 @@ class WidgetConfigurationActivity : ComponentActivity() {
     @OptIn(ExperimentalResourceApi::class)
     private fun confirmSelection(featureId: String) {
         val scope = kotlinx.coroutines.MainScope()
+
+        // Return RESULT_OK immediately so the launcher can place the widget.
+        // Data refresh runs in the background; the widget shows a placeholder until ready.
+        val resultValue = Intent().apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        setResult(RESULT_OK, resultValue)
+        finish()
+
         scope.launch {
-            val glanceId = GlanceAppWidgetManager(this@WidgetConfigurationActivity)
+            val glanceId = GlanceAppWidgetManager(applicationContext)
                 .getGlanceIdBy(appWidgetId)
-
-            // Store feature choice and trigger first data load
             refreshWidgetData(applicationContext, glanceId, featureId)
-
-            val resultValue = Intent().apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-            }
-            setResult(RESULT_OK, resultValue)
-            finish()
         }
     }
 }
