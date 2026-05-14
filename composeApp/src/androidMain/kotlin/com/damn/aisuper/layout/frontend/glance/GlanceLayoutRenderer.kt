@@ -206,6 +206,7 @@ private fun Widget.glanceLayoutModifier(): GlanceModifier {
 }
 
 /** Map [com.damn.aisuper.layout.StyleRule] properties into a GlanceModifier (padding, background). */
+@SuppressLint("RestrictedApi")
 private fun com.damn.aisuper.layout.StyleRule.toGlanceModifier(): GlanceModifier {
     var m: GlanceModifier = GlanceModifier
 
