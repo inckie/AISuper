@@ -14,9 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import com.damn.aisuper.engine.KeightJSEngine
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
-import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.runtime.AppletManifest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -30,18 +28,13 @@ class WidgetConfigurationActivity : ComponentActivity() {
     @OptIn(ExperimentalResourceApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Default result is CANCELED (user pressed back)
         setResult(RESULT_CANCELED)
 
         appWidgetId = intent?.extras
             ?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
             ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
-            finish()
-            return
-        }
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
 
         AndroidAppContextHolder.appContext = applicationContext
         AndroidAppContextHolder.currentActivity = this
@@ -49,8 +42,8 @@ class WidgetConfigurationActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 WidgetConfigScreen(
-                    onFeatureSelected = { featureId ->
-                        confirmSelection(featureId)
+                    onConfirm = { featureId, styleId ->
+                        confirmSelection(featureId, styleId)
                     }
                 )
             }
@@ -58,36 +51,30 @@ class WidgetConfigurationActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (AndroidAppContextHolder.currentActivity === this) {
-            AndroidAppContextHolder.currentActivity = null
-        }
+        if (AndroidAppContextHolder.currentActivity === this) AndroidAppContextHolder.currentActivity = null
         super.onDestroy()
     }
 
     @OptIn(ExperimentalResourceApi::class)
-    private fun confirmSelection(featureId: String) {
+    private fun confirmSelection(featureId: String, styleId: String?) {
         val scope = kotlinx.coroutines.MainScope()
-
-        // Return RESULT_OK immediately so the launcher can place the widget.
-        // Data refresh runs in the background; the widget shows a placeholder until ready.
-        val resultValue = Intent().apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
+        val resultValue = Intent().apply { putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId) }
         setResult(RESULT_OK, resultValue)
         finish()
-
         scope.launch {
-            val glanceId = GlanceAppWidgetManager(applicationContext)
-                .getGlanceIdBy(appWidgetId)
-            refreshWidgetData(applicationContext, glanceId, featureId)
+            val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
+            refreshWidgetData(applicationContext, glanceId, featureId, styleId)
         }
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
 @Composable
-private fun WidgetConfigScreen(onFeatureSelected: (String) -> Unit) {
+private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) -> Unit) {
     var widgetFeatures by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var availableStyles by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var selectedStyleId by remember { mutableStateOf<String?>(null) }
+    var styleDropdownExpanded by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
@@ -100,6 +87,8 @@ private fun WidgetConfigScreen(onFeatureSelected: (String) -> Unit) {
                 widgetFeatures = manifest.features
                     .filter { (_, def) -> def.supportsWidget }
                     .map { (id, def) -> id to (def.name ?: id) }
+                availableStyles = manifest.styles.map { (id, def) -> id to (def.name ?: id) }
+                selectedStyleId = manifest.defaultStyle ?: availableStyles.firstOrNull()?.first
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -111,10 +100,52 @@ private fun WidgetConfigScreen(onFeatureSelected: (String) -> Unit) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Choose Widget Feature",
+                text = "Add AISuper Widget",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
+
+            // Style dropdown
+            if (availableStyles.isNotEmpty()) {
+                Text(
+                    "Style",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                ExposedDropdownMenuBox(
+                    expanded = styleDropdownExpanded,
+                    onExpandedChange = { styleDropdownExpanded = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                ) {
+                    val selectedLabel = availableStyles.firstOrNull { it.first == selectedStyleId }?.second ?: "Default"
+                    OutlinedTextField(
+                        value = selectedLabel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Theme") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = styleDropdownExpanded) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = styleDropdownExpanded,
+                        onDismissRequest = { styleDropdownExpanded = false }
+                    ) {
+                        availableStyles.forEach { (id, name) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = { selectedStyleId = id; styleDropdownExpanded = false }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Text(
+                text = "Choose Feature",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
             if (loading) {
                 CircularProgressIndicator()
             } else if (widgetFeatures.isEmpty()) {
@@ -125,7 +156,7 @@ private fun WidgetConfigScreen(onFeatureSelected: (String) -> Unit) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onFeatureSelected(featureId) }
+                                .clickable { onConfirm(featureId, selectedStyleId) }
                         ) {
                             Text(
                                 text = featureName,
@@ -139,4 +170,3 @@ private fun WidgetConfigScreen(onFeatureSelected: (String) -> Unit) {
         }
     }
 }
-
