@@ -5,17 +5,22 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.Button
 import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.LocalContext
 import androidx.glance.action.actionParametersOf
+import androidx.glance.appwidget.ImageProvider
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.damn.aisuper.widget.WidgetImageCache
 import com.damn.aisuper.layout.AudioPlayerWidget
 import com.damn.aisuper.layout.ButtonWidget
 import com.damn.aisuper.layout.ColumnWidget
@@ -119,8 +124,16 @@ fun RenderWidget(
         }
 
         is ImageWidget -> {
-            // Glance Image needs resource-based providers; data-URI images not directly supported
-            if (widget.description.isNotBlank()) {
+            val url = widget.url.takeIf { it.isNotBlank() }
+            val context = LocalContext.current
+            if (url != null) {
+                Image(
+                    provider = ImageProvider(WidgetImageCache.contentUri(context, url)),
+                    contentDescription = widget.description.takeIf { it.isNotBlank() },
+                    contentScale = ContentScale.Fit,
+                    modifier = modifier.then(widget.glanceLayoutModifier())
+                )
+            } else if (widget.description.isNotBlank()) {
                 Text(
                     text = "[Image: ${widget.description}]",
                     style = TextStyle(color = ColorProvider(Color(0x80FFFFFF.toInt())), fontSize = 10.sp),

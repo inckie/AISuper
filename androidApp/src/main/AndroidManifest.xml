@@ -28,6 +28,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Serves locally cached widget images via content:// URI to RemoteViews -->
+        <provider
+            android:name="com.damn.aisuper.widget.WidgetImageContentProvider"
+            android:authorities="${applicationId}.widget_images"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+
         <!-- Single widget receiver for all AISuper feature widgets -->
         <receiver
             android:name="com.damn.aisuper.widget.AISuperWidgetReceiver"

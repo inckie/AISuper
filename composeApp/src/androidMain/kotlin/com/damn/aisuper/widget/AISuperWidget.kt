@@ -1,27 +1,32 @@
 package com.damn.aisuper.widget
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.background
 import androidx.glance.currentState
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Column
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import androidx.glance.layout.*
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.background
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.damn.aisuper.engine.KeightJSEngine
+import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.LayoutRoot
+import com.damn.aisuper.layout.Widget
 import com.damn.aisuper.layout.frontend.glance.RenderWidget
 import com.damn.aisuper.layout.parseLayout
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
@@ -30,8 +35,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import java.net.URL
 
 /** Preference key: which featureId this widget instance is bound to. */
 val PREF_FEATURE_ID = stringPreferencesKey("feature_id")
@@ -148,7 +156,9 @@ suspend fun refreshWidgetData(context: Context, glanceId: GlanceId, featureId: S
 
             val feature    = applet.currentFeature.value
             val layoutRoot = feature?.layoutRoot?.value
-            val valuesMap  = feature?.values?.value ?: emptyMap()
+            val valuesMap  = feature?.values?.value?.toMutableMap() ?: mutableMapOf()
+
+            cacheImages(layoutRoot, valuesMap, context)
 
             val layoutJson = if (layoutRoot != null) {
                 try { Json.encodeToString(LayoutRoot.serializer(), layoutRoot) } catch (_: Exception) { "" }
@@ -173,3 +183,66 @@ suspend fun refreshWidgetData(context: Context, glanceId: GlanceId, featureId: S
         }
     }
 }
+
+private fun cacheImages(
+    layoutRoot: LayoutRoot?,
+    valuesMap: MutableMap<String, JsonElement>,
+    context: Context
+) {
+    // Pre-warm image cache: download images in the background so the content provider
+    // can serve them instantly without blocking the RemoteViews host process.
+    val imageUrls = mutableSetOf<String>()
+    if (layoutRoot != null) imageUrls += collectImageUrls(layoutRoot.layout)
+    valuesMap.values.forEach { element -> imageUrls += collectImageUrlsFromValue(element) }
+
+    imageUrls.forEach { url ->
+        try {
+            val file = WidgetImageCache.cacheFile(context, url)
+            if (!file.exists()) {
+                file.parentFile?.mkdirs()
+                val bytes = URL(url).openStream().use { it.readBytes() }
+                file.writeBytes(bytes)
+            }
+        } catch (_: Exception) { /* non-fatal: provider will retry on demand */
+        }
+    }
+}
+
+/**
+ * Recursively collect all non-blank image URLs from [ImageWidget] nodes in the static layout tree.
+ */
+private fun collectImageUrls(widget: Widget): List<String> = when (widget) {
+    is ImageWidget -> listOfNotNull(widget.url.takeIf { it.isNotBlank() })
+    is com.damn.aisuper.layout.ColumnWidget ->
+        widget.children.flatMap { collectImageUrls(it) }
+    is com.damn.aisuper.layout.RowWidget ->
+        widget.children.flatMap { collectImageUrls(it) }
+    else -> emptyList()
+}
+
+/**
+ * Extract image URLs from a [JsonElement] that may be a dynamic widget array value
+ * (e.g. `imageList = [{"type":"Image","url":"..."},...]`).
+ * Handles both raw JsonArray and a string-encoded JSON array.
+ */
+private fun collectImageUrlsFromValue(element: JsonElement): List<String> {
+    val array: JsonArray = when (element) {
+        is JsonArray -> element
+        is JsonPrimitive -> {
+            val str = element.content
+            try { Json.parseToJsonElement(str) as? JsonArray } catch (_: Exception) { null }
+        }
+        else -> null
+    } ?: return emptyList()
+
+    return array.mapNotNull { item ->
+        if (item is JsonObject) {
+            val type = (item["type"] as? JsonPrimitive)?.content
+            if (type == "Image") {
+                (item["url"] as? JsonPrimitive)?.content
+                    ?.takeIf { it.isNotBlank() }
+            } else null
+        } else null
+    }
+}
+
