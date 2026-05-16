@@ -68,7 +68,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.keight)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coil.compose)
@@ -84,7 +83,14 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.ktor.client.cio)
             implementation(libs.kotlinx.coroutinesSwing)
+        }
+        jsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
     }
 }
