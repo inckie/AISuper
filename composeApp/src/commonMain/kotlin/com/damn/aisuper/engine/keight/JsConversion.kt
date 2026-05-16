@@ -1,4 +1,4 @@
-package com.damn.aisuper.engine
+package com.damn.aisuper.engine.keight
 
 import io.github.alexzhirkevich.keight.Callable
 import io.github.alexzhirkevich.keight.ScriptRuntime
@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.collections.iterator
 
 /**
  * Convert a keight JsAny? to a kotlinx.serialization JsonElement.

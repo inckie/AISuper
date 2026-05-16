@@ -1,5 +1,6 @@
-package com.damn.aisuper.engine
+package com.damn.aisuper.engine.keight
 
+import com.damn.aisuper.engine.AppJSEngine
 import io.github.alexzhirkevich.keight.Callable
 import io.github.alexzhirkevich.keight.JSEngine
 import io.github.alexzhirkevich.keight.JSRuntime
