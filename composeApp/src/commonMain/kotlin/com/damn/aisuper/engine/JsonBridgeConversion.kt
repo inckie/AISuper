@@ -21,24 +21,10 @@ internal fun anyToJsonElement(value: Any?): JsonElement = when (value) {
 	is UByteArray -> JsonArray(value.map { JsonPrimitive(it.toInt()) })
 	is Array<*> -> JsonArray(value.map { anyToJsonElement(it) })
 	is Iterable<*> -> JsonArray(value.map { anyToJsonElement(it) })
-	is Map<*, *> -> JsonObject(value.entries.associate { (k, v) -> (k?.toString() ?: "") to anyToJsonElement(v) })
+	is Map<*, *> -> JsonObject(value.entries.associate { (k, v) ->
+		(k?.toString() ?: "") to anyToJsonElement(v)
+	})
 	else -> JsonPrimitive(value.toString())
-}
-
-internal fun jsonElementToAny(element: JsonElement): Any? = when (element) {
-	is JsonNull -> null
-	is JsonArray -> element.map { jsonElementToAny(it) }
-	is JsonObject -> element.mapValues { (_, value) -> jsonElementToAny(value) }
-	is JsonPrimitive -> {
-		if (element.isString) {
-			element.content
-		} else {
-			element.content.toBooleanStrictOrNull()
-				?: element.content.toLongOrNull()
-				?: element.content.toDoubleOrNull()
-				?: element.content
-		}
-	}
 }
 
 internal fun jsonElementToJsLiteral(element: JsonElement): String = when (element) {

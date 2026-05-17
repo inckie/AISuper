@@ -2,15 +2,20 @@ package com.damn.aisuper.engine.quickjs
 
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.engine.anyToJsonElement
-import com.damn.aisuper.engine.jsonElementToAny
 import com.damn.aisuper.engine.jsonElementToJsLiteral
 import com.dokar.quickjs.QuickJs
+import com.dokar.quickjs.binding.JsObject
 import com.dokar.quickjs.binding.asyncFunction
 import com.dokar.quickjs.binding.function
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.longOrNull
 
 class QuickJsKtEngine : AppJSEngine {
 
@@ -56,7 +61,7 @@ class QuickJsKtEngine : AppJSEngine {
         quickJs.function<Any?>(name) { args ->
             val jsonArgs = args.map { anyToJsonElement(it) }
             try {
-                jsonElementToAny(callback(jsonArgs))
+                jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
                 println("[AISuper][JS][CallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
                 e.printStackTrace()
@@ -69,7 +74,7 @@ class QuickJsKtEngine : AppJSEngine {
         quickJs.asyncFunction<Any?>(name) { args ->
             val jsonArgs = args.map { anyToJsonElement(it) }
             try {
-                jsonElementToAny(callback(jsonArgs))
+                jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
                 println("[AISuper][JS][SuspendCallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
                 e.printStackTrace()
@@ -80,6 +85,27 @@ class QuickJsKtEngine : AppJSEngine {
 
     override fun close() {
         quickJs.close()
+    }
+
+    /**
+     * Convert a [JsonElement] to a QuickJS-native value.
+     *
+     * Critically, [JsonObject] must become [JsObject] (not a plain Map) so that QuickJS
+     * recognises it as a JavaScript object and correctly populates its properties.
+     * A plain Kotlin Map passed back to QuickJS results in null property values because
+     * QuickJS doesn't know how to reflect over an arbitrary Map.
+     */
+    private fun jsonElementToQuickJsAny(element: JsonElement): Any? = when (element) {
+        is JsonNull -> null
+        is JsonPrimitive -> when {
+            element.isString -> element.content
+            element.booleanOrNull != null -> element.booleanOrNull
+            element.longOrNull != null -> element.longOrNull
+            element.doubleOrNull != null -> element.doubleOrNull
+            else -> element.content
+        }
+        is JsonArray -> element.map { jsonElementToQuickJsAny(it) }
+        is JsonObject -> JsObject(element.mapValues { (_, v) -> jsonElementToQuickJsAny(v) })
     }
 
     private fun logEngineError(
