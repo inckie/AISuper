@@ -14,10 +14,21 @@ object JSEngineSettings {
      *   JSEngineSettings.override = JSEngineBackend.Keight
      */
     var override: JSEngineBackend? = null
+
+    /**
+     * Global switch for engine-level call/register logging.
+     */
+    var enableTracing: Boolean = true
 }
 
-fun createAppJSEngine(): AppJSEngine =
-    createPlatformJSEngine(JSEngineSettings.override)
+fun createAppJSEngine(tag: String): AppJSEngine {
+    val base = createPlatformJSEngine(JSEngineSettings.override)
+    if (!JSEngineSettings.enableTracing) return base
+
+    val requested = JSEngineSettings.override?.name ?: "platformDefault"
+    val effectiveTag = "factory:$tag:$requested"
+    return LoggedAppJSEngine(base, effectiveTag)
+}
 
 /**
  * Platform actuals must:

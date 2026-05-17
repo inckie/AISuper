@@ -50,7 +50,7 @@ class WidgetActionCallback : ActionCallback {
             else emptyList()
         } catch (_: Exception) { emptyList() }
 
-        val applet = Applet { createAppJSEngine() }
+        val applet = Applet { createAppJSEngine("widget-action") }
         applet.loadApplet("files/applet.json")
         applet.launchFeature(featureId)
 

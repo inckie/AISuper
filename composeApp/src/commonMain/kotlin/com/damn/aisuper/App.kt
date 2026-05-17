@@ -34,7 +34,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 @Preview
 fun App() {
     // Instantiate Applet with platform-aware engine factory.
-    val applet = remember { Applet { createAppJSEngine() } }
+    val applet = remember { Applet { createAppJSEngine("app-ui") } }
 
         DisposableEffect(applet) {
             onDispose {

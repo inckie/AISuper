@@ -50,6 +50,7 @@ class JsModuleRuntime(
     suspend fun load() {
         // Register the export declaration callback
         engine.registerFunction("registerExports") { args ->
+            println("[AISuper][JsModule][$id] registerExports called args=${safeArgs(args)}")
             // args[0] = module name (ignored, we already know it as 'id')
             // args[1] = JsonArray of function name strings
             if (args.size >= 2) {
@@ -84,7 +85,10 @@ class JsModuleRuntime(
             if (!bridgedHostFunctions.add(hostFunction)) continue
             engine.registerSuspendFunction(hostFunction) { args ->
                 val invoker = hostInvoker ?: return@registerSuspendFunction JsonNull
-                invoker(hostFunction, args)
+                println("[AISuper][JsModule][$id] host bridge -> $hostFunction args=${safeArgs(args)}")
+                val result = invoker(hostFunction, args)
+                println("[AISuper][JsModule][$id] host bridge <- $hostFunction result=${safe(result)}")
+                result
             }
         }
 
@@ -95,7 +99,10 @@ class JsModuleRuntime(
         for (exportedFn in exports) {
             val proxyName = "${id}_${exportedFn}"
             context.registerSuspendFunction(proxyName) { args ->
-                callFunction(exportedFn, args)
+                println("[AISuper][JsModule][$id] proxy -> $proxyName args=${safeArgs(args)}")
+                val result = callFunction(exportedFn, args)
+                println("[AISuper][JsModule][$id] proxy <- $proxyName result=${safe(result)}")
+                result
             }
             println("[AISuper][JsModule] registered proxy '$proxyName' -> module '$id'")
         }
@@ -112,7 +119,10 @@ class JsModuleRuntime(
      */
     suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
         if (!isScriptLoaded) return JsonNull
-        return engine.callFunction(functionName, args)
+        println("[AISuper][JsModule][$id] vm call -> $functionName args=${safeArgs(args)}")
+        val result = engine.callFunction(functionName, args)
+        println("[AISuper][JsModule][$id] vm call <- $functionName result=${safe(result)}")
+        return result
     }
 
     fun close() {
@@ -137,6 +147,14 @@ class JsModuleRuntime(
         }
 
         return names
+    }
+
+    private fun safeArgs(args: List<JsonElement>): String {
+        return args.joinToString(prefix = "[", postfix = "]") { safe(it) }
+    }
+
+    private fun safe(value: Any?): String {
+        return value?.toString()?.replace("\n", " ")?.take(220) ?: "null"
     }
 }
 
