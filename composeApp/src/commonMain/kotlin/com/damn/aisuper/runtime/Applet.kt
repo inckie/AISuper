@@ -2,12 +2,9 @@ package com.damn.aisuper.runtime
 
 import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
-import com.damn.aisuper.layout.frontend.LayoutFrontend
-import com.damn.aisuper.layout.NamedStyleSheet
-import com.damn.aisuper.layout.StyleSheet
+import com.damn.aisuper.layout.AppletUI
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -24,17 +21,13 @@ class Applet(
     private val _currentFeature = MutableStateFlow<Feature?>(null)
     val currentFeature = _currentFeature.asStateFlow()
 
-    private val _currentStyleId = MutableStateFlow<String?>(null)
-
-    private val _currentStyleSheet = MutableStateFlow<StyleSheet?>(null)
-    val currentStyleSheet = _currentStyleSheet.asStateFlow()
-
-    private val _currentFramework = MutableStateFlow<String>(LayoutFrontend.Rikka.name)
-    val currentFramework = _currentFramework.asStateFlow()
+    // TODO: must also be a module,
+    //  so we could have headless and console applets/features
+    private val ui = AppletUI()
+    val currentStyleSheet = ui.currentStyleSheet
+    val currentFramework = ui.currentFramework
 
     private var manifest: AppletManifest? = null
-
-    private val stylesById = linkedMapOf<String, NamedStyleSheet>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun loadApplet(manifestPath: String) {
@@ -45,7 +38,7 @@ class Applet(
             val json = Json { ignoreUnknownKeys = true }
             manifest = json.decodeFromString<AppletManifest>(jsonString)
 
-            loadStyleSheets(json)
+            ui.loadStyleSheets(json, manifest)
 
             val entryFeatureId = manifest!!.entryFeature
             launchFeature(entryFeatureId)
@@ -53,32 +46,6 @@ class Applet(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    @OptIn(ExperimentalResourceApi::class)
-    private suspend fun loadStyleSheets(json: Json) {
-        stylesById.clear()
-
-        manifest?.styles?.forEach { (styleId, definition) ->
-            try {
-                val bytes = Res.readBytes(definition.file)
-                val text = bytes.decodeToString()
-                val sheet = json.decodeFromString<StyleSheet>(text)
-                val displayName = definition.name ?: sheet.name ?: styleId
-                stylesById[styleId] = NamedStyleSheet(styleId, displayName, sheet)
-            } catch (e: Exception) {
-                println("[AISuper][Style] failed to load '$styleId' from ${definition.file}: ${e.message}")
-            }
-        }
-
-        val preferred = manifest?.defaultStyle
-        val selectedId = when {
-            !preferred.isNullOrBlank() && stylesById.containsKey(preferred) -> preferred
-            stylesById.isNotEmpty() -> stylesById.keys.first()
-            else -> null
-        }
-
-        setCurrentTheme(selectedId)
     }
 
     private suspend fun registerGlobalFunctions(engine: AppJSEngine): AppJSEngine {
@@ -132,49 +99,8 @@ class Applet(
             } ?: emptyList())
         }
 
-        engine.registerFunction("getAvailableThemes") {
-            JsonArray(stylesById.values.map { style ->
-                buildJsonObject {
-                    put("id", JsonPrimitive(style.id))
-                    put("name", JsonPrimitive(style.name))
-                }
-            })
-        }
-
-        engine.registerFunction("getCurrentTheme") {
-            JsonPrimitive(_currentStyleId.value ?: "")
-        }
-
-        engine.registerFunction("setCurrentTheme") { args ->
-            val styleId = args.firstOrNull()?.let {
-                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
-            }
-            val changed = setCurrentTheme(styleId)
-            JsonPrimitive(changed)
-        }
-
-        engine.registerFunction("getAvailableFrameworks") {
-            JsonArray(
-                LayoutFrontend.entries.map { frontend ->
-                    buildJsonObject {
-                        put("id", JsonPrimitive(frontend.name))
-                        put("name", JsonPrimitive(frontend.name))
-                    }
-                }
-            )
-        }
-
-        engine.registerFunction("getCurrentFramework") {
-            JsonPrimitive(_currentFramework.value)
-        }
-
-        engine.registerFunction("setCurrentFramework") { args ->
-            val frameworkId = args.firstOrNull()?.let {
-                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
-            }
-            val changed = setCurrentFramework(frameworkId)
-            JsonPrimitive(changed)
-        }
+        // Register UI-related functions (themes, frameworks)
+        ui.registerFunctions(engine)
 
         // Helper function to safely parse strings to numbers, bypassing Keight VM conversion issues
         engine.registerFunction("stringToNumber") { args ->
@@ -198,33 +124,6 @@ class Applet(
             JsonNull
         }
         return engine
-    }
-
-    private fun setCurrentTheme(styleId: String?): Boolean {
-        if (styleId.isNullOrBlank()) {
-            _currentStyleId.update { null }
-            _currentStyleSheet.update { null }
-            return true
-        }
-
-        val style = stylesById[styleId] ?: return false
-        _currentStyleId.update { styleId }
-        _currentStyleSheet.update { style.sheet }
-        return true
-    }
-
-    private fun setCurrentFramework(frameworkId: String?): Boolean {
-        if (frameworkId.isNullOrBlank()) {
-            return false
-        }
-
-        // Validate framework ID
-        if (LayoutFrontend.entries.none { it.name == frameworkId }) {
-            return false
-        }
-
-        _currentFramework.update { frameworkId }
-        return true
     }
 
     suspend fun launchFeature(featureId: String) {
