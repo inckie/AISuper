@@ -12,6 +12,8 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     android {
         namespace = "com.damn.aisuper"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -49,13 +51,24 @@ kotlin {
     }
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain
-            implementation(libs.glance.appwidget)
-            implementation(libs.glance.material3)
-            implementation(libs.quickjs.kt)
+        // Shared source set for the QuickJS engine — used by Android, JVM, and iOS.
+        // It sits between commonMain and each of those platform source sets.
+        val quickjsMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.quickjs.kt)
+            }
+        }
+
+        androidMain {
+            dependsOn(quickjsMain)
+            dependencies {
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain
+                implementation(libs.glance.appwidget)
+                implementation(libs.glance.material3)
+            }
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -82,14 +95,16 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.ktor.client.cio)
-            implementation(libs.kotlinx.coroutinesSwing)
-            implementation(libs.quickjs.kt)
+        jvmMain {
+            dependsOn(quickjsMain)
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.kotlinx.coroutinesSwing)
+            }
         }
-        iosMain.dependencies {
-            implementation(libs.quickjs.kt)
+        iosMain {
+            dependsOn(quickjsMain)
         }
         jsMain.dependencies {
             implementation(libs.ktor.client.js)

@@ -42,6 +42,7 @@ class QuickJsKtEngine : AppJSEngine {
 
             val argsString = args.joinToString(",") { jsonElementToJsLiteral(it) }
             callString = "$functionName($argsString)"
+            // Wrap in an async IIFE so Promise-returning functions are properly awaited.
             val awaitableCall = "await (async function(){ return $callString; })()"
             val result = quickJs.evaluate<Any?>(awaitableCall)
             return anyToJsonElement(result)
@@ -94,8 +95,7 @@ class QuickJsKtEngine : AppJSEngine {
         error.printStackTrace()
     }
 
-    private fun safeArgs(args: List<JsonElement>): String {
-        return args.joinToString(prefix = "[", postfix = "]") { it.toString().replace("\n", " ").take(160) }
-    }
+    private fun safeArgs(args: List<JsonElement>): String =
+        args.joinToString(prefix = "[", postfix = "]") { it.toString().replace("\n", " ").take(160) }
 }
 
