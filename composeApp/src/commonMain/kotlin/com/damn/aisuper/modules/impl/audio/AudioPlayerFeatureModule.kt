@@ -172,7 +172,7 @@ class AudioPlayerFeatureModule(
 object AudioPlayerFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "audioPlayer"
 
-    override fun create(definition: ModuleDefinition): FeatureModule {
+    override suspend fun create(definition: ModuleDefinition): FeatureModule {
         val names = definition.config["players"]
             ?.split(',')
             ?.map { it.trim() }

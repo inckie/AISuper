@@ -161,24 +161,39 @@ class JsModuleRuntime(
 /**
  * Factory for [JsModuleRuntime] modules.
  *
- * Holds applet-level runtimes (already loaded). For each feature that declares a jsModule import,
- * locates the corresponding runtime, configures it per-feature context, and returns it directly
- * for attachment via the feature module host, unified with all other module types.
- *
- * [nativeModuleDefinitions] are provided so the runtime can bridge native host functions
- * (e.g. httpGet bridging when an http module is also present in the feature).
+ * Owns the full lifecycle of JS module runtimes: creates engines, loads scripts,
+ * and caches runtimes — all on demand inside [create].
+ * This keeps all JS-module-specific logic out of Feature.
  */
 class JsModuleFeatureModuleFactory(
-    private val appletRuntimes: Map<String, JsModuleRuntime>,
-    private val nativeModuleDefinitions: List<ModuleDefinition>
+    private val engineFactory: suspend () -> AppJSEngine,
+    private val allDefinitions: List<ModuleDefinition>
 ) : FeatureModuleFactory {
     override val type: String = "jsModule"
 
-    override fun create(definition: ModuleDefinition): FeatureModule {
-        val runtime = appletRuntimes[definition.name]
-            ?: error("[AISuper][JsModule] Runtime '${definition.name}' not found in applet runtimes")
+    private val runtimes = mutableMapOf<String, JsModuleRuntime>()
+
+    override suspend fun create(definition: ModuleDefinition): FeatureModule {
+        val runtime = runtimes.getOrPut(definition.name) {
+            val script = definition.script
+                ?: error("[AISuper][JsModule] No script for module '${definition.name}'")
+            val jsDef = JsModuleDefinition(script = script, name = definition.name)
+            JsModuleRuntime(
+                id = definition.name,
+                definition = jsDef,
+                engine = engineFactory()
+            ).also { it.load() }
+        }
+        val nativeModuleDefinitions = allDefinitions.filter {
+            !it.type.equals("jsModule", ignoreCase = true) && !it.type.equals("js", ignoreCase = true)
+        }
         runtime.configureForFeature(definition, nativeModuleDefinitions)
         return runtime
+    }
+
+    override fun close() {
+        runtimes.values.forEach { it.close() }
+        runtimes.clear()
     }
 }
 

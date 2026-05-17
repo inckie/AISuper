@@ -123,7 +123,7 @@ private const val LOCATION_PERMISSION_REQUEST_CODE = 1107
 object AndroidGeolocationFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "geolocation"
 
-    override fun create(definition: ModuleDefinition): FeatureModule {
+    override suspend fun create(definition: ModuleDefinition): FeatureModule {
         return AndroidGeolocationFeatureModule()
     }
 }

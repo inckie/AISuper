@@ -15,7 +15,9 @@ interface NativeCommandFeatureModule {
 
 interface FeatureModuleFactory {
     val type: String
-    fun create(definition: ModuleDefinition): FeatureModule
+    suspend fun create(definition: ModuleDefinition): FeatureModule
+    /** Release any resources held by this factory. */
+    fun close() {}
 }
 
 interface FeatureModuleContext {
@@ -37,6 +39,7 @@ class FeatureModuleHost(
     private val modulesByName = mutableMapOf<String, FeatureModule>()
 
     suspend fun attach(context: FeatureModuleContext) {
+
         for (definition in definitions) {
             val factory = factories[definition.type] ?: continue
             val module = factory.create(definition)
@@ -56,5 +59,10 @@ class FeatureModuleHost(
     fun detachAll() {
         modulesByName.values.forEach { it.detach() }
         modulesByName.clear()
+    }
+
+    fun close() {
+        detachAll()
+        factories.values.forEach { it.close() }
     }
 }

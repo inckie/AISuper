@@ -7,8 +7,6 @@ import com.damn.aisuper.layout.parseLayout
 import com.damn.aisuper.modules.FeatureModuleContext
 import com.damn.aisuper.modules.FeatureModuleHost
 import com.damn.aisuper.modules.buildFeatureModuleFactories
-import com.damn.aisuper.modules.impl.js.JsModuleFeatureModuleFactory
-import com.damn.aisuper.modules.impl.js.JsModuleRuntime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +24,6 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
-    private val appletJsModuleRuntimes: Map<String, JsModuleRuntime>,
     private val engineFactory: suspend () -> AppJSEngine
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -39,7 +36,6 @@ class Feature(
 
     private lateinit var engine: AppJSEngine
 
-    private val featureJsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
     private var moduleHost: FeatureModuleHost? = null
     private val registeredSyncHostFunctions = mutableMapOf<String, (List<JsonElement>) -> JsonElement>()
     private val registeredSuspendHostFunctions = mutableMapOf<String, suspend (List<JsonElement>) -> JsonElement>()
@@ -50,13 +46,11 @@ class Feature(
             engine = engineFactory()
             registeredSyncHostFunctions.clear()
             registeredSuspendHostFunctions.clear()
-            loadFeatureJsModuleRuntimes()
 
-            val resolvedJsModuleRuntimes = appletJsModuleRuntimes + featureJsModuleRuntimes
+            val factories = buildFeatureModuleFactories(engineFactory, definition.modules)
+
             moduleHost = FeatureModuleHost(
-                factories = buildFeatureModuleFactories() + mapOf(
-                    "jsModule" to JsModuleFeatureModuleFactory(resolvedJsModuleRuntimes, definition.modules.withoutJsModules())
-                ),
+                factories = factories,
                 definitions = definition.modules
             )
 
@@ -127,7 +121,6 @@ class Feature(
 
             moduleHost?.attach(moduleContext)
 
-            // Initial execution to load functions
             // Call initialize if present
             try {
                 engine.callFunction("initialize", emptyList())
@@ -141,11 +134,9 @@ class Feature(
     }
 
     fun close() {
-        moduleHost?.detachAll()
+        moduleHost?.close()
         moduleHost = null
 
-        featureJsModuleRuntimes.values.forEach { it.close() }
-        featureJsModuleRuntimes.clear()
         registeredSyncHostFunctions.clear()
         registeredSuspendHostFunctions.clear()
 
@@ -167,24 +158,6 @@ class Feature(
     fun handleModuleCommand(moduleType: String, target: String, command: String, args: List<JsonElement> = emptyList()) {
         moduleHost?.handleCommand(moduleType, target, command, args)
     }
-
-    private suspend fun loadFeatureJsModuleRuntimes() {
-        featureJsModuleRuntimes.values.forEach { it.close() }
-        featureJsModuleRuntimes.clear()
-
-        val inlineJsModules = definition.modules
-            .filter { it.type.equals("jsModule", ignoreCase = true) && !it.script.isNullOrBlank() }
-
-        for (module in inlineJsModules) {
-            val runtime = JsModuleRuntime(
-                id = module.name,
-                definition = JsModuleDefinition(script = module.script!!, name = module.name),
-                engine = engineFactory()
-            )
-            runtime.load()
-            featureJsModuleRuntimes[module.name] = runtime
-        }
-    }
 }
 
 /**
@@ -196,8 +169,4 @@ private fun JsonElement.jsonPrimitiveContentOrNull(): String? {
     } catch (_: Exception) {
         null
     }
-}
-
-private fun List<ModuleDefinition>.withoutJsModules(): List<ModuleDefinition> = filterNot {
-    it.type.equals("js", ignoreCase = true) || it.type.equals("jsModule", ignoreCase = true)
 }

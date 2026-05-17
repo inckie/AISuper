@@ -23,7 +23,7 @@ class HttpFeatureModule : FeatureModule {
 object HttpFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "http"
 
-    override fun create(definition: ModuleDefinition): FeatureModule {
+    override suspend fun create(definition: ModuleDefinition): FeatureModule {
         return HttpFeatureModule()
     }
 }

@@ -5,7 +5,6 @@ import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.NamedStyleSheet
 import com.damn.aisuper.layout.StyleSheet
-import com.damn.aisuper.modules.impl.js.JsModuleRuntime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -35,11 +34,6 @@ class Applet(
 
     private var manifest: AppletManifest? = null
 
-    /**
-     * Reserved for future applet-lifetime jsModules.
-     * Feature-level jsModules are instantiated and owned by Feature.
-     */
-    private val jsModuleRuntimes = mutableMapOf<String, JsModuleRuntime>()
     private val stylesById = linkedMapOf<String, NamedStyleSheet>()
 
     @OptIn(ExperimentalResourceApi::class)
@@ -52,11 +46,6 @@ class Applet(
             manifest = json.decodeFromString<AppletManifest>(jsonString)
 
             loadStyleSheets(json)
-
-            // Keep applet-level jsModule runtimes map lifecycle for now.
-            // It remains intentionally empty until applet-lifetime modules are enabled.
-            jsModuleRuntimes.values.forEach { it.close() }
-            jsModuleRuntimes.clear()
 
             val entryFeatureId = manifest!!.entryFeature
             launchFeature(entryFeatureId)
@@ -252,7 +241,6 @@ class Applet(
             val feature = Feature(
                 id = featureId,
                 definition = featureDef,
-                appletJsModuleRuntimes = jsModuleRuntimes,
                 engineFactory = decoratedEngineFactory
             )
             feature.load()
@@ -286,8 +274,6 @@ class Applet(
 
     fun close() {
         _currentFeature.value?.close()
-        jsModuleRuntimes.values.forEach { it.close() }
-        jsModuleRuntimes.clear()
     }
 }
 
