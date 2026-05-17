@@ -15,7 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import com.damn.aisuper.engine.keight.KeightJSEngine
+import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.frontend.material3.Material3FrontendTheme
@@ -33,9 +33,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 @Composable
 @Preview
 fun App() {
-    // Instantiate the Applet with the Keight engine factory
-    // wrapped in remember to survive recompositions.
-    val applet = remember { Applet { KeightJSEngine() } }
+    // Instantiate Applet with platform-aware engine factory.
+    val applet = remember { Applet { createAppJSEngine() } }
 
         DisposableEffect(applet) {
             onDispose {

@@ -55,6 +55,7 @@ kotlin {
             implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain
             implementation(libs.glance.appwidget)
             implementation(libs.glance.material3)
+            implementation(libs.quickjs.kt)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -85,6 +86,10 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.ktor.client.cio)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.quickjs.kt)
+        }
+        iosMain.dependencies {
+            implementation(libs.quickjs.kt)
         }
         jsMain.dependencies {
             implementation(libs.ktor.client.js)
