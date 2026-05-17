@@ -68,6 +68,7 @@ kotlin {
                 implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain
                 implementation(libs.glance.appwidget)
                 implementation(libs.glance.material3)
+                implementation(libs.ktor.client.android)
             }
         }
         commonMain.dependencies {
@@ -105,6 +106,9 @@ kotlin {
         }
         iosMain {
             dependsOn(quickjsMain)
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
         }
         jsMain.dependencies {
             implementation(libs.ktor.client.js)
