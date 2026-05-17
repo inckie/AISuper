@@ -37,15 +37,11 @@ class Feature(
     private lateinit var engine: AppJSEngine
 
     private var moduleHost: FeatureModuleHost? = null
-    private val registeredSyncHostFunctions = mutableMapOf<String, (List<JsonElement>) -> JsonElement>()
-    private val registeredSuspendHostFunctions = mutableMapOf<String, suspend (List<JsonElement>) -> JsonElement>()
 
     @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
         try {
             engine = engineFactory()
-            registeredSyncHostFunctions.clear()
-            registeredSuspendHostFunctions.clear()
 
             val factories = buildFeatureModuleFactories(engineFactory, definition.modules)
 
@@ -80,6 +76,9 @@ class Feature(
             val scriptContent = scriptBytes.decodeToString()
             engine.loadScript(scriptContent)
 
+            val syncHostFunctions = mutableMapOf<String, (List<JsonElement>) -> JsonElement>()
+            val suspendHostFunctions = mutableMapOf<String, suspend (List<JsonElement>) -> JsonElement>()
+
             val moduleContext = object : FeatureModuleContext {
                 override val scope: CoroutineScope = this@Feature.scope
 
@@ -87,7 +86,7 @@ class Feature(
                     name: String,
                     callback: (List<JsonElement>) -> JsonElement
                 ) {
-                    registeredSyncHostFunctions[name] = callback
+                    syncHostFunctions[name] = callback
                     engine.registerFunction(name, callback)
                 }
 
@@ -95,7 +94,7 @@ class Feature(
                     name: String,
                     callback: suspend (List<JsonElement>) -> JsonElement
                 ) {
-                    registeredSuspendHostFunctions[name] = callback
+                    suspendHostFunctions[name] = callback
                     engine.registerSuspendFunction(name, callback)
                 }
 
@@ -107,11 +106,11 @@ class Feature(
                 override suspend fun call(functionName: String, args: List<JsonElement>): JsonElement {
                     if (functionName.isBlank()) return JsonNull
 
-                    registeredSuspendHostFunctions[functionName]?.let { callback ->
+                    suspendHostFunctions[functionName]?.let { callback ->
                         return callback(args)
                     }
 
-                    registeredSyncHostFunctions[functionName]?.let { callback ->
+                    syncHostFunctions[functionName]?.let { callback ->
                         return callback(args)
                     }
 
@@ -137,8 +136,6 @@ class Feature(
         moduleHost?.close()
         moduleHost = null
 
-        registeredSyncHostFunctions.clear()
-        registeredSuspendHostFunctions.clear()
 
         scope.cancel()
         if (this::engine.isInitialized) {
