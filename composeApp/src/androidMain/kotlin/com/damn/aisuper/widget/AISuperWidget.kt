@@ -29,7 +29,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.damn.aisuper.R
-import com.damn.aisuper.engine.keight.KeightJSEngine
+import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.StyleSheet
@@ -222,7 +222,7 @@ suspend fun refreshWidgetData(
                 AndroidAppContextHolder.appContext = context.applicationContext
             }
 
-            val applet = Applet { KeightJSEngine() }
+            val applet = Applet { createAppJSEngine("widget-refresh") }
             applet.loadApplet("files/applet.json")
             applet.launchFeature(featureId)
 

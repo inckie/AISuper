@@ -6,7 +6,7 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.damn.aisuper.engine.keight.KeightJSEngine
+import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
 import com.damn.aisuper.runtime.Applet
@@ -50,7 +50,7 @@ class WidgetActionCallback : ActionCallback {
             else emptyList()
         } catch (_: Exception) { emptyList() }
 
-        val applet = Applet { KeightJSEngine() }
+        val applet = Applet { createAppJSEngine("widget-action") }
         applet.loadApplet("files/applet.json")
         applet.launchFeature(featureId)
 
