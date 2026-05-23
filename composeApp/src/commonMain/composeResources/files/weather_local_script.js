@@ -1,8 +1,28 @@
 var lastLoadedLocation = "";
 
+var WEATHER_LOCATIONS = [
+    { "name": "Miami", "lat": 25.7743, "lon": -80.1937 },
+    { "name": "New York", "lat": 40.7128, "lon": -74.0060 },
+    { "name": "London", "lat": 51.5074, "lon": -0.1278 },
+    { "name": "Tokyo", "lat": 35.6762, "lon": 139.6503 }
+];
+
 function initialize() {
     setValue("weather_status", "Pick a location to fetch weather");
     setValue("weatherResult", []);
+
+    var buttons = [];
+    for (var i = 0; i < WEATHER_LOCATIONS.length; i = i + 1) {
+        var city = WEATHER_LOCATIONS[i];
+        buttons.push({
+            "type": "Button",
+            "text": city.name,
+            "action": "loadWeather",
+            "actionArgs": [city.lat, city.lon, city.name],
+            "fillMaxWidth": true
+        });
+    }
+    setValue("locationButtons", buttons);
 }
 
 async function loadWeatherCurrent() {

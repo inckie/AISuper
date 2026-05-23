@@ -131,7 +131,7 @@
       "name": "Form Demo"
     },
     "weatherLocal": {
-      "layout": "files/weather_local_layout.json",
+      "layout": "files/weather_layout.json",
       "script": "files/weather_local_script.js",
       "name": "Weather (Local)",
       "supportsWidget": true,

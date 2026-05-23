@@ -5,17 +5,13 @@ var WEATHER_LOCATIONS = [
     { "name": "Tokyo", "lat": 35.6762, "lon": 139.6503 }
 ];
 
+var lastLoadedLocation = "";
+
 function initialize() {
     setValue("weather_status", "Pick a location to fetch weather");
     setValue("weatherResult", []);
 
     var buttons = [];
-    buttons.push({
-        "type": "Button",
-        "text": "My Location",
-        "action": "loadWeatherCurrent",
-        "fillMaxWidth": true
-    });
 
     for (var i = 0; i < WEATHER_LOCATIONS.length; i = i + 1) {
         var city = WEATHER_LOCATIONS[i];
@@ -57,8 +53,24 @@ async function loadWeatherCurrent() {
     }
 }
 
+async function refreshCurrent() {
+    if (lastLoadedLocation === "") {
+        setValue("weather_status", "No location to refresh. Pick a location first.");
+        return;
+    }
+
+    var parts = lastLoadedLocation.split("|");
+    if (parts.length >= 3) {
+        var lat = stringToNumber(parts[0]);
+        var lon = stringToNumber(parts[1]);
+        var name = parts[2];
+        await loadWeather(lat, lon, name);
+    }
+}
+
 async function loadWeather(latitude, longitude, locationName) {
     setValue("weather_status", "Loading weather for " + locationName + "...");
+    lastLoadedLocation = latitude + "|" + longitude + "|" + locationName;
 
     try {
         var result = await mcpCall("weather", "get_current_weather", {
