@@ -58,6 +58,21 @@
 # If your code needs specific interfaces kept for reflection, add them explicitly, e.g.:
 # -keep interface com.damn.aisuper.somepackage.CallbackInterface { *; }
 
+# Jetpack Libraries (WorkManager, Room, Startup, Glance)
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }
+-keep class * extends androidx.room.RoomDatabase {
+    <init>(...);
+}
+-dontwarn androidx.room.paging.**
+
+-keep class androidx.startup.** { *; }
+-keep public class * implements androidx.startup.Initializer {
+    public <init>();
+}
+
+-keep class androidx.glance.** { *; }
+
 # Optimization settings
 -optimizationpasses 5
 -verbose
