@@ -29,7 +29,8 @@ private val mcpJson = Json { ignoreUnknownKeys = true }
 class McpHttpFeatureModule(
     private val serverName: String,
     private val url: String,
-    private val allowedGroups: Set<String>
+    private val allowedGroups: Set<String>,
+    private val customHeaders: Map<String, String> = emptyMap()
 ) : FeatureModule {
 
     private val client = HttpClient()
@@ -142,6 +143,10 @@ class McpHttpFeatureModule(
         val responseText = client.post(url) {
             accept(ContentType.Application.Json)
             header("Content-Type", "application/json")
+            // Add custom headers
+            customHeaders.forEach { (key, value) ->
+                header(key, value)
+            }
             setBody(body.toString())
         }.bodyAsText()
 
@@ -172,11 +177,29 @@ object McpHttpFeatureModuleFactory : FeatureModuleFactory {
             ?.toSet()
             .orEmpty()
 
+        // Parse custom headers from config
+        val customHeaders = parseCustomHeaders(config)
+
         return McpHttpFeatureModule(
             serverName = serverName,
             url = url,
-            allowedGroups = allowedGroups
+            allowedGroups = allowedGroups,
+            customHeaders = customHeaders
         )
+    }
+
+    private fun parseCustomHeaders(config: Map<String, String>): Map<String, String> {
+        val headersJson = config["headers"] ?: return emptyMap()
+        return runCatching {
+            val parsed = mcpJson.parseToJsonElement(headersJson).jsonObject
+            parsed.mapValues { (_, value) ->
+                try {
+                    value.jsonPrimitive.contentOrNull ?: ""
+                } catch (_: Exception) {
+                    ""
+                }
+            }
+        }.getOrElse { emptyMap() }
     }
 
     private fun resolveServerUrl(config: Map<String, String>, serverName: String): String {
