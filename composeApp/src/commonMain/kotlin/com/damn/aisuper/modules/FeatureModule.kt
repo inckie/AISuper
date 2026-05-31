@@ -1,6 +1,7 @@
 package com.damn.aisuper.modules
 
 import com.damn.aisuper.runtime.ModuleDefinition
+import com.damn.aisuper.storage.StateStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.JsonElement
 
@@ -26,6 +27,20 @@ interface FeatureModuleFactory {
 interface FeatureModuleContext {
     val scope: CoroutineScope
 
+    /**
+     * Default storage: scoped to this context's level (FEATURE for features, MODULE for modules).
+     * This is in-memory by default for fast access.
+     */
+    val storage: StateStorage
+
+    /**
+     * Persistent storage for the same scope.
+     * Use this when you need data to survive app restarts.
+     * Available at APPLET, FEATURE, and MODULE scopes.
+     * All scopes have access to both in-memory and persistent storage.
+     */
+    val persistentStorage: StateStorage
+
     suspend fun registerFunction(name: String, callback: (List<JsonElement>) -> JsonElement)
     suspend fun registerSuspendFunction(name: String, callback: suspend (List<JsonElement>) -> JsonElement)
 
@@ -41,12 +56,15 @@ class FeatureModuleHost(
 ) {
     private val modulesByName = mutableMapOf<String, FeatureModule>()
 
-    suspend fun attach(context: FeatureModuleContext) {
-
+    /**
+     * Attach all modules. Each module receives its own context created by [contextFactory],
+     * which receives the [ModuleDefinition] so it can supply per-module namespaced storage.
+     */
+    suspend fun attach(contextFactory: (ModuleDefinition) -> FeatureModuleContext) {
         for (definition in definitions) {
             val factory = factories[definition.type] ?: continue
             val module = factory.create(definition)
-            module.attach(context)
+            module.attach(contextFactory(definition))
             modulesByName[definition.name] = module
         }
     }

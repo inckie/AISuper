@@ -7,8 +7,11 @@ var WEATHER_LOCATIONS = [
     { "name": "Tokyo", "lat": 35.6762, "lon": 139.6503 }
 ];
 
-function initialize() {
-    setValue("weather_status", "Pick a location to fetch weather");
+// Storage key for persisting location selection
+var LOCATION_KEY = "selected_location";
+
+async function initialize() {
+    setValue("weather_status", "Loading...");
     setValue("weatherResult", []);
 
     var buttons = [];
@@ -23,6 +26,27 @@ function initialize() {
         });
     }
     setValue("locationButtons", buttons);
+
+    // Restore previously selected location from persistent storage
+    try {
+        var savedLocation = await persistentStorageGet("feature", LOCATION_KEY);
+        if (savedLocation != null && savedLocation != "") {
+            var parts = savedLocation.split("|");
+            if (parts.length >= 3) {
+                var lat = stringToNumber(parts[0]);
+                var lon = stringToNumber(parts[1]);
+                var name = parts[2];
+                lastLoadedLocation = savedLocation;
+                setValue("weather_status", "Restoring last location: " + name + "...");
+                await loadWeather(lat, lon, name);
+                return;
+            }
+        }
+    } catch (e) {
+        consoleError("Failed to restore saved location", e);
+    }
+
+    setValue("weather_status", "Pick a location to fetch weather");
 }
 
 async function loadWeatherCurrent() {
@@ -75,7 +99,14 @@ async function loadWeather(latitude, longitude, locationName) {
 
         renderWeather(locationName, result);
         setValue("weather_status", "Weather loaded for " + locationName);
+
+        // Persist the selected location so it restores on next open
         lastLoadedLocation = latitude + "|" + longitude + "|" + locationName;
+        try {
+            await persistentStoragePut("feature", LOCATION_KEY, lastLoadedLocation);
+        } catch (e) {
+            consoleError("Failed to save location", e);
+        }
     } catch (e) {
         consoleError("loadWeather failed", e);
         setValue("weather_status", "Failed to load weather: " + e);

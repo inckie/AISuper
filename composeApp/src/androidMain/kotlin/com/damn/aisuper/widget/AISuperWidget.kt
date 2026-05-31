@@ -222,7 +222,9 @@ suspend fun refreshWidgetData(
                 AndroidAppContextHolder.appContext = context.applicationContext
             }
 
-            val applet = Applet { createAppJSEngine("widget-refresh") }
+            val applet = Applet(
+                engineFactory = { createAppJSEngine("widget-refresh") }
+            )
             applet.loadApplet("files/applet.json")
             applet.launchFeature(featureId)
 

@@ -7,6 +7,10 @@ import com.damn.aisuper.layout.parseLayout
 import com.damn.aisuper.modules.FeatureModuleContext
 import com.damn.aisuper.modules.FeatureModuleHost
 import com.damn.aisuper.modules.buildFeatureModuleFactories
+import com.damn.aisuper.storage.StateStorage
+import com.damn.aisuper.storage.StateStorageFactory
+import com.damn.aisuper.storage.StorageContext
+import com.damn.aisuper.storage.StorageScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,9 +28,36 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
-    private val engineFactory: suspend () -> AppJSEngine
+    private val engineFactory: suspend () -> AppJSEngine,
+    /** Raw transient backend shared across the applet. */
+    private val transientBackend: StateStorage,
+    /** Raw persistent backend shared across the applet. */
+    private val persistentBackend: StateStorage,
+    /** Context carrying appletId + featureId (no moduleName at feature level). */
+    private val storageContext: StorageContext
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // Feature-script-level storage: can access Applet + Feature scopes
+    val featureTransientStorage: StateStorage = StateStorageFactory.createScoped(
+        baseStorage = transientBackend,
+        context = storageContext,
+        maxAccessibleScope = StorageScope.Feature
+    )
+    val featurePersistentStorage: StateStorage = StateStorageFactory.createScoped(
+        baseStorage = persistentBackend,
+        context = storageContext,
+        maxAccessibleScope = StorageScope.Feature
+    )
+
+    private fun moduleStorage(moduleName: String, persistent: Boolean): StateStorage {
+        val backend = if (persistent) persistentBackend else transientBackend
+        return StateStorageFactory.createScoped(
+            baseStorage = backend,
+            context = storageContext.copy(moduleName = moduleName),
+            maxAccessibleScope = StorageScope.ModuleGlobal // modules can use all scopes
+        )
+    }
 
     private val _layoutRoot = MutableStateFlow<LayoutRoot?>(null)
     val layoutRoot = _layoutRoot.asStateFlow()
@@ -79,8 +110,11 @@ class Feature(
             val syncHostFunctions = mutableMapOf<String, (List<JsonElement>) -> JsonElement>()
             val suspendHostFunctions = mutableMapOf<String, suspend (List<JsonElement>) -> JsonElement>()
 
-            val moduleContext = object : FeatureModuleContext {
+            // Feature-script context (no module name — cannot access Module/ModuleGlobal scopes)
+            val featureScriptContext = object : FeatureModuleContext {
                 override val scope: CoroutineScope = this@Feature.scope
+                override val storage: StateStorage = featureTransientStorage
+                override val persistentStorage: StateStorage = featurePersistentStorage
 
                 override suspend fun registerFunction(
                     name: String,
@@ -105,20 +139,19 @@ class Feature(
 
                 override suspend fun call(functionName: String, args: List<JsonElement>): JsonElement {
                     if (functionName.isBlank()) return JsonNull
-
-                    suspendHostFunctions[functionName]?.let { callback ->
-                        return callback(args)
-                    }
-
-                    syncHostFunctions[functionName]?.let { callback ->
-                        return callback(args)
-                    }
-
+                    suspendHostFunctions[functionName]?.let { return it(args) }
+                    syncHostFunctions[functionName]?.let { return it(args) }
                     return engine.callFunction(functionName, args)
                 }
             }
 
-            moduleHost?.attach(moduleContext)
+            // Each module gets its own context with a per-module namespaced storage
+            moduleHost?.attach { definition ->
+                object : FeatureModuleContext by featureScriptContext {
+                    override val storage: StateStorage = moduleStorage(definition.name, persistent = false)
+                    override val persistentStorage: StateStorage = moduleStorage(definition.name, persistent = true)
+                }
+            }
 
             // Call initialize if present
             try {

@@ -3,6 +3,10 @@ package com.damn.aisuper.runtime
 import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.AppletUI
+import com.damn.aisuper.storage.StateStorage
+import com.damn.aisuper.storage.StateStorageFactory
+import com.damn.aisuper.storage.StorageContext
+import com.damn.aisuper.storage.StorageScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
@@ -29,6 +33,11 @@ class Applet(
 
     private var manifest: AppletManifest? = null
 
+    // State storage: both transient and persistent storages available to all scopes
+    private val compositeStorage = StateStorageFactory.createComposite()
+    private val appletTransientStorage: StateStorage = compositeStorage.memoryStorage
+    private val appletPersistentStorage: StateStorage = compositeStorage.persistentStorage
+
     @OptIn(ExperimentalResourceApi::class)
     suspend fun loadApplet(manifestPath: String) {
         try {
@@ -48,7 +57,11 @@ class Applet(
         }
     }
 
-    private suspend fun registerGlobalFunctions(engine: AppJSEngine): AppJSEngine {
+    private suspend fun registerGlobalFunctions(
+        engine: AppJSEngine,
+        featureTransient: StateStorage,
+        featurePersistent: StateStorage
+    ): AppJSEngine {
         engine.registerFunction("consoleLog") { args ->
             println("[AISuper][JS][Log] ${args.joinToString(" ") { it.toString() }}")
             JsonNull
@@ -123,24 +136,37 @@ class Applet(
             }
             JsonNull
         }
+
+        // Storage bindings are registered via extension to keep argument parsing logic in one place.
+        engine.registerStorageBindings(
+            featureTransient = featureTransient,
+            featurePersistent = featurePersistent
+        )
         return engine
     }
+
 
     suspend fun launchFeature(featureId: String) {
         val featureDef = manifest?.features?.get(featureId)
         if (featureDef != null) {
-            // Unload previous
             _currentFeature.value?.close()
 
-            // Decorate engine creation so global functions are always available.
+            val storageContext = StorageContext(appletId = manifest!!.id, featureId = featureId)
+
+            val featureTransient = StateStorageFactory.createScoped(appletTransientStorage, storageContext, StorageScope.Feature)
+            val featurePersistent = StateStorageFactory.createScoped(appletPersistentStorage, storageContext, StorageScope.Feature)
+
             val decoratedEngineFactory: suspend () -> AppJSEngine = {
-                registerGlobalFunctions(engineFactory())
+                registerGlobalFunctions(engineFactory(), featureTransient, featurePersistent)
             }
 
             val feature = Feature(
                 id = featureId,
                 definition = featureDef,
-                engineFactory = decoratedEngineFactory
+                engineFactory = decoratedEngineFactory,
+                transientBackend = appletTransientStorage,
+                persistentBackend = appletPersistentStorage,
+                storageContext = storageContext
             )
             feature.load()
             _currentFeature.value = feature

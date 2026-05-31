@@ -91,6 +91,7 @@ kotlin {
 
             implementation(libs.rikka.foundation) // theme system
             implementation(libs.rikka.components) // all components
+            implementation(libs.klibsKstorage)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
