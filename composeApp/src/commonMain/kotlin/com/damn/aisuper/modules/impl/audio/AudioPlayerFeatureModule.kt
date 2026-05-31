@@ -171,6 +171,17 @@ class AudioPlayerFeatureModule(
 
 object AudioPlayerFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "audioPlayer"
+    override val exposedFunctions: Set<String> = setOf(
+        "getAudioPlayers",
+        "audioGetState",
+        "audioLoad",
+        "audioPlay",
+        "audioPause",
+        "audioStop",
+        "audioSeek",
+        "audioSubscribe",
+        "audioUnsubscribe"
+    )
 
     override suspend fun create(definition: ModuleDefinition): FeatureModule {
         val names = definition.config["players"]

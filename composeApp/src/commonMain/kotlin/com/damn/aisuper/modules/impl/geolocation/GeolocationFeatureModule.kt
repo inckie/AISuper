@@ -48,6 +48,7 @@ class GeoIpGeolocationFeatureModule : FeatureModule {
 
 object GeoIpGeolocationFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "geolocation"
+    override val exposedFunctions: Set<String> = setOf("geoRequestPermission", "geoGetCurrent")
 
     override suspend fun create(definition: ModuleDefinition): FeatureModule {
         return GeoIpGeolocationFeatureModule()

@@ -165,6 +165,7 @@ class McpHttpFeatureModule(
 
 object McpHttpFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "mcpHttp"
+    override val exposedFunctions: Set<String> = setOf("mcpServerInfo", "mcpListTools", "mcpCall")
 
     override suspend fun create(definition: ModuleDefinition): FeatureModule {
         val serverName = definition.name

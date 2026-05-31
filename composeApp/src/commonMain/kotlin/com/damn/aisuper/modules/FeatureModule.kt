@@ -15,6 +15,9 @@ interface NativeCommandFeatureModule {
 
 interface FeatureModuleFactory {
     val type: String
+    /** Function names this module type exposes to JS host bridging. */
+    val exposedFunctions: Set<String>
+        get() = emptySet()
     suspend fun create(definition: ModuleDefinition): FeatureModule
     /** Release any resources held by this factory. */
     fun close() {}

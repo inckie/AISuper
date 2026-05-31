@@ -16,11 +16,18 @@ fun buildFeatureModuleFactories(
         HttpFeatureModuleFactory,
         AudioPlayerFeatureModuleFactory,
         McpHttpFeatureModuleFactory,
-        GeoIpGeolocationFeatureModuleFactory,
-        JsModuleFeatureModuleFactory(engineFactory, moduleDefinitions)
+        GeoIpGeolocationFeatureModuleFactory
     )
     factories += platformFeatureModuleFactories()
-    return factories.associateBy { it.type }
+
+    val nativeFactoriesByType = factories.associateBy { it.type }
+    val jsFactory = JsModuleFeatureModuleFactory(
+        engineFactory = engineFactory,
+        allDefinitions = moduleDefinitions,
+        factoriesByType = nativeFactoriesByType
+    )
+
+    return (factories + jsFactory).associateBy { it.type }
 }
 
 expect fun platformFeatureModuleFactories(): List<FeatureModuleFactory>

@@ -33,7 +33,7 @@ class JsModuleRuntime(
     val exports: MutableList<String> = mutableListOf()
 
     private var currentImport: ModuleDefinition? = null
-    private var currentNativeTypes: Set<String> = emptySet()
+    private var currentDeclaredHostFunctions: Set<String> = emptySet()
     private var hostInvoker: (suspend (String, List<JsonElement>) -> JsonElement)? = null
     private val bridgedHostFunctions = mutableSetOf<String>()
 
@@ -41,9 +41,9 @@ class JsModuleRuntime(
      * Prepare per-feature import context before attach().
      * Called by [JsModuleFeatureModuleFactory] when building the module for a feature.
      */
-    fun configureForFeature(importDefinition: ModuleDefinition, nativeModuleDefinitions: List<ModuleDefinition>) {
+    fun configureForFeature(importDefinition: ModuleDefinition, declaredHostFunctions: Set<String>) {
         currentImport = importDefinition
-        currentNativeTypes = nativeModuleDefinitions.map { it.type.lowercase() }.toSet()
+        currentDeclaredHostFunctions = declaredHostFunctions
     }
 
     @OptIn(ExperimentalResourceApi::class)
@@ -111,7 +111,7 @@ class JsModuleRuntime(
     override fun detach() {
         hostInvoker = null
         currentImport = null
-        currentNativeTypes = emptySet()
+        currentDeclaredHostFunctions = emptySet()
     }
 
     /**
@@ -133,9 +133,8 @@ class JsModuleRuntime(
     private fun resolveHostFunctionsForCurrentFeature(): Set<String> {
         val names = linkedSetOf<String>()
 
-        if ("http" in currentNativeTypes) {
-            names.add("httpGet")
-        }
+        // Module factories declare host-callable names; bridge all declared names.
+        names.addAll(currentDeclaredHostFunctions)
 
         val configValue = currentImport?.config?.get("hostFunctions")
         if (!configValue.isNullOrBlank()) {
@@ -167,7 +166,8 @@ class JsModuleRuntime(
  */
 class JsModuleFeatureModuleFactory(
     private val engineFactory: suspend () -> AppJSEngine,
-    private val allDefinitions: List<ModuleDefinition>
+    private val allDefinitions: List<ModuleDefinition>,
+    private val factoriesByType: Map<String, FeatureModuleFactory>
 ) : FeatureModuleFactory {
     override val type: String = "jsModule"
 
@@ -187,7 +187,17 @@ class JsModuleFeatureModuleFactory(
         val nativeModuleDefinitions = allDefinitions.filter {
             !it.type.equals("jsModule", ignoreCase = true) && !it.type.equals("js", ignoreCase = true)
         }
-        runtime.configureForFeature(definition, nativeModuleDefinitions)
+        val declaredHostFunctions = nativeModuleDefinitions
+            .flatMap { moduleDef ->
+                factoriesByType.entries
+                    .firstOrNull { (type, _) -> type.equals(moduleDef.type, ignoreCase = true) }
+                    ?.value
+                    ?.exposedFunctions
+                    .orEmpty()
+            }
+            .toSet()
+
+        runtime.configureForFeature(definition, declaredHostFunctions)
         return runtime
     }
 

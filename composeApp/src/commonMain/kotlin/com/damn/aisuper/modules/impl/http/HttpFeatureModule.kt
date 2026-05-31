@@ -43,6 +43,7 @@ class HttpFeatureModule : FeatureModule {
 
 object HttpFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "http"
+    override val exposedFunctions: Set<String> = setOf("httpGet", "httpPost")
 
     override suspend fun create(definition: ModuleDefinition): FeatureModule {
         return HttpFeatureModule()
