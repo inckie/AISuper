@@ -1,8 +1,8 @@
 package com.damn.aisuper.layout
 
-import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
+import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.AppletManifest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 /**
  * Manages UI-related state: style sheets, framework selection,
@@ -32,13 +31,16 @@ class AppletUI {
 
     private val stylesById = linkedMapOf<String, NamedStyleSheet>()
 
-    @OptIn(ExperimentalResourceApi::class)
-    suspend fun loadStyleSheets(json: Json, manifest: AppletManifest?) {
+    suspend fun loadStyleSheets(
+        json: Json,
+        manifest: AppletManifest?,
+        resourceLoader: AppletResourceLoader
+    ) {
         stylesById.clear()
 
         manifest?.styles?.forEach { (styleId, definition) ->
             try {
-                val bytes = Res.readBytes(definition.file)
+                val bytes = resourceLoader.readBytes(definition.file)
                 val text = bytes.decodeToString()
                 val sheet = json.decodeFromString<StyleSheet>(text)
                 val displayName = definition.name ?: sheet.name ?: styleId

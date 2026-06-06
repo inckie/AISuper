@@ -29,6 +29,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.damn.aisuper.R
+import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.LayoutRoot
@@ -223,7 +224,8 @@ suspend fun refreshWidgetData(
             }
 
             val applet = Applet(
-                engineFactory = { createAppJSEngine("widget-refresh") }
+                engineFactory = { createAppJSEngine("widget-refresh") },
+                resourceLoader = ComposeAppletProvider().createLoader()
             )
             applet.loadApplet("files/applet.json")
             applet.launchFeature(featureId)

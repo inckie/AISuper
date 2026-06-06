@@ -10,62 +10,95 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.engine.createAppJSEngine
-import com.damn.aisuper.layout.frontend.LayoutFrontend
+import com.damn.aisuper.headless.HeadlessSessionSnapshot
+import com.damn.aisuper.headless.RemoteAppletClient
 import com.damn.aisuper.layout.StyleSheet
+import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.frontend.material3.Material3FrontendTheme
-import com.damn.aisuper.layout.frontend.material3.RenderWidget as Material3RenderWidget
-import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.layout.frontend.rikka.RikkaFrontendTheme
-import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
+import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
-import org.jetbrains.compose.resources.ExperimentalResourceApi
+import com.damn.aisuper.layout.frontend.material3.RenderWidget as Material3RenderWidget
+import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 @Preview
 fun App() {
-    // Instantiate Applet with platform-aware engine factory.
-    val applet = remember { Applet { createAppJSEngine("app-ui") } }
+    // Local in-process runtime is kept as a fallback when remote kernel is unavailable.
+    val applet = remember {
+        Applet(
+            engineFactory = { createAppJSEngine("app-ui") },
+            resourceLoader = ComposeAppletProvider().createLoader()
+        )
+    }
+    val remoteClient = remember { RemoteAppletClient(baseUrl = REMOTE_SERVER_BASE_URL) }
+    var remoteState by remember { mutableStateOf<HeadlessSessionSnapshot?>(null) }
+    var remoteSessionId by remember { mutableStateOf<String?>(null) }
+    var useRemote by remember { mutableStateOf<Boolean?>(null) }
 
-        DisposableEffect(applet) {
+        DisposableEffect(applet, remoteClient) {
             onDispose {
                 applet.close()
+                remoteClient.close()
             }
         }
 
-        // Observe the current feature from the Applet
         val currentFeature by applet.currentFeature.collectAsState()
-        val styleSheet by applet.currentStyleSheet.collectAsState()
-        val frameworkName by applet.currentFramework.collectAsState()
+        val localStyleSheet by applet.currentStyleSheet.collectAsState()
+        val localFrameworkName by applet.currentFramework.collectAsState()
+        val styleSheet = if (useRemote == true) remoteState?.styleSheet else localStyleSheet
+        val frameworkName = if (useRemote == true) {
+            remoteState?.framework ?: LayoutFrontend.Rikka.name
+        } else {
+            localFrameworkName
+        }
         val frontend = try {
             LayoutFrontend.valueOf(frameworkName)
         } catch (_: Exception) {
             LayoutFrontend.Rikka
         }
 
-        // Derive UI state from the current feature
-        val layoutRoot by remember(currentFeature) {
+        // Derive local UI state from the current feature.
+        val localLayoutRoot by remember(currentFeature) {
             currentFeature?.layoutRoot ?: flowOf(null)
         }.collectAsState(initial = null)
 
-        val layoutValues by remember(currentFeature) {
+        val localLayoutValues by remember(currentFeature) {
             currentFeature?.values ?: flowOf(emptyMap())
         }.collectAsState(initial = emptyMap())
+        val layoutRoot = if (useRemote == true) remoteState?.layout else localLayoutRoot
+        val layoutValues = if (useRemote == true) (remoteState?.values ?: emptyMap()) else localLayoutValues
 
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
-            // Load the applet manifest
-            applet.loadApplet("files/applet.json")
+            // Try remote notebook kernel first; fallback to in-process runtime.
+            try {
+                val created = remoteClient.createSession(REMOTE_MANIFEST_PATH)
+                remoteSessionId = created.id
+                remoteState = created.state
+                useRemote = true
+
+                remoteClient.events(created.id).collect { snapshot ->
+                    remoteState = snapshot
+                }
+            } catch (remoteError: Exception) {
+                println("[AISuper][Remote] falling back to local runtime: ${remoteError.message}")
+                useRemote = false
+                applet.loadApplet("files/applet.json")
+            }
         }
 
         Column(
@@ -73,9 +106,18 @@ fun App() {
                 .fillMaxSize()
                 .background(resolveAppBackground(styleSheet, Color.White))
         ) {
+            if (useRemote == null) {
+                BasicText("Connecting to headless kernel...", modifier = Modifier.safeContentPadding())
+                return@Column
+            }
+
             if (layoutRoot == null) {
                 BasicText(
-                    if (currentFeature == null) "Loading Applet..." else "Loading Feature...",
+                    if (useRemote == true) {
+                        "Waiting for remote state..."
+                    } else {
+                        if (currentFeature == null) "Loading Applet..." else "Loading Feature..."
+                    },
                     modifier = Modifier.safeContentPadding()
                 )
             } else {
@@ -90,15 +132,41 @@ fun App() {
                                 values = layoutValues,
                                 styleSheet = styleSheet,
                                 onValueChange = { id, value ->
-                                    applet.updateValue(id, JsonPrimitive(value))
+                                    if (useRemote == true && remoteSessionId != null) {
+                                        scope.launch {
+                                            remoteState = remoteClient.setValue(
+                                                sessionId = remoteSessionId!!,
+                                                id = id,
+                                                value = JsonPrimitive(value)
+                                            )
+                                        }
+                                    } else {
+                                        applet.updateValue(id, JsonPrimitive(value))
+                                    }
                                 },
                                 onAction = { action, args ->
                                     scope.launch {
-                                        applet.handleAction(action, args)
+                                        if (useRemote == true && remoteSessionId != null) {
+                                            remoteState = remoteClient.sendAction(remoteSessionId!!, action, args)
+                                        } else {
+                                            applet.handleAction(action, args)
+                                        }
                                     }
                                 },
                                 onModuleCommand = { moduleType, target, command, args ->
-                                    applet.handleModuleCommand(moduleType, target, command, args)
+                                    if (useRemote == true && remoteSessionId != null) {
+                                        scope.launch {
+                                            remoteState = remoteClient.sendModuleCommand(
+                                                sessionId = remoteSessionId!!,
+                                                moduleType = moduleType,
+                                                target = target,
+                                                command = command,
+                                                args = args
+                                            )
+                                        }
+                                    } else {
+                                        applet.handleModuleCommand(moduleType, target, command, args)
+                                    }
                                 },
                                 modifier = renderModifier
                             )
@@ -112,15 +180,41 @@ fun App() {
                                 values = layoutValues,
                                 styleSheet = styleSheet,
                                 onValueChange = { id, value ->
-                                    applet.updateValue(id, JsonPrimitive(value))
+                                    if (useRemote == true && remoteSessionId != null) {
+                                        scope.launch {
+                                            remoteState = remoteClient.setValue(
+                                                sessionId = remoteSessionId!!,
+                                                id = id,
+                                                value = JsonPrimitive(value)
+                                            )
+                                        }
+                                    } else {
+                                        applet.updateValue(id, JsonPrimitive(value))
+                                    }
                                 },
                                 onAction = { action, args ->
                                     scope.launch {
-                                        applet.handleAction(action, args)
+                                        if (useRemote == true && remoteSessionId != null) {
+                                            remoteState = remoteClient.sendAction(remoteSessionId!!, action, args)
+                                        } else {
+                                            applet.handleAction(action, args)
+                                        }
                                     }
                                 },
                                 onModuleCommand = { moduleType, target, command, args ->
-                                    applet.handleModuleCommand(moduleType, target, command, args)
+                                    if (useRemote == true && remoteSessionId != null) {
+                                        scope.launch {
+                                            remoteState = remoteClient.sendModuleCommand(
+                                                sessionId = remoteSessionId!!,
+                                                moduleType = moduleType,
+                                                target = target,
+                                                command = command,
+                                                args = args
+                                            )
+                                        }
+                                    } else {
+                                        applet.handleModuleCommand(moduleType, target, command, args)
+                                    }
                                 },
                                 modifier = renderModifier
                             )
@@ -130,6 +224,9 @@ fun App() {
             }
         }
 }
+
+private const val REMOTE_SERVER_BASE_URL = "http://127.0.0.1:8080"
+private const val REMOTE_MANIFEST_PATH = "composeApp/src/commonMain/composeResources/files/applet.json"
 
 private fun resolveAppBackground(styleSheet: StyleSheet?, fallback: Color): Color {
     val colorHex = styleSheet?.classes?.get("screen")?.backgroundColor

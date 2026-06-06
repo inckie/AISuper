@@ -1,10 +1,10 @@
 package com.damn.aisuper.modules.impl.js
 
-import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.modules.FeatureModule
 import com.damn.aisuper.modules.FeatureModuleContext
 import com.damn.aisuper.modules.FeatureModuleFactory
+import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.JsModuleDefinition
 import com.damn.aisuper.runtime.ModuleDefinition
 import kotlinx.serialization.json.JsonElement
@@ -12,7 +12,6 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 /**
  * Isolated JS module runtime with its own VM.
@@ -25,7 +24,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 class JsModuleRuntime(
     val id: String,
     private val definition: JsModuleDefinition,
-    private val engine: AppJSEngine
+    private val engine: AppJSEngine,
+    private val resourceLoader: AppletResourceLoader
 ) : FeatureModule {
     private var isScriptLoaded: Boolean = false
 
@@ -46,7 +46,6 @@ class JsModuleRuntime(
         currentDeclaredHostFunctions = declaredHostFunctions
     }
 
-    @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
         // Register the export declaration callback
         engine.registerFunction("registerExports") { args ->
@@ -67,7 +66,7 @@ class JsModuleRuntime(
             JsonNull
         }
 
-        val bytes = Res.readBytes(definition.script)
+        val bytes = resourceLoader.readBytes(definition.script)
         val scriptContent = bytes.decodeToString()
 
         // Evaluate script — this will trigger registerExports() call
@@ -166,6 +165,7 @@ class JsModuleRuntime(
  */
 class JsModuleFeatureModuleFactory(
     private val engineFactory: suspend () -> AppJSEngine,
+    private val resourceLoader: AppletResourceLoader,
     private val allDefinitions: List<ModuleDefinition>,
     private val factoriesByType: Map<String, FeatureModuleFactory>
 ) : FeatureModuleFactory {
@@ -181,7 +181,8 @@ class JsModuleFeatureModuleFactory(
             JsModuleRuntime(
                 id = definition.name,
                 definition = jsDef,
-                engine = engineFactory()
+                engine = engineFactory(),
+                resourceLoader = resourceLoader
             ).also { it.load() }
         }
         val nativeModuleDefinitions = allDefinitions.filter {

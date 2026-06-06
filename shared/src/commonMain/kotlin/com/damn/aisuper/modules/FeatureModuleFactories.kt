@@ -6,10 +6,12 @@ import com.damn.aisuper.modules.impl.geolocation.GeoIpGeolocationFeatureModuleFa
 import com.damn.aisuper.modules.impl.http.HttpFeatureModuleFactory
 import com.damn.aisuper.modules.impl.js.JsModuleFeatureModuleFactory
 import com.damn.aisuper.modules.impl.mcp.McpHttpFeatureModuleFactory
+import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.ModuleDefinition
 
 fun buildFeatureModuleFactories(
     engineFactory: suspend () -> AppJSEngine,
+    resourceLoader: AppletResourceLoader,
     moduleDefinitions: List<ModuleDefinition>
 ): Map<String, FeatureModuleFactory> {
     val factories = mutableListOf(
@@ -23,6 +25,7 @@ fun buildFeatureModuleFactories(
     val nativeFactoriesByType = factories.associateBy { it.type }
     val jsFactory = JsModuleFeatureModuleFactory(
         engineFactory = engineFactory,
+        resourceLoader = resourceLoader,
         allDefinitions = moduleDefinitions,
         factoriesByType = nativeFactoriesByType
     )

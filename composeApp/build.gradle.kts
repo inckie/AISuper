@@ -51,17 +51,7 @@ kotlin {
     }
 
     sourceSets {
-        // Shared source set for the QuickJS engine — used by Android, JVM, and iOS.
-        // It sits between commonMain and each of those platform source sets.
-        val quickjsMain by creating {
-            dependsOn(commonMain.get())
-            dependencies {
-                implementation(libs.quickjs.kt)
-            }
-        }
-
         androidMain {
-            dependsOn(quickjsMain)
             dependencies {
                 implementation(libs.compose.uiToolingPreview)
                 implementation(libs.androidx.activity.compose)
@@ -72,6 +62,8 @@ kotlin {
             }
         }
         commonMain.dependencies {
+            implementation(projects.shared)
+            implementation(projects.appletProvider)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -81,10 +73,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.keight)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
             implementation(libs.coil.svg)
@@ -98,7 +86,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
         jvmMain {
-            dependsOn(quickjsMain)
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.cio)
@@ -106,7 +93,6 @@ kotlin {
             }
         }
         iosMain {
-            dependsOn(quickjsMain)
             dependencies {
                 implementation(libs.ktor.client.darwin)
             }

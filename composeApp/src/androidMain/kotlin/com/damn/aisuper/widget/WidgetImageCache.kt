@@ -3,6 +3,7 @@ package com.damn.aisuper.widget
 import android.content.Context
 import android.net.Uri
 import android.util.Base64
+import com.damn.aisuper.widget.WidgetImageCache.contentUri
 import java.io.File
 import java.security.MessageDigest
 

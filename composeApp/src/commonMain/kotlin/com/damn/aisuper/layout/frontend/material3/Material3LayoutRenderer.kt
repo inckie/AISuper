@@ -16,8 +16,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
@@ -58,12 +58,12 @@ import com.damn.aisuper.layout.childModifier
 import com.damn.aisuper.layout.floatOrNull
 import com.damn.aisuper.layout.layoutModifier
 import com.damn.aisuper.layout.parseColorOrNull
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
-import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.resolveDropdownOptions
+import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.resolveStyleRule
 import com.damn.aisuper.layout.stringOrNull
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 private val focusRegistry: MutableMap<String, FocusRequester> = mutableMapOf()
 
@@ -114,8 +114,9 @@ fun RenderWidget(
         }
 
         is TextWidget -> {
-            val displayText = if (widget.id != null && values.containsKey(widget.id)) {
-                values[widget.id]?.stringOrNull() ?: widget.text
+            val widgetId = widget.id
+            val displayText = if (widgetId != null && values.containsKey(widgetId)) {
+                values[widgetId]?.stringOrNull() ?: widget.text
             } else {
                 widget.text
             }
@@ -141,10 +142,11 @@ fun RenderWidget(
         }
 
         is TextFieldWidget -> {
-            val value = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
+            val widgetId = widget.id
+            val value = if (widgetId != null) values[widgetId]?.stringOrNull() ?: "" else ""
             val focusRequester = remember { FocusRequester() }
-            if (widget.id != null) {
-                focusRegistry[widget.id] = focusRequester
+            if (widgetId != null) {
+                focusRegistry[widgetId] = focusRequester
             }
 
             val ime = when ((widget.imeAction ?: "").lowercase()) {
@@ -174,8 +176,8 @@ fun RenderWidget(
                 singleLine = widget.singleLine,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style).focusRequester(focusRequester),
                 onValueChange = { newValue ->
-                    if (widget.id != null) {
-                        onValueChange(widget.id, newValue)
+                    if (widgetId != null) {
+                        onValueChange(widgetId, newValue)
                     }
                 },
                 placeholder = { Text(widget.hint) },
@@ -272,7 +274,8 @@ fun RenderWidget(
 
         is DropdownWidget -> {
             val options = resolveDropdownOptions(widget, values)
-            val selectedValue = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
+            val widgetId = widget.id
+            val selectedValue = if (widgetId != null) values[widgetId]?.stringOrNull() ?: "" else ""
             val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label ?: selectedValue
             var expanded by remember { mutableStateOf(false) }
 
@@ -318,8 +321,8 @@ fun RenderWidget(
                             },
                             onClick = {
                                 expanded = false
-                                if (widget.id != null) {
-                                    onValueChange(widget.id, option.value)
+                                if (widgetId != null) {
+                                    onValueChange(widgetId, option.value)
                                 }
                                 val action = widget.onChangeAction
                                 if (!action.isNullOrBlank()) {
@@ -333,8 +336,9 @@ fun RenderWidget(
         }
 
         is SwitchWidget -> {
-            val checked = if (widget.id != null) {
-                values[widget.id]?.booleanOrNull() ?: widget.checked
+            val widgetId = widget.id
+            val checked = if (widgetId != null) {
+                values[widgetId]?.booleanOrNull() ?: widget.checked
             } else {
                 widget.checked
             }
@@ -352,8 +356,8 @@ fun RenderWidget(
                 Switch(
                     checked = checked,
                     onCheckedChange = { newValue ->
-                        if (widget.id != null) {
-                            onValueChange(widget.id, newValue.toString())
+                        if (widgetId != null) {
+                            onValueChange(widgetId, newValue.toString())
                         }
                     }
                 )

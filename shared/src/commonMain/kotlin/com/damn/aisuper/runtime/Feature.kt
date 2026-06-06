@@ -1,6 +1,5 @@
 package com.damn.aisuper.runtime
 
-import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.parseLayout
@@ -23,12 +22,12 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 class Feature(
     val id: String,
     private val definition: FeatureDefinition,
     private val engineFactory: suspend () -> AppJSEngine,
+    private val resourceLoader: AppletResourceLoader,
     /** Raw transient backend shared across the applet. */
     private val transientBackend: StateStorage,
     /** Raw persistent backend shared across the applet. */
@@ -69,12 +68,11 @@ class Feature(
 
     private var moduleHost: FeatureModuleHost? = null
 
-    @OptIn(ExperimentalResourceApi::class)
     suspend fun load() {
         try {
             engine = engineFactory()
 
-            val factories = buildFeatureModuleFactories(engineFactory, definition.modules)
+            val factories = buildFeatureModuleFactories(engineFactory, resourceLoader, definition.modules)
 
             moduleHost = FeatureModuleHost(
                 factories = factories,
@@ -98,12 +96,12 @@ class Feature(
             }
 
             // Layout
-            val bytes = Res.readBytes(definition.layout)
+            val bytes = resourceLoader.readBytes(definition.layout)
             val jsonString = bytes.decodeToString()
             _layoutRoot.value = parseLayout(jsonString)
 
             // Script
-            val scriptBytes = Res.readBytes(definition.script)
+            val scriptBytes = resourceLoader.readBytes(definition.script)
             val scriptContent = scriptBytes.decodeToString()
             engine.loadScript(scriptContent)
 

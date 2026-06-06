@@ -106,8 +106,9 @@ fun RenderWidget(
         }
 
         is TextWidget -> {
-            val displayText = if (widget.id != null && values.containsKey(widget.id)) {
-                values[widget.id]?.stringOrNull() ?: widget.text
+            val widgetId = widget.id
+            val displayText = if (widgetId != null && values.containsKey(widgetId)) {
+                values[widgetId]?.stringOrNull() ?: widget.text
             } else {
                 widget.text
             }
@@ -132,10 +133,11 @@ fun RenderWidget(
         }
 
         is TextFieldWidget -> {
-            val value = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
+            val widgetId = widget.id
+            val value = if (widgetId != null) values[widgetId]?.stringOrNull() ?: "" else ""
             val focusRequester = remember { FocusRequester() }
-            if (widget.id != null) {
-                focusRegistry[widget.id] = focusRequester
+            if (widgetId != null) {
+                focusRegistry[widgetId] = focusRequester
             }
 
             val ime = when ((widget.imeAction ?: "").lowercase()) {
@@ -149,8 +151,8 @@ fun RenderWidget(
                 value = value,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style).focusRequester(focusRequester),
                 onValueChange = { newValue ->
-                    if (widget.id != null) {
-                        onValueChange(widget.id, newValue)
+                    if (widgetId != null) {
+                        onValueChange(widgetId, newValue)
                     }
                 },
                 placeholder = widget.hint,
@@ -217,7 +219,8 @@ fun RenderWidget(
 
         is DropdownWidget -> {
             val options = resolveDropdownOptions(widget, values)
-            val selectedValue = if (widget.id != null) values[widget.id]?.stringOrNull() ?: "" else ""
+            val widgetId = widget.id
+            val selectedValue = if (widgetId != null) values[widgetId]?.stringOrNull() ?: "" else ""
             var selected by remember(selectedValue) { mutableStateOf(selectedValue) }
 
             Select(
@@ -227,8 +230,8 @@ fun RenderWidget(
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
                 onValueChange = { newValue ->
                     selected = newValue
-                    if (widget.id != null) {
-                        onValueChange(widget.id, newValue)
+                    if (widgetId != null) {
+                        onValueChange(widgetId, newValue)
                     }
                     val action = widget.onChangeAction
                     if (!action.isNullOrBlank()) {
@@ -239,8 +242,9 @@ fun RenderWidget(
         }
 
         is SwitchWidget -> {
-            val checked = if (widget.id != null) {
-                values[widget.id]?.booleanOrNull() ?: widget.checked
+            val widgetId = widget.id
+            val checked = if (widgetId != null) {
+                values[widgetId]?.booleanOrNull() ?: widget.checked
             } else {
                 widget.checked
             }
@@ -254,8 +258,8 @@ fun RenderWidget(
                 Toggle(
                     checked = checked,
                     onCheckedChange = { newValue ->
-                        if (widget.id != null) {
-                            onValueChange(widget.id, newValue.toString())
+                        if (widgetId != null) {
+                            onValueChange(widgetId, newValue.toString())
                         }
                     }
                 )

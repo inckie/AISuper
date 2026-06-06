@@ -36,3 +36,5 @@ plugins {
 include(":composeApp")
 include(":androidApp")
 include(":shared")
+include(":server")
+include(":applet-provider")

@@ -1,6 +1,5 @@
 package com.damn.aisuper.runtime
 
-import aisuper.composeapp.generated.resources.Res
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.AppletUI
 import com.damn.aisuper.storage.StateStorage
@@ -17,10 +16,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 class Applet(
-    private val engineFactory: () -> AppJSEngine
+    private val engineFactory: () -> AppJSEngine,
+    private val resourceLoader: AppletResourceLoader
 ) {
     private val _currentFeature = MutableStateFlow<Feature?>(null)
     val currentFeature = _currentFeature.asStateFlow()
@@ -38,16 +37,15 @@ class Applet(
     private val appletTransientStorage: StateStorage = compositeStorage.memoryStorage
     private val appletPersistentStorage: StateStorage = compositeStorage.persistentStorage
 
-    @OptIn(ExperimentalResourceApi::class)
     suspend fun loadApplet(manifestPath: String) {
         try {
-            val bytes = Res.readBytes(manifestPath)
+            val bytes = resourceLoader.readBytes(manifestPath)
             val jsonString = bytes.decodeToString()
 
             val json = Json { ignoreUnknownKeys = true }
             manifest = json.decodeFromString<AppletManifest>(jsonString)
 
-            ui.loadStyleSheets(json, manifest)
+            ui.loadStyleSheets(json, manifest, resourceLoader)
 
             val entryFeatureId = manifest!!.entryFeature
             launchFeature(entryFeatureId)
@@ -164,6 +162,7 @@ class Applet(
                 id = featureId,
                 definition = featureDef,
                 engineFactory = decoratedEngineFactory,
+                resourceLoader = resourceLoader,
                 transientBackend = appletTransientStorage,
                 persistentBackend = appletPersistentStorage,
                 storageContext = storageContext

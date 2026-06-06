@@ -5,7 +5,9 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
@@ -13,7 +15,6 @@ import com.damn.aisuper.runtime.Applet
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import androidx.glance.appwidget.state.updateAppWidgetState
 
 /** ActionParameters key carrying the JS action name to invoke. */
 val KEY_ACTION = ActionParameters.Key<String>("widget_action")
@@ -51,7 +52,8 @@ class WidgetActionCallback : ActionCallback {
         } catch (_: Exception) { emptyList() }
 
         val applet = Applet(
-            engineFactory = { createAppJSEngine("widget-action") }
+            engineFactory = { createAppJSEngine("widget-action") },
+            resourceLoader = ComposeAppletProvider().createLoader()
         )
         applet.loadApplet("files/applet.json")
         applet.launchFeature(featureId)

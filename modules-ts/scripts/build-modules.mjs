@@ -8,7 +8,10 @@ const __dirname = path.dirname(__filename);
 const modulesRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(modulesRoot, "..");
 const sourceModulesDir = path.join(modulesRoot, "modules");
-const outputDir = path.join(repoRoot, "composeApp", "src", "commonMain", "composeResources", "files");
+// Single output location: Compose Multiplatform resources in :applet-provider.
+// jvmMain resources are configured in Gradle to include this same directory,
+// so no second copy is needed.
+const outputDir = path.join(repoRoot, "applet-provider", "src", "commonMain", "composeResources", "files");
 const watchMode = process.argv.includes("--watch");
 
 async function readModuleConfigs() {
@@ -92,5 +95,3 @@ main().catch((error) => {
   console.error("[modules-ts] build failed:", error);
   process.exit(1);
 });
-
-

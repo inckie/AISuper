@@ -2,9 +2,9 @@ package com.damn.aisuper.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -22,8 +22,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 private val renderJsonParser = Json { ignoreUnknownKeys = true }
 
-fun parseLayout(jsonString: String): LayoutRoot =
-    renderJsonParser.decodeFromString<LayoutRoot>(jsonString)
 
 private fun parseWidgets(jsonString: String): List<Widget> {
     return try {
