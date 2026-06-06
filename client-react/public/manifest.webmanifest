@@ -1,0 +1,23 @@
+{
+  "name": "AISuper Client",
+  "short_name": "AISuper",
+  "description": "React TypeScript client for AISuper headless server",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#10172a",
+  "theme_color": "#10172a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
+
