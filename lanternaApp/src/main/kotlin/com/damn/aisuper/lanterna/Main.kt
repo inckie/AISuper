@@ -11,6 +11,7 @@ import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.MouseCaptureMode
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import java.nio.file.Paths
@@ -19,15 +20,15 @@ fun main(args: Array<String>) {
     // 1. Setup Lanterna Terminal & GUI with Mouse Capture
     val terminalFactory = DefaultTerminalFactory()
     terminalFactory.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE)
-    
+
     val terminal = terminalFactory.createTerminal()
     val screen = TerminalScreen(terminal)
     screen.startScreen()
-    
+
     val gui = MultiWindowTextGUI(screen)
     val window = BasicWindow("AISuper Terminal")
     window.setHints(listOf(Window.Hint.FULL_SCREEN))
-    
+
     val mainPanel = Panel(LinearLayout(Direction.VERTICAL))
     window.component = mainPanel
 
@@ -43,7 +44,7 @@ fun main(args: Array<String>) {
     } else {
         AppletProviders.classpath()
     }
-    
+
     val applet = Applet(
         engineFactory = { createAppJSEngine("app-ui") },
         resourceLoader = provider.createLoader()
@@ -51,7 +52,7 @@ fun main(args: Array<String>) {
 
     // 3. Collect State and Render
     val scope = CoroutineScope(Dispatchers.Default + Job())
-    
+
     scope.launch {
         val entryPath = if (args.isNotEmpty()) "applet.json" else "files/applet.json"
         try {
@@ -79,7 +80,7 @@ fun main(args: Array<String>) {
             previousRoot = null
             previousValues = emptyMap()
             lastTypedValues.clear()
-            
+
             if (feature == null) {
                 gui.updateUI {
                     mainPanel.removeAllComponents()
@@ -89,7 +90,7 @@ fun main(args: Array<String>) {
             }
 
             layoutJob = scope.launch {
-                kotlinx.coroutines.flow.combine(
+                combine(
                     feature.layoutRoot,
                     feature.values
                 ) { root, values ->
@@ -97,7 +98,7 @@ fun main(args: Array<String>) {
                 }.collect { (root, values) ->
                     val rootChanged = root != previousRoot
                     val changedKeys = values.filter { (k, v) -> previousValues[k] != v }.keys
-                    
+
                     val meaningfulChanges = changedKeys.filter { key ->
                         val typedVal = lastTypedValues[key]
                         val newVal = values[key]?.stringOrNull() ?: ""
@@ -115,7 +116,8 @@ fun main(args: Array<String>) {
                     gui.updateUI {
                         mainPanel.removeAllComponents()
                         if (root != null) {
-                            val rendered = renderWidget(root.layout, applet, values, lastTypedValues)
+                            val rendered =
+                                renderWidget(root.layout, applet, values, lastTypedValues)
                             mainPanel.addComponent(rendered)
                             // Automatically focus the first interactive component to maintain keyboard navigation
                             findFirstInteractable(rendered)?.takeFocus()
@@ -130,7 +132,7 @@ fun main(args: Array<String>) {
 
     // 4. Start the GUI loop (Blocking)
     gui.addWindowAndWait(window)
-    
+
     // 5. Cleanup
     scope.cancel()
     applet.close()
@@ -141,7 +143,7 @@ fun main(args: Array<String>) {
 private fun findFirstInteractable(component: Component): Interactable? {
     if (component is Interactable) return component
     if (component is Container) {
-        for (child in component.getChildren()) {
+        for (child in component.children) {
             val found = findFirstInteractable(child)
             if (found != null) return found
         }
@@ -151,16 +153,25 @@ private fun findFirstInteractable(component: Component): Interactable? {
 
 /** Recursively maps an AISuper Widget to a Lanterna Component */
 private fun renderWidget(
-    widget: Widget, 
-    applet: Applet, 
+    widget: Widget,
+    applet: Applet,
     values: Map<String, JsonElement>,
     lastTypedValues: MutableMap<String, String>
 ): Component {
     return when (widget) {
         is ColumnWidget -> {
             val panel = Panel(LinearLayout(Direction.VERTICAL))
-            widget.children.forEach { panel.addComponent(renderWidget(it, applet, values, lastTypedValues)) }
-            
+            widget.children.forEach {
+                panel.addComponent(
+                    renderWidget(
+                        it,
+                        applet,
+                        values,
+                        lastTypedValues
+                    )
+                )
+            }
+
             if (widget.dynamicChildrenId != null) {
                 val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
                 dynamicWidgets.forEach { child ->
@@ -172,22 +183,31 @@ private fun renderWidget(
             }
             panel
         }
-        
+
         is RowWidget -> {
             val panel = Panel(LinearLayout(Direction.HORIZONTAL))
-            widget.children.forEach { panel.addComponent(renderWidget(it, applet, values, lastTypedValues)) }
+            widget.children.forEach {
+                panel.addComponent(
+                    renderWidget(
+                        it,
+                        applet,
+                        values,
+                        lastTypedValues
+                    )
+                )
+            }
             panel
         }
-        
+
         is TextWidget -> Label(resolveText(widget.text, values))
-        
+
         is ButtonWidget -> Button(widget.text) {
             // Dispatch action to Applet when pressed
             CoroutineScope(Dispatchers.Default).launch {
                 applet.handleAction(widget.action, widget.actionArgs)
             }
         }
-        
+
         is TextFieldWidget -> {
             val currentText = widget.id?.let { values[it]?.stringOrNull() } ?: ""
             val textBox = TextBox(TerminalSize(20, 1), currentText)
@@ -200,7 +220,7 @@ private fun renderWidget(
             }
             textBox
         }
-        
+
         is ImageWidget -> {
             // Placeholders for Images in the Terminal
             val desc = widget.description.ifBlank { "Image" }
@@ -208,12 +228,12 @@ private fun renderWidget(
             placeholder.addComponent(Label("[Image Placeholder: $desc]"))
             placeholder
         }
-        
+
         is DropdownWidget -> {
             val comboBox = ComboBox<String>()
             val options = resolveDropdownOptions(widget, values)
             options.forEach { comboBox.addItem(it.label) }
-            
+
             // pre-select currently chosen value if any
             val currentValue = widget.id?.let { values[it]?.stringOrNull() }
             if (currentValue != null) {
@@ -222,7 +242,7 @@ private fun renderWidget(
                     comboBox.selectedIndex = idx
                 }
             }
-            
+
             comboBox.addListener { selectedIndex, previousIndex, changedByUser ->
                 if (changedByUser) {
                     widget.id?.let {
@@ -230,28 +250,32 @@ private fun renderWidget(
                     }
                     widget.onChangeAction?.takeIf { it.isNotBlank() }?.let { action ->
                         CoroutineScope(Dispatchers.Default).launch {
-                            applet.handleAction(action, listOf(JsonPrimitive(options[selectedIndex].value)))
+                            applet.handleAction(
+                                action,
+                                listOf(JsonPrimitive(options[selectedIndex].value))
+                            )
                         }
                     }
                 }
             }
             comboBox
         }
-        
+
         is SwitchWidget -> {
             val checkBox = CheckBox(widget.text)
             val isCheckedState = widget.id?.let { values[it]?.booleanOrNull() } ?: widget.checked
             checkBox.isChecked = isCheckedState
             checkBox
         }
-        
+
         is ProgressWidget -> ProgressBar(0, 100).apply {
-            val progressVal = widget.progressId?.let { values[it]?.floatOrNull() } ?: widget.progress ?: 0f
+            val progressVal =
+                widget.progressId?.let { values[it]?.floatOrNull() } ?: widget.progress ?: 0f
             value = (progressVal * 100).toInt()
         }
-        
+
         is SpinnerWidget -> Label("...")
-        
+
         is AudioPlayerWidget -> {
             val panel = Panel()
             panel.addComponent(Label("--- Audio Player ---"))
@@ -259,13 +283,14 @@ private fun renderWidget(
             panel.addComponent(Button("Play/Pause") {})
             panel
         }
-        
+
         else -> Label("<Unsupported Widget: ${widget::class.simpleName}>")
     }.apply {
         // Handle common layout traits
         if (widget.fillMaxWidth || widget.fillMaxSize || widget.weight != null) {
             val grabHorizontal = widget.fillMaxWidth || widget.weight != null
-            val growPolicy = if (grabHorizontal) LinearLayout.GrowPolicy.CanGrow else LinearLayout.GrowPolicy.None
+            val growPolicy =
+                if (grabHorizontal) LinearLayout.GrowPolicy.CanGrow else LinearLayout.GrowPolicy.None
             layoutData = LinearLayout.createLayoutData(LinearLayout.Alignment.Fill, growPolicy)
         }
     }
