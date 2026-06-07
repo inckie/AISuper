@@ -140,3 +140,36 @@ A Vite + React + TypeScript browser app that connects to `:server`:
                                                              │  React · WidgetRenderer  │
                                                              └──────────────────────────┘
 ```
+
+# Custom Applet Loading
+
+You can dynamically load external custom applets into the running application instead of relying on the bundled default applet.
+
+### Format and Directory Structure Requirements
+Custom applets must be either a **ZIP archive** or a **standard directory** (JVM only). The applet must contain the entry point manifest file `applet.json` directly at its root. Any internal resources (scripts, layouts, etc.) referenced in `applet.json` under `"files/"` paths (e.g. `"files/feature1.js"`) must be located inside a sibling `files/` directory.
+
+```text
+my-custom-applet/                <-- Root of the ZIP or Directory
+├── applet.json                  <-- (Entry point)
+└── files/
+    ├── feature1.js              <-- (Loaded as "files/feature1.js")
+    └── feature1.json            <-- (Loaded as "files/feature1.json")
+```
+
+### Loading on JVM Desktop
+Pass the path to your custom applet ZIP or directory as a command-line argument:
+```powershell
+# Running the compiled desktop executable
+.\com.damn.aisuper.exe "C:\path\to\my-applet.zip"
+.\com.damn.aisuper.exe "C:\path\to\my-applet-directory"
+
+# Running during development with Gradle
+.\gradlew.bat :composeApp:run --args="C:\path\to\my-applet.zip"
+```
+
+*For more details on building the JVM Desktop app, see [JVM Application Packaging Guide](docs/JVM_APP_PACKAGING.md).*
+
+### Loading on Android
+On Android, only `.zip` applets are supported. You can load a custom applet using two methods:
+1. **From a File Manager**: Tap on any `.zip` file. If prompted, choose "AISuper" from the "Open With..." dialog.
+2. **From the App Shortcut**: Long-press the AISuper app icon on your home screen and select **Run custom applet...**. A native file picker will open allowing you to select your applet `.zip`.
