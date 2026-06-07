@@ -108,3 +108,36 @@ If the provided path is invalid or the files fail to load, the application will 
 .\gradlew.bat :composeApp:run --args="C:\path\to\my-applet.zip"
 ```
 
+---
+
+## 4. Packaging Lanterna TUI Application
+
+You can also compile and package the **Lanterna Terminal User Interface (TUI)** version of your application (`lanternaApp`) into a native Windows executable (`lanternaApp.exe`) containing a bundled JRE, exactly like you do for Compose.
+
+### Commands
+
+To build the native standalone terminal directory:
+```powershell
+$env:JAVA_HOME="c:\Users\ink\.jdks\jbr-21.0.10"
+.\gradlew.bat :lanternaApp:createDistributable
+```
+
+### Output Location
+
+The packaged native TUI application folder will be written to:
+```text
+lanternaApp/build/distributions/app-image/lanternaApp/
+```
+
+### Running the Native TUI Executable
+
+You can execute your terminal-based applet directly inside Command Prompt, PowerShell, or Windows Terminal:
+```powershell
+# Run with bundled applet:
+.\lanternaApp\build\distributions\app-image\lanternaApp\lanternaApp.exe
+
+# Run with custom applet zip or directory:
+.\lanternaApp\build\distributions\app-image\lanternaApp\lanternaApp.exe "C:\path\to\my-applet-directory"
+```
+
+
