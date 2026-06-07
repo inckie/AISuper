@@ -24,6 +24,14 @@ class HttpFeatureModule : FeatureModule {
             val headers = extractHeaders(args.getOrNull(2))
             JsonPrimitive(HttpComponent.post(url, body, headers))
         }
+
+        context.registerSuspendFunction("httpRequestRaw") { args ->
+            val method = args.getOrNull(0)?.jsonPrimitiveContentOrNull() ?: return@registerSuspendFunction JsonPrimitive("{}")
+            val url = args.getOrNull(1)?.jsonPrimitiveContentOrNull() ?: return@registerSuspendFunction JsonPrimitive("{}")
+            val body = args.getOrNull(2)?.jsonPrimitiveContentOrNull() ?: ""
+            val headers = extractHeaders(args.getOrNull(3))
+            JsonPrimitive(HttpComponent.requestRaw(method, url, body, headers))
+        }
     }
 
     override fun detach() = Unit
@@ -43,7 +51,7 @@ class HttpFeatureModule : FeatureModule {
 
 object HttpFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "http"
-    override val exposedFunctions: Set<String> = setOf("httpGet", "httpPost")
+    override val exposedFunctions: Set<String> = setOf("httpGet", "httpPost", "httpRequestRaw")
 
     override suspend fun create(definition: ModuleDefinition): FeatureModule {
         return HttpFeatureModule()

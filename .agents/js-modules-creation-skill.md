@@ -121,13 +121,32 @@ Declared via `declare function` in TypeScript:
 
 | Function | Description |
 |----------|-------------|
-| `httpGet(url: string): Promise<string>` | HTTP GET, requires `http` native module in feature |
+| `httpGet(url: string, headers?: Record<string, string>): Promise<string>` | HTTP GET, requires `http` native module in feature. Returns plain body. |
+| `httpPost(url: string, body?: string, headers?: Record<string, string>): Promise<string>` | HTTP POST. Returns plain body. |
+| `httpRequestRaw(method, url, body?, headers?): Promise<string>` | Raw HTTP request returning a JSON envelope (see below). |
 | `jsonParse(json: string): unknown` | Safe JSON parse |
 | `xmlParse(xml: string): Record<string, unknown>` | XML → JSON parse |
 | `encodeURIComponent(s: string): string` | URI encoding |
 | `stringToNumber(s: string): number` | Safe string→double conversion (use instead of `parseFloat` for longitude/lat) |
 | `consoleLog(...)` | Logging |
 | `consoleError(...)` | Error logging |
+
+### When to use `httpRequestRaw` vs `httpGet` / `httpPost`
+`httpGet` and `httpPost` only return the plain response body as a string. They completely discard HTTP status codes and response headers.
+
+If your module needs to handle specific HTTP status codes (e.g., handling `409 Conflict` for session token negotiation) or read response headers (e.g., extracting an `X-Transmission-Session-Id` token), you **must** use `httpRequestRaw`.
+
+It returns a JSON-encoded string envelope containing the full response context:
+```json
+{
+  "status": 200,
+  "headers": {
+    "X-Transmission-Session-Id": "token123"
+  },
+  "body": "..."
+}
+```
+*Note: You must `JSON.parse()` the result of `httpRequestRaw` before accessing these fields.*
 
 ## 8) Test strategy
 
