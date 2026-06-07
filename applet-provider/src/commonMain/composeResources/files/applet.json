@@ -67,6 +67,25 @@
         }
       ]
     },
+    "gemini": {
+      "layouts": {
+        "settings": "files/gemini_settings_layout.json",
+        "chat": "files/gemini_chat_layout.json"
+      },
+      "script": "files/gemini_script.js",
+      "name": "Gemini Chat",
+      "modules": [
+        {
+          "type": "jsModule",
+          "name": "gemini",
+          "script": "files/gemini_module.js"
+        },
+        {
+          "type": "http",
+          "name": "httpMain"
+        }
+      ]
+    },
     "form": {
       "layout": "files/form_layout.json",
       "script": "files/form_script.js",

@@ -1,0 +1,5 @@
+{
+  "id": "gemini",
+  "entry": "index.ts",
+  "output": "gemini_module.js"
+}

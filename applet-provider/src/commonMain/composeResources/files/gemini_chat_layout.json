@@ -1,0 +1,52 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Gemini Chat", "classes": ["section_title"], "weight": 1 },
+          { "type": "Button", "text": "Settings", "action": "goToSettings" }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
+        "dynamicChildrenId": "messageList",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Spinner",
+        "id": "loading_spinner",
+        "visibilityId": "spinner_visible"
+      },
+      {
+        "type": "Text",
+        "id": "error_text",
+        "text": ""
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "TextField",
+            "id": "input_field",
+            "hint": "Ask Gemini...",
+            "weight": 1,
+            "singleLine": false
+          },
+          {
+            "type": "Button",
+            "text": "Send",
+            "action": "processChat"
+          }
+        ]
+      }
+    ]
+  }
+}
