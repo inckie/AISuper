@@ -57,13 +57,6 @@ Each block and module should come with a set of test cases for the sandbox. For 
 * New session of External AI with role "verificator" and optionally human verifies generated artifacts. There are additional tools for verification of each block.
 * After these steps are complete, artifacts are exported and then loaded into the runtime environment application.
 
-# Reference implementation details
-
-* App and UI framework: Compose Multiplatform  
-* Flow graph format: XState  
-* Block script format: JavaScript  
-* Initial Block JavaScript engine: https://github.com/alexzhirkevich/keight
-
 # UI and Core Architecture
 
 The reference implementation is split into clearly separated layers so that the same applet logic can run in native UI or headlessly behind a web server.
@@ -74,10 +67,12 @@ All applet execution lives in the `:shared` Kotlin Multiplatform module — no U
 
 - **`Applet`** — loads `applet.json`, manages feature lifecycle, exposes JS globals.
 - **`Feature`** — loads layout JSON + feature script, attaches native modules, dispatches actions/values.
-- **`AppJSEngine`** — abstracts the JavaScript sandbox (QuickJS via Keight on native/JVM; browser JS on web).
+- **`AppJSEngine`** — abstracts the JavaScript sandbox (QuickJS or Keight on native/JVM; Keight on JS/WASM).
 - **`FeatureModule`** / **`FeatureModuleHost`** — pluggable native modules (HTTP, audio, GPS, MCP, JS modules) that register functions into the JS context.
 - **`StateStorage`** — hierarchical, scope-isolated state with transient and persistent backends (APPLET / FEATURE / MODULE / MODULE_GLOBAL scopes).
 - **`HeadlessSessionManager`** / **`HeadlessSession`** — wraps `Applet` for server-side use; re-emits state changes as a `Flow<HeadlessSessionSnapshot>` for REST/SSE delivery.
+
+**Improrant**: Keight JS engine while been awesome piece of code was never intended to be used as full blown JS runtime, so it has a lot of small issues.
 
 ## Applet Resources layer (`:applet-provider`)
 
