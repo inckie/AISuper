@@ -130,6 +130,22 @@
       "script": "files/form_script.js",
       "name": "Form Demo"
     },
+    "transmission": {
+      "layout": "files/transmission_layout.json",
+      "script": "files/transmission_script.js",
+      "name": "Transmission RPC",
+      "modules": [
+        {
+          "type": "jsModule",
+          "name": "transmission",
+          "script": "files/transmission_module.js"
+        },
+        {
+          "type": "http",
+          "name": "httpMain"
+        }
+      ]
+    },
     "weatherLocal": {
       "layout": "files/weather_layout.json",
       "script": "files/weather_local_script.js",

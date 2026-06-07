@@ -1,0 +1,5 @@
+{
+  "id": "transmission",
+  "entry": "index.ts",
+  "output": "transmission_module.js"
+}
