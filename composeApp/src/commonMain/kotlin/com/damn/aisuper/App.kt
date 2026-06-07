@@ -38,7 +38,7 @@ import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
 @Preview
 fun App(customProvider: AppletProvider? = null, entryPath: String = "files/applet.json") {
     // Local in-process runtime is kept as a fallback when remote kernel is unavailable.
-    val applet = remember {
+    val applet = remember(customProvider, entryPath) {
         Applet(
             engineFactory = { createAppJSEngine("app-ui") },
             resourceLoader = (customProvider ?: ComposeAppletProvider()).createLoader()
@@ -85,7 +85,8 @@ fun App(customProvider: AppletProvider? = null, entryPath: String = "files/apple
 
         val scope = rememberCoroutineScope()
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(applet, entryPath) {
+            localAppletError = null
             // Try remote notebook kernel first; fallback to in-process runtime.
             try {
                 val created = remoteClient.createSession(REMOTE_MANIFEST_PATH)

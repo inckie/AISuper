@@ -18,6 +18,59 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- 1. Handle common ZIP MIME types regardless of file name / path -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+
+            <!-- 2. Handle generic MIME types with specific extensions (.zip) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:host="*" />
+                <data android:scheme="file" android:host="*" />
+                <data android:mimeType="*/*" />
+
+                <!-- pathSuffix works reliably on Android 12+ -->
+                <data android:pathSuffix=".zip" />
+
+                <!-- pathPattern workarounds for Android < 12 (multiple dots issue) -->
+                <data android:pathPattern=".*\\.zip" />
+                <data android:pathPattern=".*\\..*\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\.zip" />
+            </intent-filter>
+
+            <!-- 3. Handle specific extensions when file manager provides no MIME type at all -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:host="*" />
+                <data android:scheme="file" android:host="*" />
+
+                <data android:pathSuffix=".zip" />
+
+                <data android:pathPattern=".*\\.zip" />
+                <data android:pathPattern=".*\\..*\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\.zip" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="com.damn.aisuper.ACTION_PICK_APPLET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Widget configuration activity -->

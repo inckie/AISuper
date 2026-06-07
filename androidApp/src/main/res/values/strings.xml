@@ -2,4 +2,7 @@
     <string name="app_name">AISuper</string>
     <string name="widget_description">AISuper feature widget</string>
     <string name="widget_config_title">Choose Widget Feature</string>
+    <string name="shortcut_run_applet_short">Run applet</string>
+    <string name="shortcut_run_applet_long">Run custom applet...</string>
+    <string name="shortcut_run_applet_disabled">Not available</string>
 </resources>
