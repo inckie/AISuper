@@ -22,6 +22,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.damn.aisuper.layout.AudioPlayerWidget
@@ -118,9 +119,16 @@ fun RenderWidget(
             if (displayText.isNotBlank()) {
                 val textColor = parseColorOrNull(style.textColor) ?: DEFAULT_TEXT_COLOR
                 val fontSize = (style.fontSize ?: 14).sp
+                val alignRaw = widget.align ?: style.textAlign ?: ""
+                val textAlign = when (alignRaw.lowercase()) {
+                    "center" -> TextAlign.Center
+                    "right", "end" -> TextAlign.End
+                    "left", "start" -> TextAlign.Start
+                    else -> null
+                }
                 Text(
                     text = displayText,
-                    style = TextStyle(color = ColorProvider(textColor), fontSize = fontSize),
+                    style = TextStyle(color = ColorProvider(textColor), fontSize = fontSize, textAlign = textAlign),
                     modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())
                 )
             }

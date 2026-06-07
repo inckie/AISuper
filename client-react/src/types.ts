@@ -57,6 +57,7 @@ export interface RowWidget extends WidgetBase {
 export interface TextWidget extends WidgetBase {
   type: 'Text';
   text?: string;
+  align?: string | null;
 }
 
 export interface TextFieldWidget extends WidgetBase {

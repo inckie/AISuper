@@ -117,7 +117,8 @@ fun RenderWidget(
             }
 
             val textColor = parseColorOrNull(style.textColor) ?: Color.Unspecified
-            val textAlign = when ((style.textAlign ?: "").lowercase()) {
+            val alignRaw = widget.align ?: style.textAlign ?: ""
+            val textAlign = when (alignRaw.lowercase()) {
                 "center" -> TextAlign.Center
                 "right" -> TextAlign.Right
                 "end" -> TextAlign.End

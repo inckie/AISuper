@@ -130,6 +130,20 @@ export function WidgetRenderer({
     case 'Text': {
       const widgetId = widget.id ?? undefined;
       const displayText = widgetId ? stringOrNull(values[widgetId]) ?? widget.text ?? '' : widget.text ?? '';
+
+      const alignRaw = widget.align ?? style.textAlign ?? '';
+      const textAlignMap: Record<string, any> = {
+        'center': 'center',
+        'right': 'right',
+        'end': 'right',
+        'start': 'left',
+        'left': 'left',
+        'justify': 'justify'
+      };
+      if (alignRaw) {
+         baseStyle.textAlign = textAlignMap[alignRaw.toLowerCase()] ?? baseStyle.textAlign;
+      }
+
       return <div style={baseStyle}>{displayText}</div>;
     }
 

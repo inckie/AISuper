@@ -55,7 +55,8 @@ data class TextWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
-    val text: String = ""
+    val text: String = "",
+    val align: String? = null
 ) : Widget()
 
 @Serializable
