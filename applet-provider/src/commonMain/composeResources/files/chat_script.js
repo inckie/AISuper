@@ -4,9 +4,24 @@ function refreshMessages() {
     var widgets = [];
     for (var i = 0; i < messages.length; i = i + 1) {
         var msg = messages[i];
+        var text = "";
+        var alignVal = "start";
+        if (msg.sender === "user") {
+            text = "You: " + msg.text;
+            alignVal = "end";
+        } else if (msg.sender === "echo") {
+            text = "Echo: " + msg.text;
+            alignVal = "start";
+        } else {
+            text = "System: " + msg.text;
+            alignVal = "center";
+        }
+
         var item = {
             "type": "Text",
-            "text": msg
+            "text": text,
+            "align": alignVal,
+            "fillMaxWidth": true
         };
         widgets.push(item);
     }
@@ -14,7 +29,7 @@ function refreshMessages() {
 }
 
 function initialize() {
-    messages.push("System: Welcome to Echo Chat!");
+    messages.push({ sender: "system", text: "Welcome to Echo Chat!" });
     refreshMessages();
 }
 
@@ -27,11 +42,8 @@ function process() {
         return;
     }
 
-    var uMsg = "You: " + input;
-    messages.push(uMsg);
-
-    var eMsg = "Echo: " + input;
-    messages.push(eMsg);
+    messages.push({ sender: "user", text: input });
+    messages.push({ sender: "echo", text: input });
 
     refreshMessages();
     setValue("input_field", "");

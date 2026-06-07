@@ -57,11 +57,14 @@ function renderMessages() {
 
         var prefix = msg.role === "user" ? "You: " : "Gemini: ";
         var styleClasses = msg.role === "user" ? ["user_message"] : ["ai_message"];
+        var alignVal = msg.role === "user" ? "end" : "start";
 
         widgets.push({
             "type": "Text",
             "text": prefix + msg.text,
-            "classes": styleClasses
+            "classes": styleClasses,
+            "align": alignVal,
+            "fillMaxWidth": true
         });
     }
     setValue("messageList", widgets);
