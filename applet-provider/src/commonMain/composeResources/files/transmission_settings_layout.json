@@ -4,14 +4,12 @@
     "fillMaxSize": true,
     "children": [
       {
-        "type": "Button",
-        "text": "<< Back",
-        "action": "launch:menu"
-      },
-      {
-        "type": "Text",
-        "text": "Transmission Torrents",
-        "classes": ["section_title"]
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Transmission Settings", "classes": ["section_title"], "weight": 1 }
+        ]
       },
       {
         "type": "TextField",
@@ -37,26 +35,14 @@
       },
       {
         "type": "Button",
-        "text": "Connect / Refresh",
-        "action": "refreshTorrents",
+        "text": "Connect",
+        "action": "connectAndGoToList",
         "fillMaxWidth": true
       },
       {
         "type": "Text",
         "id": "status_text",
-        "text": "Status: Not connected"
-      },
-      {
-        "type": "Spinner",
-        "id": "loading_spinner",
-        "visibilityId": "spinner_visible"
-      },
-      {
-        "type": "Column",
-        "weight": 1,
-        "isScrollable": true,
-        "dynamicChildrenId": "torrentList",
-        "fillMaxWidth": true
+        "text": ""
       }
     ]
   }

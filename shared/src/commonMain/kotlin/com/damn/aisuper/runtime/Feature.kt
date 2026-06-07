@@ -95,10 +95,32 @@ class Feature(
                 JsonNull
             }
 
-            // Layout
-            val bytes = resourceLoader.readBytes(definition.layout)
-            val jsonString = bytes.decodeToString()
-            _layoutRoot.value = parseLayout(jsonString)
+            // Register setLayout function for the script to use
+            engine.registerSuspendFunction("setLayout") { args ->
+                val layoutKeyOrPath = args.firstOrNull()?.jsonPrimitiveContentOrNull() ?: return@registerSuspendFunction JsonNull
+                
+                // If the applet provides a layouts dictionary, resolve the key to a path. Otherwise assume it's a direct path or fallback.
+                val actualPath = definition.layouts?.get(layoutKeyOrPath) ?: layoutKeyOrPath
+                
+                if (actualPath.isNotEmpty()) {
+                    try {
+                        val bytes = resourceLoader.readBytes(actualPath)
+                        val jsonString = bytes.decodeToString()
+                        _layoutRoot.value = parseLayout(jsonString)
+                    } catch (e: Exception) {
+                        println("[AISuper][JS][LayoutError] failed to load layout $actualPath: ${e.message}")
+                    }
+                }
+                JsonNull
+            }
+
+            // Layout initial load
+            val initialLayoutPath = definition.layout ?: definition.layouts?.values?.firstOrNull() ?: ""
+            if (initialLayoutPath.isNotEmpty()) {
+                val bytes = resourceLoader.readBytes(initialLayoutPath)
+                val jsonString = bytes.decodeToString()
+                _layoutRoot.value = parseLayout(jsonString)
+            }
 
             // Script
             val scriptBytes = resourceLoader.readBytes(definition.script)

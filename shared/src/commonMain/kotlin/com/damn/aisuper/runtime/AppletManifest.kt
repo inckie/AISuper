@@ -22,7 +22,8 @@ data class JsModuleDefinition(
 
 @Serializable
 data class FeatureDefinition(
-    val layout: String,
+    val layout: String? = null,
+    val layouts: Map<String, String>? = null,
     val script: String,
     val name: String? = null,
     val modules: List<ModuleDefinition> = emptyList(),

@@ -73,7 +73,10 @@
       "name": "Form Demo"
     },
     "transmission": {
-      "layout": "files/transmission_layout.json",
+      "layouts": {
+        "settings": "files/transmission_settings_layout.json",
+        "list": "files/transmission_list_layout.json"
+      },
       "script": "files/transmission_script.js",
       "name": "Transmission RPC",
       "modules": [

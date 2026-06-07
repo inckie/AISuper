@@ -1,0 +1,40 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Transmission Torrents", "classes": ["section_title"], "weight": 1 },
+          { "type": "Button", "text": "Settings", "action": "goToSettings" }
+        ]
+      },
+      {
+        "type": "Button",
+        "text": "Refresh",
+        "action": "refreshTorrents",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Text",
+        "id": "status_text",
+        "text": ""
+      },
+      {
+        "type": "Spinner",
+        "id": "loading_spinner",
+        "visibilityId": "spinner_visible"
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
+        "dynamicChildrenId": "torrentList",
+        "fillMaxWidth": true
+      }
+    ]
+  }
+}

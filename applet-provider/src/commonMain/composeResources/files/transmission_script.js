@@ -10,22 +10,61 @@ var STATUS_DOWNLOAD = 4;
 var STATUS_SEED_WAIT = 5;
 var STATUS_SEED = 6;
 
+// Local cached credentials for list view
+var currentHost = "";
+var currentLogin = "";
+var currentPass = "";
+
 async function initialize() {
     setValue("spinner_visible", false);
     setValue("torrentList", []);
-    setValue("status_text", "Status: Not connected");
+    setValue("status_text", "");
 
     try {
         var host = await persistentStorageGet("feature", HOST_KEY);
         var login = await persistentStorageGet("feature", LOGIN_KEY);
         var pass = await persistentStorageGet("feature", PASS_KEY);
 
-        if (host) setValue("host_input", host);
-        if (login) setValue("login_input", login);
-        if (pass) setValue("password_input", pass);
+        if (host) {
+            currentHost = host;
+            currentLogin = login || "";
+            currentPass = pass || "";
+            await setLayout("list");
+            refreshTorrents();
+        } else {
+            await setLayout("settings");
+        }
     } catch (e) {
         consoleError("Failed to load credentials", e);
+        await setLayout("settings");
     }
+}
+
+async function goToSettings() {
+    await setLayout("settings");
+    setValue("host_input", currentHost);
+    setValue("login_input", currentLogin);
+    setValue("password_input", currentPass);
+    setValue("status_text", "");
+}
+
+async function connectAndGoToList() {
+    var host = getValue("host_input");
+    var login = getValue("login_input");
+    var pass = getValue("password_input");
+
+    if (!host) {
+        setValue("status_text", "Error: Host is required");
+        return;
+    }
+
+    currentHost = host;
+    currentLogin = login;
+    currentPass = pass;
+
+    await saveCredentials(host, login, pass);
+    await setLayout("list");
+    refreshTorrents();
 }
 
 async function saveCredentials(host, login, pass) {
@@ -52,23 +91,17 @@ function getStatusString(status) {
 }
 
 async function refreshTorrents() {
-    var host = getValue("host_input");
-    var login = getValue("login_input");
-    var pass = getValue("password_input");
-
-    if (!host) {
-        setValue("status_text", "Error: Host is required");
+    if (!currentHost) {
+        setValue("status_text", "Error: Host is missing");
         return;
     }
-
-    await saveCredentials(host, login, pass);
 
     setValue("status_text", "Connecting...");
     setValue("spinner_visible", true);
     setValue("torrentList", []);
 
     try {
-        var res = await transmission_transmission_getTorrents(host, login, pass);
+        var res = await transmission_transmission_getTorrents(currentHost, currentLogin, currentPass);
         setValue("spinner_visible", false);
 
         if (!res.ok) {
@@ -129,13 +162,11 @@ async function refreshTorrents() {
 }
 
 async function pauseTorrent(id) {
-    var host = getValue("host_input");
-    var login = getValue("login_input");
-    var pass = getValue("password_input");
+    if (!currentHost) return;
 
     setValue("status_text", "Pausing torrent " + id + "...");
     try {
-        var res = await transmission_transmission_pauseTorrent(host, login, pass, id);
+        var res = await transmission_transmission_pauseTorrent(currentHost, currentLogin, currentPass, id);
         if (!res.ok) {
             setValue("status_text", "Error pausing: " + res.error);
             return;
@@ -147,13 +178,11 @@ async function pauseTorrent(id) {
 }
 
 async function resumeTorrent(id) {
-    var host = getValue("host_input");
-    var login = getValue("login_input");
-    var pass = getValue("password_input");
+    if (!currentHost) return;
 
     setValue("status_text", "Resuming torrent " + id + "...");
     try {
-        var res = await transmission_transmission_resumeTorrent(host, login, pass, id);
+        var res = await transmission_transmission_resumeTorrent(currentHost, currentLogin, currentPass, id);
         if (!res.ok) {
             setValue("status_text", "Error resuming: " + res.error);
             return;
