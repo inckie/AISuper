@@ -28,6 +28,7 @@ import com.damn.aisuper.layout.frontend.material3.Material3FrontendTheme
 import com.damn.aisuper.layout.frontend.rikka.RikkaFrontendTheme
 import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.runtime.Applet
+import com.damn.aisuper.util.Logger
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -98,13 +99,13 @@ fun App(customProvider: AppletProvider? = null, entryPath: String = "files/apple
                     remoteState = snapshot
                 }
             } catch (remoteError: Exception) {
-                println("[AISuper][Remote] falling back to local runtime: ${remoteError.message}")
+                Logger.i("Remote") { "falling back to local runtime: ${remoteError.message}" }
                 useRemote = false
                 try {
                     applet.loadApplet(entryPath)
                 } catch (e: Exception) {
                     val errMsg = "Failed to load custom applet from '$entryPath':\n${e.message}"
-                    println(errMsg)
+                    Logger.e("Runtime") { errMsg }
                     localAppletError = errMsg
                 }
             }
@@ -249,4 +250,3 @@ private fun resolveAppBackground(styleSheet: StyleSheet?, fallback: Color): Colo
     val colorHex = styleSheet?.classes?.get("screen")?.backgroundColor
     return parseColorOrNull(colorHex) ?: fallback
 }
-

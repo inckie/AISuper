@@ -1,5 +1,6 @@
 package com.damn.aisuper.engine.keight
 
+import com.damn.aisuper.util.Logger
 import io.github.alexzhirkevich.keight.Callable
 import io.github.alexzhirkevich.keight.ScriptRuntime
 import io.github.alexzhirkevich.keight.Wrapper
@@ -46,7 +47,7 @@ internal suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): 
                     null
                 }
             } catch (e: Exception) {
-                println("[AISuper][JS][PromiseError] ${e.message}")
+                Logger.e("JS", "PromiseError", throwable = e) { "Promise rejected: ${e.message}" }
                 return JsonPrimitive("Error: Promise rejected: ${e.message}")
             }
             jsAnyToJsonElement(resolved, runtime)
@@ -99,7 +100,7 @@ internal suspend fun jsAnyToJsonElement(value: JsAny?, runtime: ScriptRuntime): 
         }
 
         else -> {
-            println("[AISuper][JS][Conversion] Unknown type: ${value.toString().take(100)}")
+            Logger.w("JS", "Conversion") { "Unknown type: ${value.toString().take(100)}" }
             JsonPrimitive(value.toString())
         }
     }

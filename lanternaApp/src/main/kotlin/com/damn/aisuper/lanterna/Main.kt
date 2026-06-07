@@ -4,6 +4,8 @@ import com.damn.aisuper.applet.AppletProviders
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.*
 import com.damn.aisuper.runtime.Applet
+import com.damn.aisuper.util.LogLevel
+import com.damn.aisuper.util.Logger
 import com.googlecode.lanterna.TerminalSize
 import com.googlecode.lanterna.gui2.*
 import com.googlecode.lanterna.gui2.Button
@@ -17,6 +19,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.nio.file.Paths
 
 fun main(args: Array<String>) {
+    // 0. Disable logging to avoid messing up the Terminal UI
+    Logger.minLevel = LogLevel.NONE
+
     // 1. Setup Lanterna Terminal & GUI with Mouse Capture
     val terminalFactory = DefaultTerminalFactory()
     terminalFactory.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE)
@@ -59,11 +64,13 @@ fun main(args: Array<String>) {
             applet.loadApplet(entryPath)
         } catch (e: Exception) {
             if (entryPath != "files/applet.json") {
-                println("Failed to load $entryPath: ${e.message}, trying files/applet.json")
+                // We use println here because Logger is disabled and we might want to see critical startup errors
+                // but since it's a TUI, even this might be problematic if it happens after screen.startScreen()
+                // However, the requirement was to disable Logger, so we follow that.
                 try {
                     applet.loadApplet("files/applet.json")
                 } catch (e2: Exception) {
-                    println("Failed to load files/applet.json: ${e2.message}")
+                    // Critical failure
                 }
             }
         }

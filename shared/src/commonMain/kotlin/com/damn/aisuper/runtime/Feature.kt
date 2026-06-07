@@ -10,6 +10,7 @@ import com.damn.aisuper.storage.StateStorage
 import com.damn.aisuper.storage.StateStorageFactory
 import com.damn.aisuper.storage.StorageContext
 import com.damn.aisuper.storage.StorageScope
+import com.damn.aisuper.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -108,7 +109,7 @@ class Feature(
                         val jsonString = bytes.decodeToString()
                         _layoutRoot.value = parseLayout(jsonString)
                     } catch (e: Exception) {
-                        println("[AISuper][JS][LayoutError] failed to load layout $actualPath: ${e.message}")
+                        Logger.e("Runtime", "Layout") { "failed to load layout $actualPath: ${e.message}" }
                     }
                 }
                 JsonNull
@@ -177,11 +178,10 @@ class Feature(
             try {
                 engine.callFunction("initialize", emptyList())
             } catch (e: Exception) {
-                println("[AISuper][JS][InitializeError] feature=$id message=${e.message}")
-                e.printStackTrace()
+                Logger.e("Runtime", "Initialize", throwable = e) { "feature=$id message=${e.message}" }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.e("Runtime", "Feature", throwable = e) { "Failed to load feature $id" }
         }
     }
 

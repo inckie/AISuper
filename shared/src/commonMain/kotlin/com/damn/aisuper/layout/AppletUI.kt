@@ -4,6 +4,7 @@ import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.AppletManifest
+import com.damn.aisuper.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +47,7 @@ class AppletUI {
                 val displayName = definition.name ?: sheet.name ?: styleId
                 stylesById[styleId] = NamedStyleSheet(styleId, displayName, sheet)
             } catch (e: Exception) {
-                println("[AISuper][Style] failed to load '$styleId' from ${definition.file}: ${e.message}")
+                Logger.e("Style") { "failed to load '$styleId' from ${definition.file}: ${e.message}" }
             }
         }
 

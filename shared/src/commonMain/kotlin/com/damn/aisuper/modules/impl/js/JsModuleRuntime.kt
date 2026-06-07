@@ -7,6 +7,7 @@ import com.damn.aisuper.modules.FeatureModuleFactory
 import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.JsModuleDefinition
 import com.damn.aisuper.runtime.ModuleDefinition
+import com.damn.aisuper.util.Logger
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
@@ -49,7 +50,7 @@ class JsModuleRuntime(
     suspend fun load() {
         // Register the export declaration callback
         engine.registerFunction("registerExports") { args ->
-            println("[AISuper][JsModule][$id] registerExports called args=${safeArgs(args)}")
+            Logger.i("JsModule", id) { "registerExports called args=${safeArgs(args)}" }
             // args[0] = module name (ignored, we already know it as 'id')
             // args[1] = JsonArray of function name strings
             if (args.size >= 2) {
@@ -60,7 +61,7 @@ class JsModuleRuntime(
                         if (!name.isNullOrBlank()) exports.add(name)
                     }
                 } catch (e: Exception) {
-                    println("[AISuper][JsModule][$id] registerExports parse error: ${e.message}")
+                    Logger.e("JsModule", id) { "registerExports parse error: ${e.message}" }
                 }
             }
             JsonNull
@@ -73,7 +74,7 @@ class JsModuleRuntime(
         engine.loadScript(scriptContent)
         isScriptLoaded = true
 
-        println("[AISuper][JsModule][$id] loaded, exports: $exports")
+        Logger.i("JsModule", id) { "loaded, exports: $exports" }
     }
 
     override suspend fun attach(context: FeatureModuleContext) {
@@ -84,26 +85,26 @@ class JsModuleRuntime(
             if (!bridgedHostFunctions.add(hostFunction)) continue
             engine.registerSuspendFunction(hostFunction) { args ->
                 val invoker = hostInvoker ?: return@registerSuspendFunction JsonNull
-                println("[AISuper][JsModule][$id] host bridge -> $hostFunction args=${safeArgs(args)}")
+                Logger.i("JsModule", id) { "host bridge -> $hostFunction args=${safeArgs(args)}" }
                 val result = invoker(hostFunction, args)
-                println("[AISuper][JsModule][$id] host bridge <- $hostFunction result=${safe(result)}")
+                Logger.i("JsModule", id) { "host bridge <- $hostFunction result=${safe(result)}" }
                 result
             }
         }
 
         if (functionsToBridge.isNotEmpty()) {
-            println("[AISuper][JsModule][${context.hashCode()}] bridged host functions for '$id': $functionsToBridge")
+            Logger.i("JsModule", "Feature:${context.hashCode()}", id) { "bridged host functions: $functionsToBridge" }
         }
 
         for (exportedFn in exports) {
             val proxyName = "${id}_${exportedFn}"
             context.registerSuspendFunction(proxyName) { args ->
-                println("[AISuper][JsModule][$id] proxy -> $proxyName args=${safeArgs(args)}")
+                Logger.i("JsModule", id) { "proxy -> $proxyName args=${safeArgs(args)}" }
                 val result = callFunction(exportedFn, args)
-                println("[AISuper][JsModule][$id] proxy <- $proxyName result=${safe(result)}")
+                Logger.i("JsModule", id) { "proxy <- $proxyName result=${safe(result)}" }
                 result
             }
-            println("[AISuper][JsModule] registered proxy '$proxyName' -> module '$id'")
+            Logger.i("JsModule", id) { "registered proxy '$proxyName' -> module '$id'" }
         }
     }
 
@@ -118,9 +119,9 @@ class JsModuleRuntime(
      */
     suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
         if (!isScriptLoaded) return JsonNull
-        println("[AISuper][JsModule][$id] vm call -> $functionName args=${safeArgs(args)}")
+        Logger.i("JsModule", id) { "vm call -> $functionName args=${safeArgs(args)}" }
         val result = engine.callFunction(functionName, args)
-        println("[AISuper][JsModule][$id] vm call <- $functionName result=${safe(result)}")
+        Logger.i("JsModule", id) { "vm call <- $functionName result=${safe(result)}" }
         return result
     }
 
@@ -207,4 +208,3 @@ class JsModuleFeatureModuleFactory(
         runtimes.clear()
     }
 }
-

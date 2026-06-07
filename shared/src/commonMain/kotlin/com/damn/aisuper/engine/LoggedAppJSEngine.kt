@@ -1,5 +1,6 @@
 package com.damn.aisuper.engine
 
+import com.damn.aisuper.util.Logger
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -11,50 +12,50 @@ class LoggedAppJSEngine(
 ) : AppJSEngine by delegate {
 
     override suspend fun loadScript(script: String) {
-        println("[AISuper][JS][Engine][$tag] loadScript length=${script.length}")
+        Logger.i("JS", "Engine", tag) { "loadScript length=${script.length}" }
         delegate.loadScript(script)
-        println("[AISuper][JS][Engine][$tag] loadScript ok")
+        Logger.i("JS", "Engine", tag) { "loadScript ok" }
     }
 
     override suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
-        println("[AISuper][JS][Engine][$tag] call -> $functionName args=${safeArgs(args)}")
+        Logger.i("JS", "Engine", tag) { "call -> $functionName args=${safeArgs(args)}" }
         val result = delegate.callFunction(functionName, args)
-        println("[AISuper][JS][Engine][$tag] call <- $functionName result=${safe(result)}")
+        Logger.i("JS", "Engine", tag) { "call <- $functionName result=${safe(result)}" }
         return result
     }
 
     override suspend fun registerFunction(name: String, callback: (List<JsonElement>) -> JsonElement) {
-        println("[AISuper][JS][Engine][$tag] registerFunction $name")
+        Logger.i("JS", "Engine", tag) { "registerFunction $name" }
         delegate.registerFunction(name) { args ->
-            println("[AISuper][JS][Engine][$tag] callback(sync) -> $name args=${safeArgs(args)}")
+            Logger.i("JS", "Engine", tag) { "callback(sync) -> $name args=${safeArgs(args)}" }
             try {
                 val result = callback(args)
-                println("[AISuper][JS][Engine][$tag] callback(sync) <- $name result=${safe(result)}")
+                Logger.i("JS", "Engine", tag) { "callback(sync) <- $name result=${safe(result)}" }
                 result
             } catch (e: Exception) {
-                println("[AISuper][JS][Engine][$tag] callback(sync) !! $name error=${e.message}")
+                Logger.e("JS", "Engine", tag, throwable = e) { "callback(sync) !! $name error=${e.message}" }
                 throw e
             }
         }
     }
 
     override suspend fun registerSuspendFunction(name: String, callback: suspend (List<JsonElement>) -> JsonElement) {
-        println("[AISuper][JS][Engine][$tag] registerSuspendFunction $name")
+        Logger.i("JS", "Engine", tag) { "registerSuspendFunction $name" }
         delegate.registerSuspendFunction(name) { args ->
-            println("[AISuper][JS][Engine][$tag] callback(async) -> $name args=${safeArgs(args)}")
+            Logger.i("JS", "Engine", tag) { "callback(async) -> $name args=${safeArgs(args)}" }
             try {
                 val result = callback(args)
-                println("[AISuper][JS][Engine][$tag] callback(async) <- $name result=${safe(result)}")
+                Logger.i("JS", "Engine", tag) { "callback(async) <- $name result=${safe(result)}" }
                 result
             } catch (e: Exception) {
-                println("[AISuper][JS][Engine][$tag] callback(async) !! $name error=${e.message}")
+                Logger.e("JS", "Engine", tag, throwable = e) { "callback(async) !! $name error=${e.message}" }
                 throw e
             }
         }
     }
 
     override fun close() {
-        println("[AISuper][JS][Engine][$tag] close")
+        Logger.i("JS", "Engine", tag) { "close" }
         delegate.close()
     }
 
@@ -66,4 +67,3 @@ class LoggedAppJSEngine(
         return value?.toString()?.replace("\n", " ")?.take(220) ?: "null"
     }
 }
-

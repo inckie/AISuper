@@ -4,6 +4,7 @@ import com.damn.aisuper.modules.FeatureModule
 import com.damn.aisuper.modules.FeatureModuleContext
 import com.damn.aisuper.modules.FeatureModuleFactory
 import com.damn.aisuper.runtime.ModuleDefinition
+import com.damn.aisuper.util.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
@@ -49,7 +50,7 @@ class McpHttpFeatureModule(
             val tools = runCatching {
                 listTools(groupFilter = group)
             }.getOrElse {
-                println("[AISuper][MCP] tools/list failed: ${it.message}")
+                Logger.e("MCP", serverName) { "tools/list failed: ${it.message}" }
                 emptyList()
             }
 
@@ -70,7 +71,7 @@ class McpHttpFeatureModule(
             runCatching {
                 callTool(group = group, tool = tool, arguments = payload)
             }.getOrElse {
-                println("[AISuper][MCP] tools/call failed: ${it.message}")
+                Logger.e("MCP", serverName) { "tools/call failed: ${it.message}" }
                 JsonPrimitive("Error: ${it.message}")
             }
         }
@@ -246,6 +247,3 @@ private fun List<JsonElement>.stringAt(index: Int): String? {
         }
     }
 }
-
-
-

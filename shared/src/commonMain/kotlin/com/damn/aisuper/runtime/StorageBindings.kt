@@ -3,6 +3,7 @@ package com.damn.aisuper.runtime
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.storage.StateStorage
 import com.damn.aisuper.storage.StorageScope
+import com.damn.aisuper.util.Logger
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -103,8 +104,7 @@ private fun parseJsScope(scope: String): StorageScope? = when (scope.lowercase()
     "applet" -> StorageScope.Applet
     "feature" -> StorageScope.Feature
     else -> {
-        println("[AISuper][Storage] Unknown or unsupported JS scope: '$scope'")
+        Logger.w("Storage") { "Unknown or unsupported JS scope: '$scope'" }
         null
     }
 }
-

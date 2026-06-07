@@ -3,6 +3,7 @@ package com.damn.aisuper.engine.quickjs
 import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.engine.anyToJsonElement
 import com.damn.aisuper.engine.jsonElementToJsLiteral
+import com.damn.aisuper.util.Logger
 import com.dokar.quickjs.QuickJs
 import com.dokar.quickjs.binding.JsObject
 import com.dokar.quickjs.binding.asyncFunction
@@ -63,8 +64,7 @@ class QuickJsKtEngine : AppJSEngine {
             try {
                 jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
-                println("[AISuper][JS][CallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
-                e.printStackTrace()
+                Logger.e("JS", "CallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
                 null
             }
         }
@@ -76,8 +76,7 @@ class QuickJsKtEngine : AppJSEngine {
             try {
                 jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
-                println("[AISuper][JS][SuspendCallbackError] name=$name args=${safeArgs(jsonArgs)} message=${e.message}")
-                e.printStackTrace()
+                Logger.e("JS", "SuspendCallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
                 null
             }
         }
@@ -117,11 +116,9 @@ class QuickJsKtEngine : AppJSEngine {
     ) {
         val fn = functionName.ifBlank { "<script-load>" }
         val callPreview = if (callString.isNullOrBlank()) "<none>" else callString.take(500)
-        println("[AISuper][JS][EngineError] stage=$stage function=$fn args=${safeArgs(args)} call=$callPreview message=${error.message}")
-        error.printStackTrace()
+        Logger.e("JS", "EngineError", throwable = error) { "stage=$stage function=$fn args=${safeArgs(args)} call=$callPreview message=${error.message}" }
     }
 
     private fun safeArgs(args: List<JsonElement>): String =
         args.joinToString(prefix = "[", postfix = "]") { it.toString().replace("\n", " ").take(160) }
 }
-

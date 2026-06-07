@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.damn.aisuper.layout.frontend.material3.RenderWidget
 import com.damn.aisuper.layout.parseLayout
+import com.damn.aisuper.util.Logger
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -157,8 +158,8 @@ fun RenderWidgetPreviewRadio() {
         widget = root,
         values = values,
         styleSheet = PreviewThemes.byId["neon"] ?: PreviewThemes.default,
-        onValueChange = { id, value -> println("[Preview] onValueChange: $id -> $value") },
-        onAction = { name, args -> println("[Preview] onAction: $name args=$args") },
-        onModuleCommand = { module, target, command, args -> println("[Preview] onModuleCommand: $module.$command target=$target args=$args") }
+        onValueChange = { id, value -> Logger.d("Preview") { "onValueChange: $id -> $value" } },
+        onAction = { name, args -> Logger.d("Preview") { "onAction: $name args=$args" } },
+        onModuleCommand = { module, target, command, args -> Logger.d("Preview") { "onModuleCommand: $module.$command target=$target args=$args" } }
     )
 }

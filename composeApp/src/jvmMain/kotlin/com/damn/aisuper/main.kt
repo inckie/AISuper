@@ -3,6 +3,7 @@ package com.damn.aisuper
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.damn.aisuper.applet.AppletProviders
+import com.damn.aisuper.util.Logger
 import java.io.File
 
 fun main(args: Array<String>) = application {
@@ -13,7 +14,7 @@ fun main(args: Array<String>) = application {
         } else if (file.extension.equals("zip", ignoreCase = true)) {
             AppletProviders.zip(file.toPath())
         } else {
-            println("Unsupported applet format for: $pathString")
+            Logger.w("JVM", "Main") { "Unsupported applet format for: $pathString" }
             null
         }
     }

@@ -6,6 +6,7 @@ import com.damn.aisuper.storage.StateStorage
 import com.damn.aisuper.storage.StateStorageFactory
 import com.damn.aisuper.storage.StorageContext
 import com.damn.aisuper.storage.StorageScope
+import com.damn.aisuper.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
@@ -51,7 +52,7 @@ class Applet(
             launchFeature(entryFeatureId)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.e("Runtime", "Applet", throwable = e) { "Failed to load manifest $manifestPath" }
             throw e
         }
     }
@@ -62,12 +63,12 @@ class Applet(
         featurePersistent: StateStorage
     ): AppJSEngine {
         engine.registerFunction("consoleLog") { args ->
-            println("[AISuper][JS][Log] ${args.joinToString(" ") { it.toString() }}")
+            Logger.i("JS", "Log") { args.joinToString(" ") { it.toString() } }
             JsonNull
         }
 
         engine.registerFunction("consoleError") { args ->
-            println("[AISuper][JS][Error] ${args.joinToString(" ") { it.toString() }}")
+            Logger.e("JS", "Error") { args.joinToString(" ") { it.toString() } }
             JsonNull
         }
 
@@ -78,7 +79,7 @@ class Applet(
             try {
                 Json.parseToJsonElement(jsonString)
             } catch (e: Exception) {
-                println("[AISuper][JS][jsonParse] Failed to parse JSON: ${e.message}")
+                Logger.e("JS", "jsonParse") { "Failed to parse JSON: ${e.message}" }
                 JsonNull
             }
         }
@@ -90,7 +91,7 @@ class Applet(
             try {
                 XmlJsonParser.parse(xmlString)
             } catch (e: Exception) {
-                println("[AISuper][JS][xmlParse] Failed to parse XML: ${e.message}")
+                Logger.e("JS", "xmlParse") { "Failed to parse XML: ${e.message}" }
                 JsonNull
             }
         }
@@ -171,7 +172,7 @@ class Applet(
             feature.load()
             _currentFeature.value = feature
         } else {
-            println("Feature '$featureId' not found.")
+            Logger.w("Runtime") { "Feature '$featureId' not found." }
         }
     }
 
@@ -222,4 +223,3 @@ private fun encodeURIComponentUtf8(input: String): String {
 
     return out.toString()
 }
-
