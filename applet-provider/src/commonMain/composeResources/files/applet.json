@@ -67,45 +67,6 @@
         }
       ]
     },
-    "weather": {
-      "layout": "files/weather_layout.json",
-      "script": "files/weather_script.js",
-      "name": "Weather (MCP)",
-      "modules": [
-        {
-          "type": "mcpHttp",
-          "name": "mcp-host-http",
-          "config": {
-            "url": "http://127.0.0.1:8000/mcp",
-            "groups": "weather"
-          }
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
-    },
-    "metromoverJs": {
-      "layout": "files/metromover_layout.json",
-      "script": "files/metromover_js_script.js",
-      "name": "Miami Metromover (JS Module)",
-      "modules": [
-        {
-          "type": "jsModule",
-          "name": "miamiMetromover",
-          "script": "files/miami_metromover_module.js"
-        },
-        {
-          "type": "http",
-          "name": "httpMain"
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
-    },
     "form": {
       "layout": "files/form_layout.json",
       "script": "files/form_script.js",
@@ -130,13 +91,52 @@
     "weatherLocal": {
       "layout": "files/weather_layout.json",
       "script": "files/weather_local_script.js",
-      "name": "Weather (Local)",
+      "name": "Weather",
       "supportsWidget": true,
       "modules": [
         {
           "type": "jsModule",
           "name": "weather",
           "script": "files/weather_module.js"
+        },
+        {
+          "type": "http",
+          "name": "httpMain"
+        },
+        {
+          "type": "geolocation",
+          "name": "geoMain"
+        }
+      ]
+    },
+    "weather": {
+      "layout": "files/weather_layout.json",
+      "script": "files/weather_script.js",
+      "name": "Weather (MCP)",
+      "modules": [
+        {
+          "type": "mcpHttp",
+          "name": "mcp-host-http",
+          "config": {
+            "url": "http://127.0.0.1:8000/mcp",
+            "groups": "weather"
+          }
+        },
+        {
+          "type": "geolocation",
+          "name": "geoMain"
+        }
+      ]
+    },
+    "metromoverJs": {
+      "layout": "files/metromover_layout.json",
+      "script": "files/metromover_js_script.js",
+      "name": "Miami Metromover",
+      "modules": [
+        {
+          "type": "jsModule",
+          "name": "miamiMetromover",
+          "script": "files/miami_metromover_module.js"
         },
         {
           "type": "http",
