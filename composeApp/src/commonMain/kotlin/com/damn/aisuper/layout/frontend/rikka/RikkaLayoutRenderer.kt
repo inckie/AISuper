@@ -58,6 +58,9 @@ import zed.rainxch.rikkaui.components.ui.text.Text
 import zed.rainxch.rikkaui.components.ui.text.TextVariant
 import zed.rainxch.rikkaui.components.ui.toggle.Toggle
 
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+
 private val focusRegistry: MutableMap<String, FocusRequester> = mutableMapOf()
 
 
@@ -146,6 +149,12 @@ fun RenderWidget(
                 "done" -> ImeAction.Done
                 else -> ImeAction.Default
             }
+            
+            val visualTransformation = if (widget.password) {
+                PasswordVisualTransformation()
+            } else {
+                VisualTransformation.None
+            }
 
             Input(
                 value = value,
@@ -158,6 +167,7 @@ fun RenderWidget(
                 placeholder = widget.hint,
                 singleLine = widget.singleLine,
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ime),
+                visualTransformation = visualTransformation,
                 keyboardActions = KeyboardActions(
                     onSearch = {
                         val actionName = widget.onImeAction ?: widget.imeAction

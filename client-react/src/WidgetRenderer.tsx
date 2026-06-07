@@ -139,6 +139,7 @@ export function WidgetRenderer({
       const imeAction = textFieldActionKey(widget);
       return (
         <input
+          type={widget.password ? 'password' : 'text'}
           ref={(el) => {
             if (widgetId) {
               focusMap[widgetId] = el;

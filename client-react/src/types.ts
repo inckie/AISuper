@@ -63,6 +63,7 @@ export interface TextFieldWidget extends WidgetBase {
   type: 'TextField';
   hint?: string;
   singleLine?: boolean;
+  password?: boolean;
   imeAction?: string | null;
   onImeAction?: string | null;
   nextFocusId?: string | null;

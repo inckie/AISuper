@@ -11,7 +11,8 @@
           { "type": "Text", "text": "Form Demo", "weight": 1, "classes": ["header_text"] }
         ]
       },
-      { "type": "TextField", "id": "first_field", "hint": "First value", "singleLine": true, "imeAction": "Next", "nextFocusId": "second_field" },
+      { "type": "TextField", "id": "first_field", "hint": "First value", "singleLine": true, "imeAction": "Next", "nextFocusId": "password_field" },
+      { "type": "TextField", "id": "password_field", "hint": "Password", "singleLine": true, "password": true, "imeAction": "Next", "nextFocusId": "second_field" },
       { "type": "TextField", "id": "second_field", "hint": "Second value", "singleLine": true, "imeAction": "Done", "onImeAction": "submitForm" },
       { "type": "Switch", "id": "agree_toggle", "text": "Agree to terms", "fillMaxWidth": true },
       { "type": "Row", "fillMaxWidth": true, "children": [ { "type": "Button", "text": "Submit", "action": "submitForm" } ] },

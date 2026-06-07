@@ -69,6 +69,7 @@ data class TextFieldWidget(
     val hint: String = "",
     // single line input (default true)
     val singleLine: Boolean = true,
+    val password: Boolean = false,
     // IME action to request (e.g. "Search", "Next", "Done")
     val imeAction: String? = null,
     // action to call when IME action is triggered (JS action name)

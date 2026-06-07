@@ -65,6 +65,9 @@ import com.damn.aisuper.layout.stringOrNull
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+
 private val focusRegistry: MutableMap<String, FocusRequester> = mutableMapOf()
 
 
@@ -171,6 +174,22 @@ fun RenderWidget(
                 TextFieldDefaults.colors()
             }
 
+            var passwordVisible by remember { mutableStateOf(false) }
+
+            val visualTransformation = if (widget.password && !passwordVisible) {
+                PasswordVisualTransformation()
+            } else {
+                VisualTransformation.None
+            }
+
+            val trailingIcon: @Composable (() -> Unit)? = if (widget.password) {
+                {
+                    androidx.compose.material3.TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Text(if (passwordVisible) "Hide" else "Show")
+                    }
+                }
+            } else null
+
             TextField(
                 value = value,
                 singleLine = widget.singleLine,
@@ -207,6 +226,8 @@ fun RenderWidget(
                         }
                     }
                 ),
+                visualTransformation = visualTransformation,
+                trailingIcon = trailingIcon,
                 colors = colors
             )
         }
