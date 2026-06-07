@@ -1,76 +1,142 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Web, Desktop (JVM).
+# AI Super App
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+# General overview
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+Currently there are a number of so-called "super applications", like Grab, WeChat, Uber Go, Yandex Go and so on. These applications include functionality of what used to be multiple separate applications, like banking app, taxi app, food delivery app.
+The document proposes the next step of Super Application, where these separate applications, called "applets" can be built, loaded and executed dynamically based on user needs. Actual development of these applets is performed by strong "External" AI, that delivers a set of artifacts, which can be verified and signed. Super applications can load and execute these artifacts in safe sandbox environments, with permission guards.
+Rationale: while in theory any functionality provided by applet can be performed using "Strong" LLM AI with ad-hock UI "dashboards" for visual presentation, there is a number of drawbacks for that generic case:
 
-### Build and Run Android Application
+* In many cases it's more reasonable to have specialized self contained "closed loop" UI applications, like "Podcast player" or "Spending Analyzer"
+* It's not always comfortable to use chat mode to operate the app.
+* Running "Strong" AI is expensive and wasteful for performing basic functionality of say Audio Player
+* Since "Strong" LLM by nature is stochastic, there is no guarantee of it having reproducible and safe behavior, which is usually expected from the typical purpose-built application.
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+# Building blocks
 
-### Build and Run Desktop (JVM) Application
+| Block | Provided by |
+| :---- | :---- |
+| Widget – visual component in UI: Label, Button, Slider, Image, Map, Video View, and so on. | Application runtime |
+| Layout – spatial arrangement of Widgets or other Layouts. | Applet |
+| Screen – container to present layout in a specific way: modal, regular | Application runtime |
+| Navigation – stack of screens, can be hierarchical | Application runtime |
+| Module – isolated and permission guarded building block providing MCP-like interface | Application runtime |
+| Action – abstracted call to the module, widget update, navigation to another screen and so on. Some actions are "embedded", some are provided by Modules and Features. | Application runtime, applet |
+| Use Case – primitive case of interaction with a system, like "pressing a button on specific screen when in specific state performs specific action" | Applet |
+| Flow – a state machine that implements some Use Case or a group of Use Cases. **Represented as a graph so it can be verified**. | Applet |
+| Pipeline – a chain of actions calls (both native and pure JS) with parameters passed as blobs and dictionaries. **Represented as a graph so it can be verified**. | Applet |
+| Block – a sandboxed script that implements logical parts of the Flows, like calling of the actions or interaction with Modules. Can be run both locally or remotely. | Applet |
+| Flow State – a set of variables and objects that keeps the current state of the Flow and all required data. Can be interacted with using actions. | Applet |
+| Blob – text or binary named piece of data that can be shared/transferred between modules to avoid passing it though interfaces. AI modules should operate with blobs when dealing with data. For example, if large HTTP response must be passed to the Block, it's done wia Blob. Can be permanent (file or database), cache files, or in-memory | Applet |
+| Global State – State that keeps information shared by all Flows. Access can be protected by permissions. | Applet |
+| Feature – a connection of Widgets, Layouts, Screens, Flows | Applet |
+| Permission – receiving user approval to perform specific action using a specific module in the context of the specific Flow or Use Case. Can be one time or permanent. | Applet |
+| Applet – a full set of artifacts: Layouts, screens, Use Cases, Flows, and Blocks that work together as a single application from user point of view | Applet |
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+Every Layout file, Flow graph file, block script file, and entire feature can be digitally signed.  
+Expected list of base Modules:
 
-### Build and Run Web Application
+* HTTP calls module: can perform REST queries.  
+* Audio Player (can play in the background)  
+* Video Player (rich video player screen, can also have additional layouts on top, and include blocks as regular screen)  
+* In-App purchases module  
+* GPS module
 
-To build and run the development version of the web app, use the run configuration from the run widget
-in your IDE's toolbar or run it directly from the terminal:
-- for the Wasm target (faster, modern browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-- for the JS target (slower, supports older browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:jsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-    ```
+# Runtime environment
 
-### Build and Run iOS Application
+"Super application" resembles a typical flexible Game engine, that can load external layouts, present screens in required way, execute Blocks in the sandboxes, persist Flow states, and request permissions. Can be UI, headless or both (background services inside Android application).
+Application provides base Actions, like Present screen, and implements passing of data inside and between Flows.
+The application has a built-in set of modules, like Audio Player, Video Player, Purchases, GPS, Http calls.  
+The application also provides sandboxes to test each building block (Layout, Flow) or interaction with modules in isolation.  
+Each block and module should come with a set of test cases for the sandbox. For modules it\`s a pre-generated layout with a list of cases that can be performed against the module, like "Start playing a song using Audio Player module", "Receive GPS coordinates", "Load available in-app purchases list", "Post local notification" and so on.
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+# Process of designing or expanding an applet
 
----
+* The user provides an initial idea for the feature or even entire "applet".
+* "External" AI with role "Feature designer" creates an initial specification and saves it.
+* New session "External" AI with role "Developer" analyzes specification and generates a set of artifacts: Widgets, Layouts, Flows and Blocks.
+* New session of External AI with role "verificator" and optionally human verifies generated artifacts. There are additional tools for verification of each block.
+* After these steps are complete, artifacts are exported and then loaded into the runtime environment application.
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+# Reference implementation details
 
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+* App and UI framework: Compose Multiplatform  
+* Flow graph format: XState  
+* Block script format: JavaScript  
+* Initial Block JavaScript engine: https://github.com/alexzhirkevich/keight
+
+# UI and Core Architecture
+
+The reference implementation is split into clearly separated layers so that the same applet logic can run in native UI or headlessly behind a web server.
+
+## Core / Logic layer (`:shared`)
+
+All applet execution lives in the `:shared` Kotlin Multiplatform module — no UI framework, no server, just pure logic:
+
+- **`Applet`** — loads `applet.json`, manages feature lifecycle, exposes JS globals.
+- **`Feature`** — loads layout JSON + feature script, attaches native modules, dispatches actions/values.
+- **`AppJSEngine`** — abstracts the JavaScript sandbox (QuickJS via Keight on native/JVM; browser JS on web).
+- **`FeatureModule`** / **`FeatureModuleHost`** — pluggable native modules (HTTP, audio, GPS, MCP, JS modules) that register functions into the JS context.
+- **`StateStorage`** — hierarchical, scope-isolated state with transient and persistent backends (APPLET / FEATURE / MODULE / MODULE_GLOBAL scopes).
+- **`HeadlessSessionManager`** / **`HeadlessSession`** — wraps `Applet` for server-side use; re-emits state changes as a `Flow<HeadlessSessionSnapshot>` for REST/SSE delivery.
+
+## Applet Resources layer (`:applet-provider`)
+
+Decouples *where* applet files live from *who* executes them:
+
+- **`ComposeAppletProvider`** — reads from Compose Multiplatform bundled resources; works on Android, iOS, Desktop, and web-compose targets.
+- **`AppletProviders`** (JVM) — classpath, filesystem, or ZIP strategies; used by the server and JVM tests.
+
+The default applet is bundled here once and made available to all consumers.
+
+## Native UI layer (`:composeApp`)
+
+Renders applet widget trees using Compose Multiplatform on all native and web-compose targets:
+
+- **`RikkaLayoutRenderer`** — primary Compose renderer (Rikka UI design system).
+- **`Material3LayoutRenderer`** — alternative Material 3 Compose renderer.
+- **`GlanceLayoutRenderer`** — renders applets as Android App Widgets via Jetpack Glance.
+- Platform entry points: `MainActivity` (Android), `main.kt` (Desktop / web-compose), iOS glue.
+
+The Compose app simply collects the `layoutRoot` and `values` state flows from `Applet`/`Feature` and passes them to the renderer — no business logic here.
+
+## Headless server (`:server`)
+
+A Ktor/Netty JVM application that runs applets without any UI and exposes a REST + SSE API:
+
+- `POST /sessions` — create a session, load an applet.
+- `POST /sessions/{id}/action|value|module-command` — drive the applet.
+- `GET /sessions/{id}/events` — SSE stream of `HeadlessSessionSnapshot` pushed on every state change.
+
+This enables any HTTP client (browser, mobile, CLI) to interact with an applet remotely.
+
+## React web client (`client-react/`)
+
+A Vite + React + TypeScript browser app that connects to `:server`:
+
+- **`api.ts`** — typed `serverApi` object wrapping all REST calls.
+- **`App.tsx`** — session management and inline `EventSource` SSE subscription.
+- **`WidgetRenderer.tsx`** — recursive renderer that maps the `HeadlessSessionSnapshot.layout` widget tree to React DOM elements; mirrors the role of `RikkaLayoutRenderer` on native platforms.
+- **`types.ts`** — TypeScript mirror of the Kotlin layout model types.
+
+## How it fits together
+
+```
+                    ┌────────────────────────────────────────────────────┐
+                    │             :shared  (core logic)                  │
+                    │  Applet · Feature · AppJSEngine · Modules          │
+                    │  Storage · HeadlessSession                         │
+                    └──────────────────────┬─────────────────────────────┘
+                                           │
+              ┌────────────────────────────┼──────────────────────────────────┐
+              ▼                            ▼                                  ▼
+  ┌─────────────────────┐    ┌──────────────────────────┐   ┌──────────────────────────┐
+  │  :composeApp        │    │  :applet-provider        │   │  :server  (Ktor JVM)     │
+  │  Compose renderers  │    │  ComposeAppletProvider   │   │  REST + SSE              │
+  │  platform entries   │◄───│  AppletProviders (JVM)   │──►│  HeadlessSessionManager  │
+  └─────────────────────┘    └──────────────────────────┘   └────────────┬─────────────┘
+                                                                          │ REST / SSE
+                                                             ┌────────────▼─────────────┐
+                                                             │  client-react/  (npm)    │
+                                                             │  React · WidgetRenderer  │
+                                                             └──────────────────────────┘
+```
