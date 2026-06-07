@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.damn.aisuper.applet.AppletProvider
 import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.headless.HeadlessSessionSnapshot
@@ -35,18 +36,19 @@ import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
 
 @Composable
 @Preview
-fun App() {
+fun App(customProvider: AppletProvider? = null, entryPath: String = "files/applet.json") {
     // Local in-process runtime is kept as a fallback when remote kernel is unavailable.
     val applet = remember {
         Applet(
             engineFactory = { createAppJSEngine("app-ui") },
-            resourceLoader = ComposeAppletProvider().createLoader()
+            resourceLoader = (customProvider ?: ComposeAppletProvider()).createLoader()
         )
     }
     val remoteClient = remember { RemoteAppletClient(baseUrl = REMOTE_SERVER_BASE_URL) }
     var remoteState by remember { mutableStateOf<HeadlessSessionSnapshot?>(null) }
     var remoteSessionId by remember { mutableStateOf<String?>(null) }
     var useRemote by remember { mutableStateOf<Boolean?>(null) }
+    var localAppletError by remember { mutableStateOf<String?>(null) }
 
         DisposableEffect(applet, remoteClient) {
             onDispose {
@@ -97,7 +99,13 @@ fun App() {
             } catch (remoteError: Exception) {
                 println("[AISuper][Remote] falling back to local runtime: ${remoteError.message}")
                 useRemote = false
-                applet.loadApplet("files/applet.json")
+                try {
+                    applet.loadApplet(entryPath)
+                } catch (e: Exception) {
+                    val errMsg = "Failed to load custom applet from '$entryPath':\n${e.message}"
+                    println(errMsg)
+                    localAppletError = errMsg
+                }
             }
         }
 
@@ -111,6 +119,14 @@ fun App() {
                 return@Column
             }
 
+            if (localAppletError != null) {
+                BasicText(
+                    localAppletError!!,
+                    modifier = Modifier.safeContentPadding()
+                )
+                return@Column
+            }
+
             if (layoutRoot == null) {
                 BasicText(
                     if (useRemote == true) {
@@ -121,7 +137,7 @@ fun App() {
                     modifier = Modifier.safeContentPadding()
                 )
             } else {
-                val widget = layoutRoot!!.layout
+                val widget = layoutRoot.layout
                 val renderModifier = Modifier.fillMaxSize().safeContentPadding()
 
                 when (frontend) {

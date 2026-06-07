@@ -52,6 +52,7 @@ class Applet(
 
         } catch (e: Exception) {
             e.printStackTrace()
+            throw e
         }
     }
 

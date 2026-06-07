@@ -110,6 +110,10 @@ compose.desktop {
     application {
         mainClass = "com.damn.aisuper.MainKt"
 
+        buildTypes.release.proguard {
+            configurationFiles.from(project.file("compose-proguard-rules.pro"))
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.damn.aisuper"
