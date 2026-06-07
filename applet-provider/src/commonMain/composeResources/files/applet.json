@@ -77,26 +77,7 @@
           "name": "mcp-host-http",
           "config": {
             "url": "http://127.0.0.1:8000/mcp",
-            "groups": "weather,miami_metromover"
-          }
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
-    },
-    "metromover": {
-      "layout": "files/metromover_layout.json",
-      "script": "files/metromover_script.js",
-      "name": "Miami Metromover",
-      "modules": [
-        {
-          "type": "mcpHttp",
-          "name": "mcp-host-http",
-          "config": {
-            "url": "http://127.0.0.1:8000/mcp",
-            "groups": "miami_metromover"
+            "groups": "weather"
           }
         },
         {
