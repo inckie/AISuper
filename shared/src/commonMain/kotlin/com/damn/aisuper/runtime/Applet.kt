@@ -25,18 +25,18 @@ class Applet(
     private val _currentFeature = MutableStateFlow<Feature?>(null)
     val currentFeature = _currentFeature.asStateFlow()
 
-    // TODO: must also be a module,
-    //  so we could have headless and console applets/features
-    private val ui = AppletUI()
-    val currentStyleSheet = ui.currentStyleSheet
-    val currentFramework = ui.currentFramework
-
-    private var manifest: AppletManifest? = null
-
     // State storage: both transient and persistent storages available to all scopes
     private val compositeStorage = StateStorageFactory.createComposite()
     private val appletTransientStorage: StateStorage = compositeStorage.memoryStorage
     private val appletPersistentStorage: StateStorage = compositeStorage.persistentStorage
+
+    // TODO: must also be a module,
+    //  so we could have headless and console applets/features
+    private val ui = AppletUI(appletPersistentStorage)
+    val currentStyleSheet = ui.currentStyleSheet
+    val currentFramework = ui.currentFramework
+
+    private var manifest: AppletManifest? = null
 
     suspend fun loadApplet(manifestPath: String) {
         try {

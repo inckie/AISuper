@@ -4,6 +4,8 @@ import com.damn.aisuper.engine.AppJSEngine
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.AppletManifest
+import com.damn.aisuper.storage.StateStorage
+import com.damn.aisuper.storage.StorageScope
 import com.damn.aisuper.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * Manages UI-related state: style sheets, framework selection,
  * and registers corresponding JS engine callbacks.
  */
-class AppletUI {
+class AppletUI(private val persistentStorage: StateStorage) {
 
     private val _currentStyleId = MutableStateFlow<String?>(null)
 
@@ -51,17 +53,39 @@ class AppletUI {
             }
         }
 
-        val preferred = manifest?.defaultStyle
-        val selectedId = when {
-            !preferred.isNullOrBlank() && stylesById.containsKey(preferred) -> preferred
-            stylesById.isNotEmpty() -> stylesById.keys.first()
-            else -> null
+        // Restore saved theme
+        val savedThemeId = persistentStorage.getString(StorageScope.Applet, KEY_THEME)
+        val selectedId = if (!savedThemeId.isNullOrBlank() && stylesById.containsKey(savedThemeId)) {
+            savedThemeId
+        } else {
+            if (!savedThemeId.isNullOrBlank()) {
+                Logger.w("Style") { "Saved theme '$savedThemeId' no longer available, reverting to default." }
+                persistentStorage.delete(StorageScope.Applet, KEY_THEME)
+            }
+            val preferred = manifest?.defaultStyle
+            when {
+                !preferred.isNullOrBlank() && stylesById.containsKey(preferred) -> preferred
+                stylesById.isNotEmpty() -> stylesById.keys.first()
+                else -> null
+            }
         }
 
-        setCurrentTheme(selectedId)
+        applyTheme(selectedId)
+
+        // Restore saved framework
+        val savedFramework = persistentStorage.getString(StorageScope.Applet, KEY_FRAMEWORK)
+        if (!savedFramework.isNullOrBlank()) {
+            if (!applyFramework(savedFramework)) {
+                Logger.w("UI") { "Saved framework '$savedFramework' no longer available, reverting to default." }
+                persistentStorage.delete(StorageScope.Applet, KEY_FRAMEWORK)
+            }
+        }
     }
 
-    fun setCurrentTheme(styleId: String?): Boolean {
+    /**
+     * Internal apply methods that DON'T save to persistent storage to avoid redundant writes during load.
+     */
+    private fun applyTheme(styleId: String?): Boolean {
         if (styleId.isNullOrBlank()) {
             _currentStyleId.update { null }
             _currentStyleSheet.update { null }
@@ -74,11 +98,35 @@ class AppletUI {
         return true
     }
 
-    fun setCurrentFramework(frameworkId: String?): Boolean {
+    private fun applyFramework(frameworkId: String?): Boolean {
         if (frameworkId.isNullOrBlank()) return false
         if (LayoutFrontend.entries.none { it.name == frameworkId }) return false
         _currentFramework.update { frameworkId }
         return true
+    }
+
+    suspend fun setCurrentTheme(styleId: String?): Boolean {
+        val changed = applyTheme(styleId)
+        if (changed) {
+            if (styleId != null) {
+                persistentStorage.putString(StorageScope.Applet, KEY_THEME, styleId)
+            } else {
+                persistentStorage.delete(StorageScope.Applet, KEY_THEME)
+            }
+        }
+        return changed
+    }
+
+    suspend fun setCurrentFramework(frameworkId: String?): Boolean {
+        val changed = applyFramework(frameworkId)
+        if (changed) {
+            if (frameworkId != null) {
+                persistentStorage.putString(StorageScope.Applet, KEY_FRAMEWORK, frameworkId)
+            } else {
+                persistentStorage.delete(StorageScope.Applet, KEY_FRAMEWORK)
+            }
+        }
+        return changed
     }
 
     /**
@@ -98,7 +146,7 @@ class AppletUI {
             JsonPrimitive(_currentStyleId.value ?: "")
         }
 
-        engine.registerFunction("setCurrentTheme") { args ->
+        engine.registerSuspendFunction("setCurrentTheme") { args ->
             val styleId = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
             }
@@ -121,12 +169,17 @@ class AppletUI {
             JsonPrimitive(_currentFramework.value)
         }
 
-        engine.registerFunction("setCurrentFramework") { args ->
+        engine.registerSuspendFunction("setCurrentFramework") { args ->
             val frameworkId = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
             }
             val changed = setCurrentFramework(frameworkId)
             JsonPrimitive(changed)
         }
+    }
+
+    companion object {
+        private const val KEY_THEME = "ui.theme_id"
+        private const val KEY_FRAMEWORK = "ui.framework"
     }
 }
