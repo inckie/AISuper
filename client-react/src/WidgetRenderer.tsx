@@ -21,8 +21,7 @@ interface RenderProps {
   focusRegistry?: Record<string, HTMLInputElement | null>;
 }
 
-function widgetBaseStyle(widget: Widget, styleSheet?: StyleSheet | null): CSSProperties {
-  const style = resolveStyleRule(widget, styleSheet);
+function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
   const textAlign = style.textAlign?.toLowerCase();
   return {
     width: widget.fillMaxWidth ? '100%' : undefined,
@@ -61,7 +60,8 @@ export function WidgetRenderer({
   parentDirection = 'column',
   focusRegistry
 }: RenderProps): JSX.Element | null {
-  const baseStyle = widgetBaseStyle(widget, styleSheet);
+  const style = resolveStyleRule(widget, styleSheet);
+  const baseStyle = widgetBaseStyle(widget, style);
   const focusMap = focusRegistry ?? {};
 
   switch (widget.type) {
@@ -165,7 +165,7 @@ export function WidgetRenderer({
             minHeight: 36,
             border: '1px solid #334155',
             borderRadius: 8,
-            background: parseColorOrNull(resolveStyleRule(widget, styleSheet).containerColor) ?? '#111827',
+            background: parseColorOrNull(style.containerColor) ?? '#111827',
             color: baseStyle.color ?? '#e5e7eb'
           }}
           value={value}
@@ -191,7 +191,6 @@ export function WidgetRenderer({
     }
 
     case 'Button': {
-      const style = resolveStyleRule(widget, styleSheet);
       return (
         <button
           style={{
@@ -256,7 +255,7 @@ export function WidgetRenderer({
             minHeight: 36,
             borderRadius: 8,
             border: '1px solid #334155',
-            background: parseColorOrNull(resolveStyleRule(widget, styleSheet).containerColor) ?? '#111827',
+            background: parseColorOrNull(style.containerColor) ?? '#111827',
             color: baseStyle.color ?? '#e5e7eb'
           }}
           value={selectedValue}
