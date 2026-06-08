@@ -1,5 +1,6 @@
 package com.damn.aisuper.layout.frontend.material3
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -107,7 +108,7 @@ fun RenderWidget(
         is RowWidget -> {
             var rowModifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
             if (widget.isScrollable) {
-                rowModifier = rowModifier.verticalScroll(rememberScrollState())
+                rowModifier = rowModifier.horizontalScroll(rememberScrollState())
             }
             Row(modifier = rowModifier) {
                 widget.children.forEach { child ->
@@ -255,7 +256,12 @@ fun RenderWidget(
         }
 
         is ImageWidget -> {
-            val imageModel = widget.data?.takeIf { it.isNotBlank() } ?: widget.url
+            val widgetId = widget.id
+            val imageModel = if (widgetId != null && values.containsKey(widgetId)) {
+                values[widgetId]?.stringOrNull() ?: widget.data?.takeIf { it.isNotBlank() } ?: widget.url
+            } else {
+                widget.data?.takeIf { it.isNotBlank() } ?: widget.url
+            }
             val imgModifier = if (widget.fillMaxWidth) {
                 modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
             } else {

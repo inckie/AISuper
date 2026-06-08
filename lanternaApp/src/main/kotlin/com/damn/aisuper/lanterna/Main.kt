@@ -272,6 +272,11 @@ private fun renderWidget(
             val checkBox = CheckBox(widget.text)
             val isCheckedState = widget.id?.let { values[it]?.booleanOrNull() } ?: widget.checked
             checkBox.isChecked = isCheckedState
+            checkBox.addListener { checked ->
+                widget.id?.let { id ->
+                    applet.updateValue(id, JsonPrimitive(checked))
+                }
+            }
             checkBox
         }
 
@@ -281,13 +286,30 @@ private fun renderWidget(
             value = (progressVal * 100).toInt()
         }
 
-        is SpinnerWidget -> Label("...")
+        is SpinnerWidget -> {
+            val visible = widget.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
+            if (visible) Label("...") else Label("")
+        }
 
         is AudioPlayerWidget -> {
             val panel = Panel()
             panel.addComponent(Label("--- Audio Player ---"))
             panel.addComponent(Label(widget.title))
-            panel.addComponent(Button("Play/Pause") {})
+            panel.addComponent(Button("Play") {
+                CoroutineScope(Dispatchers.Default).launch {
+                    applet.handleModuleCommand("audioPlayer", widget.player, "play", emptyList())
+                }
+            })
+            panel.addComponent(Button("Pause") {
+                CoroutineScope(Dispatchers.Default).launch {
+                    applet.handleModuleCommand("audioPlayer", widget.player, "pause", emptyList())
+                }
+            })
+            panel.addComponent(Button("Stop") {
+                CoroutineScope(Dispatchers.Default).launch {
+                    applet.handleModuleCommand("audioPlayer", widget.player, "stop", emptyList())
+                }
+            })
             panel
         }
 
