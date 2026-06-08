@@ -6,7 +6,12 @@ import com.damn.aisuper.layout.*
 import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.util.LogLevel
 import com.damn.aisuper.util.Logger
+import com.googlecode.lanterna.SGR
 import com.googlecode.lanterna.TerminalSize
+import com.googlecode.lanterna.TextColor
+import com.googlecode.lanterna.graphics.Theme
+import com.googlecode.lanterna.graphics.ThemeDefinition
+import com.googlecode.lanterna.graphics.ThemeStyle
 import com.googlecode.lanterna.gui2.*
 import com.googlecode.lanterna.gui2.Button
 import com.googlecode.lanterna.screen.TerminalScreen
@@ -17,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import java.nio.file.Paths
+import java.util.*
 
 fun main(args: Array<String>) {
     // 0. Disable logging to avoid messing up the Terminal UI
@@ -32,7 +38,7 @@ fun main(args: Array<String>) {
 
     val gui = MultiWindowTextGUI(screen)
     val window = BasicWindow("AISuper Terminal")
-    window.setHints(listOf(Window.Hint.FULL_SCREEN))
+    window.setHints(listOf(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS))
 
     val mainPanel = Panel(LinearLayout(Direction.VERTICAL))
     window.component = mainPanel
@@ -80,12 +86,14 @@ fun main(args: Array<String>) {
         var layoutJob: Job? = null
         var previousRoot: LayoutRoot? = null
         var previousValues: Map<String, JsonElement> = emptyMap()
+        var previousStyleSheet: StyleSheet? = null
         val lastTypedValues = mutableMapOf<String, String>()
 
         applet.currentFeature.collect { feature ->
             layoutJob?.cancel()
             previousRoot = null
             previousValues = emptyMap()
+            previousStyleSheet = null
             lastTypedValues.clear()
 
             if (feature == null) {
@@ -99,11 +107,13 @@ fun main(args: Array<String>) {
             layoutJob = scope.launch {
                 combine(
                     feature.layoutRoot,
-                    feature.values
-                ) { root, values ->
-                    Pair(root, values)
-                }.collect { (root, values) ->
+                    feature.values,
+                    applet.currentStyleSheet
+                ) { root, values, styleSheet ->
+                    Triple(root, values, styleSheet)
+                }.collect { (root, values, styleSheet) ->
                     val rootChanged = root != previousRoot
+                    val styleChanged = styleSheet != previousStyleSheet
                     val changedKeys = values.filter { (k, v) -> previousValues[k] != v }.keys
 
                     val meaningfulChanges = changedKeys.filter { key ->
@@ -114,17 +124,48 @@ fun main(args: Array<String>) {
 
                     previousRoot = root
                     previousValues = values
+                    previousStyleSheet = styleSheet
 
-                    if (!rootChanged && meaningfulChanges.isEmpty()) {
+                    if (!rootChanged && !styleChanged && meaningfulChanges.isEmpty()) {
                         // Skip re-render if it's just an echo of what we are currently typing
                         return@collect
                     }
 
                     gui.updateUI {
                         mainPanel.removeAllComponents()
+
+                        // Apply global background from theme if available
+                        if (styleSheet != null) {
+                            val isDark = styleSheet.scheme == "dark"
+                            val isProbablyDark = isDark || styleSheet.name?.contains("Neon", ignoreCase = true) == true || styleSheet.name?.contains("Dark", ignoreCase = true) == true
+
+                            val bgHex = styleSheet.classes["screen"]?.backgroundColor
+                                ?: styleSheet.classes["screen"]?.containerColor
+                                ?: styleSheet.tokens.values["backgroundColor"]
+                                ?: styleSheet.tokens.values["containerColor"]
+                                ?: (if (isProbablyDark) "#000000" else null)
+                            val fgHex = styleSheet.classes["screen"]?.textColor
+                                ?: styleSheet.defaults["Text"]?.textColor
+                                ?: (if (isProbablyDark) "#FFFFFF" else null)
+                            
+                            val bg = toLanternaColor(bgHex)
+                            val fg = toLanternaColor(fgHex)
+                            if (bg != null || fg != null) {
+                                var base = gui.theme
+                                while (base is AisTheme) {
+                                    base = base.baseTheme
+                                }
+                                val theme = AisTheme(fg, bg, base)
+                                gui.theme = theme
+                                window.theme = theme
+                                mainPanel.theme = theme
+                                mainPanel.fillColorOverride = bg
+                            }
+                        }
+
                         if (root != null) {
                             val rendered =
-                                renderWidget(root.layout, applet, values, lastTypedValues)
+                                renderWidget(root.layout, applet, values, styleSheet, lastTypedValues)
                             mainPanel.addComponent(rendered)
                             // Automatically focus the first interactive component to maintain keyboard navigation
                             findFirstInteractable(rendered)?.takeFocus()
@@ -163,9 +204,10 @@ private fun renderWidget(
     widget: Widget,
     applet: Applet,
     values: Map<String, JsonElement>,
+    styleSheet: StyleSheet?,
     lastTypedValues: MutableMap<String, String>
 ): Component {
-    return when (widget) {
+    val component = when (widget) {
         is ColumnWidget -> {
             val panel = Panel(LinearLayout(Direction.VERTICAL))
             widget.children.forEach {
@@ -174,6 +216,7 @@ private fun renderWidget(
                         it,
                         applet,
                         values,
+                        styleSheet,
                         lastTypedValues
                     )
                 )
@@ -182,7 +225,7 @@ private fun renderWidget(
             if (widget.dynamicChildrenId != null) {
                 val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
                 dynamicWidgets.forEach { child ->
-                    panel.addComponent(renderWidget(child, applet, values, lastTypedValues))
+                    panel.addComponent(renderWidget(child, applet, values, styleSheet, lastTypedValues))
                 }
             }
             if (widget.isScrollable) {
@@ -199,6 +242,7 @@ private fun renderWidget(
                         it,
                         applet,
                         values,
+                        styleSheet,
                         lastTypedValues
                     )
                 )
@@ -314,7 +358,9 @@ private fun renderWidget(
         }
 
         else -> Label("<Unsupported Widget: ${widget::class.simpleName}>")
-    }.apply {
+    }
+
+    return component.apply {
         // Handle common layout traits
         if (widget.fillMaxWidth || widget.fillMaxSize || widget.weight != null) {
             val grabHorizontal = widget.fillMaxWidth || widget.weight != null
@@ -323,6 +369,51 @@ private fun renderWidget(
             layoutData = LinearLayout.createLayoutData(LinearLayout.Alignment.Fill, growPolicy)
         }
     }
+}
+
+private fun toLanternaColor(hex: String?): TextColor? {
+    if (hex.isNullOrBlank()) return null
+    return try {
+        // Strip alpha if present (#AARRGGBB -> #RRGGBB)
+        val cleanHex = if (hex.startsWith("#") && hex.length == 9) {
+            "#" + hex.substring(3)
+        } else {
+            hex
+        }
+        TextColor.Factory.fromString(cleanHex)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private class AisTheme(
+    private val fg: TextColor?,
+    private val bg: TextColor?,
+    val baseTheme: Theme
+) : Theme {
+    override fun getDefinition(clazz: Class<*>?): ThemeDefinition {
+        val baseDef = baseTheme.getDefinition(clazz) ?: baseTheme.defaultDefinition
+        return object : ThemeDefinition by baseDef {
+            override fun getActive(): ThemeStyle = AisStyle(fg, bg, baseDef.active)
+            override fun getInsensitive(): ThemeStyle = AisStyle(fg, bg, baseDef.insensitive)
+            override fun getSelected(): ThemeStyle = AisStyle(fg, bg, baseDef.selected)
+            override fun getCustom(name: String?): ThemeStyle = AisStyle(fg, bg, baseDef.getCustom(name))
+        }
+    }
+
+    override fun getDefaultDefinition(): ThemeDefinition = getDefinition(null)
+    override fun getWindowPostRenderer(): WindowPostRenderer? = baseTheme.windowPostRenderer
+    override fun getWindowDecorationRenderer(): WindowDecorationRenderer? = baseTheme.windowDecorationRenderer
+}
+
+private class AisStyle(
+    private val fg: TextColor?,
+    private val bg: TextColor?,
+    private val baseStyle: ThemeStyle
+) : ThemeStyle {
+    override fun getForeground(): TextColor = fg ?: baseStyle.foreground
+    override fun getBackground(): TextColor = bg ?: baseStyle.background
+    override fun getSGRs(): EnumSet<SGR> = baseStyle.getSGRs()
 }
 
 /** Helper to safely update GUI components from Coroutine threads */
