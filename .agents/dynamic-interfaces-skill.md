@@ -96,6 +96,11 @@ For lists that grow or shrink dynamically (like a chat interface, list of items,
 >   * If the root `Column` is scrollable (`isScrollable: true`), all nested vertical `Column` children must have scroll disabled (`isScrollable: false` or omitted).
 >   * Nesting a horizontal scrollable `Row` inside a vertical scrollable `Column` is safe because they scroll in different directions.
 
+> [!CAUTION]
+> **Weight and fillMaxWidth/fillMaxSize Conflict**
+> Do **NOT** use `fillMaxWidth: true` (or `fillMaxSize: true`) on a child widget that has `weight` set inside a `Row` or `Column`.
+> In Compose, `weight` automatically handles stretching and filling the allocated space by default. Explicitly adding `fillMaxWidth: true` to a weighted child conflicts with the weight calculation and can disrupt the layout or break proportional child distributions (e.g., preventing items in a `Row` from aligning correctly to their weighted ratios).
+
 ---
 
 ## 3. Dropdowns vs. Switches (Action Notification)
