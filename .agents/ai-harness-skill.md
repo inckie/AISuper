@@ -72,6 +72,6 @@ Used to build JS modules that are loaded via `jsModule` type in `applet.json`.
 
 ## 8. Layout Inspection
 Use `layout_get` to see the actual widget tree. This is critical when:
-- The UI adds widgets dynamically via `dynamicChildrenId`.
+- `Row` and `Column` widgets support `dynamicChildrenId`.
 - You need to verify if styles or modifiers were applied correctly.
 - You are debugging layout nesting issues.

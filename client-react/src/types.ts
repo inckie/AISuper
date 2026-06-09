@@ -51,6 +51,7 @@ export interface ColumnWidget extends WidgetBase {
 export interface RowWidget extends WidgetBase {
   type: 'Row';
   children?: Widget[];
+  dynamicChildrenId?: string | null;
   isScrollable?: boolean;
 }
 

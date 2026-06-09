@@ -247,6 +247,13 @@ private fun renderWidget(
                     )
                 )
             }
+
+            if (widget.dynamicChildrenId != null) {
+                val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
+                dynamicWidgets.forEach { child ->
+                    panel.addComponent(renderWidget(child, applet, values, styleSheet, lastTypedValues))
+                }
+            }
             panel
         }
 

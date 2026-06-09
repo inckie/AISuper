@@ -44,6 +44,7 @@ data class RowWidget(
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
     val children: List<Widget> = emptyList(),
+    val dynamicChildrenId: String? = null,
     val isScrollable: Boolean = false
 ) : Widget()
 

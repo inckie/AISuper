@@ -177,7 +177,7 @@ The UI is driven by a data-driven layout system, not hardcoded Compose code.
 *   **Rendering**:
     *   **Native**: recursive Compose function (`RenderWidget` / `RikkaLayoutRenderer`) maps widget tree to Compose nodes.
     *   **Web**: `WidgetRenderer.tsx` in `client-react` maps widget tree to React DOM nodes.
-*   **Dynamic Layout**: `ColumnWidget` can bind to a state variable (`dynamicChildrenId`) containing widget JSON values, allowing runtime UI updates.
+*   **Dynamic Layout**: `Column` and `Row` widgets can bind to a state variable (`dynamicChildrenId`) containing widget JSON values, allowing runtime UI updates.
 *   **Image Sources**: `Image` supports both remote `url` and inline `data` (e.g., `data:image/svg+xml;utf8,...`).
 *   **Action Payloads**: `Button` supports optional `actionArgs` (JSON array) propagated to `Applet.handleAction(action, args)`.
 *   **Screen Structure Pattern**: fixed header/footer with a weighted, scrollable middle region.

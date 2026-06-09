@@ -98,6 +98,9 @@ export function WidgetRenderer({
     }
 
     case 'Row': {
+      const children = widget.children ?? [];
+      const dynamic = widget.dynamicChildrenId ? resolveDynamicWidgets(values[widget.dynamicChildrenId]) : [];
+      const allChildren = [...children, ...dynamic];
       return (
         <div
           style={{
@@ -109,7 +112,7 @@ export function WidgetRenderer({
             overflowX: widget.isScrollable ? 'auto' : undefined
           }}
         >
-          {(widget.children ?? []).map((child, index) => (
+          {allChildren.map((child, index) => (
             <Fragment key={`${child.id ?? child.type}-${index}`}>
               <WidgetRenderer
                 widget={child}

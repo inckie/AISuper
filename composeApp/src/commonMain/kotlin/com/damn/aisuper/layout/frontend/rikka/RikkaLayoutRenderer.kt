@@ -106,6 +106,13 @@ fun RenderWidget(
                 widget.children.forEach { child ->
                     RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
                 }
+
+                if (widget.dynamicChildrenId != null) {
+                    val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
+                    dynamicWidgets.forEach { child ->
+                        RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
+                    }
+                }
             }
         }
 
