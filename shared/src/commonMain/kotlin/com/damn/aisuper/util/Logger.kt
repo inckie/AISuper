@@ -1,12 +1,55 @@
 package com.damn.aisuper.util
 
+import kotlinx.serialization.Serializable
+
 enum class LogLevel {
     DEBUG, INFO, WARN, ERROR, NONE
 }
 
+interface LogSink {
+    fun onLog(level: LogLevel, tag: String, message: String, throwable: Throwable?)
+}
+
+@Serializable
+class LogEntry(
+    val level: LogLevel,
+    val tag: String,
+    val message: String,
+    val timestamp: Long,
+    val throwable: String? = null
+)
+
+class LogBufferSink(private val maxEntries: Int = 1000) : LogSink {
+    private val _entries = mutableListOf<LogEntry>()
+    val entries: List<LogEntry> get() = _entries.toList()
+
+    override fun onLog(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
+        if (_entries.size >= maxEntries) {
+            _entries.removeAt(0)
+        }
+        _entries.add(
+            LogEntry(
+                level = level,
+                tag = tag,
+                message = message,
+                timestamp = currentTimeMillis(),
+                throwable = throwable?.stackTraceToString()
+            )
+        )
+    }
+
+    fun clear() = _entries.clear()
+}
+
+internal expect fun currentTimeMillis(): Long
+
 object Logger {
     var minLevel: LogLevel = LogLevel.DEBUG
     private val tagLevels = mutableMapOf<String, LogLevel>()
+    private val sinks = mutableListOf<LogSink>()
+
+    fun addSink(sink: LogSink) = sinks.add(sink)
+    fun removeSink(sink: LogSink) = sinks.remove(sink)
 
     fun setTagLevel(tag: String, level: LogLevel) {
         tagLevels[tag] = level
@@ -36,10 +79,14 @@ object Logger {
                 LogLevel.NONE -> ""
             }
             val tagString = if (tags.isEmpty()) "AISuper" else tags.joinToString(":")
-            println("[$prefix][$tagString] ${msg()}")
+            val message = msg()
+            
+            println("[$prefix][$tagString] $message")
             throwable?.let {
                 println(it.stackTraceToString())
             }
+
+            sinks.forEach { it.onLog(level, tagString, message, throwable) }
         }
     }
 }

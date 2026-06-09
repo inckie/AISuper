@@ -27,8 +27,8 @@ class Applet(
 
     // State storage: both transient and persistent storages available to all scopes
     private val compositeStorage = StateStorageFactory.createComposite()
-    private val appletTransientStorage: StateStorage = compositeStorage.memoryStorage
-    private val appletPersistentStorage: StateStorage = compositeStorage.persistentStorage
+    val appletTransientStorage: StateStorage = compositeStorage.memoryStorage
+    val appletPersistentStorage: StateStorage = compositeStorage.persistentStorage
 
     // TODO: must also be a module,
     //  so we could have headless and console applets/features
@@ -40,6 +40,9 @@ class Applet(
 
     suspend fun loadApplet(manifestPath: String) {
         try {
+            _currentFeature.value?.close()
+            _currentFeature.value = null
+
             val bytes = resourceLoader.readBytes(manifestPath)
             val jsonString = bytes.decodeToString()
 
