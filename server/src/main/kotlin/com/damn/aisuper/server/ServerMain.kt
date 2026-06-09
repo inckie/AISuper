@@ -30,13 +30,25 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.util.UUID
 
-fun main() {
+fun main(args: Array<String>) {
+    val customProvider = args.firstOrNull()?.let { pathString ->
+        val file = File(pathString)
+        if (file.isDirectory) {
+            AppletProviders.filesystem(file.toPath(), fallbackToClasspath = false)
+        } else if (file.extension.equals("zip", ignoreCase = true)) {
+            AppletProviders.zip(file.toPath())
+        } else {
+            null
+        }
+    }
+
     // Filesystem-first with classpath fallback: custom path overrides work,
     // and the bundled default applet from :applet-provider is always available.
-    val resourceLoader = AppletProviders
-        .filesystem(fallbackToClasspath = true)
+    val resourceLoader = (customProvider ?: AppletProviders
+        .filesystem(fallbackToClasspath = true))
         .createLoader()
 
     val manager = HeadlessSessionManager(
@@ -81,14 +93,18 @@ fun main() {
             route("/sessions") {
                 post {
                     val request = call.receive<CreateSessionRequest>()
-                    val session = manager.create(request.manifestPath)
+                    
+                    val entryPath = request.manifestPath.takeIf { it.isNotEmpty() }
+                        ?: if (customProvider != null) "applet.json" else "files/applet.json"
+
+                    val session = manager.create(entryPath)
                     val createdState = session.snapshot("created")
                     if (createdState.featureId.isBlank()) {
                         manager.close(session.id)
                         call.respond(
                             HttpStatusCode.BadRequest,
                             mapOf(
-                                "error" to "Failed to load applet from '${request.manifestPath}'. Verify the manifest path and entry feature."
+                                "error" to "Failed to load applet from '$entryPath'. Verify the manifest path and entry feature."
                             )
                         )
                         return@post
@@ -96,7 +112,7 @@ fun main() {
                     call.respond(
                         CreateSessionResponse(
                             id = session.id,
-                            manifestPath = request.manifestPath,
+                            manifestPath = entryPath,
                             state = createdState
                         )
                     )
