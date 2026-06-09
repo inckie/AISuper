@@ -37,10 +37,14 @@ import com.damn.aisuper.layout.frontend.rikka.RenderWidget as RikkaRenderWidget
 
 @Composable
 @Preview
-fun App(customProvider: AppletProvider? = null, entryPath: String = "files/applet.json") {
+fun App(
+    customProvider: AppletProvider? = null,
+    entryPath: String = "files/applet.json",
+    providedApplet: Applet? = null
+) {
     // Local in-process runtime is kept as a fallback when remote kernel is unavailable.
-    val applet = remember(customProvider, entryPath) {
-        Applet(
+    val applet = remember(customProvider, entryPath, providedApplet) {
+        providedApplet ?: Applet(
             engineFactory = { createAppJSEngine("app-ui") },
             resourceLoader = (customProvider ?: ComposeAppletProvider()).createLoader()
         )

@@ -16,7 +16,7 @@ import java.nio.file.Paths
  * lived privately inside `ServerMain.kt`.
  */
 class FileSystemAppletProvider(
-    private val root: Path = Paths.get("").toAbsolutePath(),
+    val root: Path = Paths.get("").toAbsolutePath(),
     private val fallbackRoots: List<Path> = emptyList()
 ) : AppletProvider {
 

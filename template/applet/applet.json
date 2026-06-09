@@ -1,0 +1,11 @@
+{
+  "id": "template.applet",
+  "name": "Template Applet",
+  "entryFeature": "main",
+  "features": {
+    "main": {
+      "layout": "files/main_layout.json",
+      "script": "files/main_script.js"
+    }
+  }
+}
