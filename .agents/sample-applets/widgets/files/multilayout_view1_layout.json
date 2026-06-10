@@ -1,0 +1,34 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "classes": ["screen"],
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "classes": ["header_bar"],
+        "children": [
+          { "type": "Button", "text": "<< Menu", "action": "launch:menu" },
+          { "type": "Text", "text": "View 1 (Home)", "weight": 1, "classes": ["header_text"] }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Text", "text": "This is the primary layout view.", "classes": ["section_title"] },
+          { "type": "Image", "url": "https://ui-avatars.com/api/?name=View+1&background=random&size=200", "fillMaxWidth": true },
+          { "type": "Text", "text": "You can dynamically swap the entire layout tree using the setLayout() function.", "classes": ["section_title"] }
+        ]
+      },
+      {
+        "type": "Button",
+        "text": "Go to View 2 ->",
+        "action": "switchToView2",
+        "fillMaxWidth": true
+      }
+    ]
+  }
+}

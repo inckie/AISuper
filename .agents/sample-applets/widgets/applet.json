@@ -50,6 +50,14 @@
       "layout": "files/chat_demo_layout.json",
       "script": "files/chat_demo_script.js",
       "name": "Chat Demo"
+    },
+    "multilayout": {
+      "layouts": {
+        "view1": "files/multilayout_view1_layout.json",
+        "view2": "files/multilayout_view2_layout.json"
+      },
+      "script": "files/multilayout_script.js",
+      "name": "Multi-Layout Demo"
     }
   }
 }
