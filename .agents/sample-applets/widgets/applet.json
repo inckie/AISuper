@@ -1,0 +1,55 @@
+{
+  "id": "com.damn.aisuper.widgets_demo",
+  "name": "Widgets Demo",
+  "entryFeature": "menu",
+  "styles": {
+    "light": {
+      "name": "Light",
+      "file": "files/styles/light_style.json"
+    },
+    "dark": {
+      "name": "Dark",
+      "file": "files/styles/dark_style.json"
+    },
+    "pink": {
+      "name": "Pink",
+      "file": "files/styles/pink_style.json"
+    },
+    "blueOrange": {
+      "name": "Blue / Orange",
+      "file": "files/styles/blue_orange_style.json"
+    },
+    "neon": {
+      "name": "Neon",
+      "file": "files/styles/neon_style.json"
+    }
+  },
+  "defaultStyle": "light",
+  "features": {
+    "menu": {
+      "layout": "files/menu_layout.json",
+      "script": "files/menu_script.js",
+      "name": "Main Menu"
+    },
+    "widgets": {
+      "layout": "files/widgets_layout.json",
+      "script": "files/widgets_script.js",
+      "name": "Widgets Demo"
+    },
+    "images": {
+      "layout": "files/image_demo_layout.json",
+      "script": "files/image_demo_script.js",
+      "name": "Image Demo"
+    },
+    "layout": {
+      "layout": "files/layout_demo_layout.json",
+      "script": "files/layout_demo_script.js",
+      "name": "Layout Demo"
+    },
+    "chat": {
+      "layout": "files/chat_demo_layout.json",
+      "script": "files/chat_demo_script.js",
+      "name": "Chat Demo"
+    }
+  }
+}

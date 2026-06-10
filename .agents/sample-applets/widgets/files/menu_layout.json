@@ -1,0 +1,41 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      { "type": "Text", "text": "AI Super App Menu", "classes": ["header_text"] },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Dropdown",
+            "id": "frameworkPicker",
+            "hint": "Choose UI framework",
+            "weight": 1,
+            "classes": ["framework_dropdown"],
+            "optionsValueId": "frameworkOptions",
+            "onChangeAction": "changeFramework"
+          },
+          {
+            "type": "Dropdown",
+            "id": "themePicker",
+            "hint": "Choose theme",
+            "weight": 1,
+            "classes": ["theme_dropdown"],
+            "optionsValueId": "themeOptions",
+            "onChangeAction": "changeTheme"
+          }
+        ]
+      },
+      { "type": "Text", "text": "Features", "classes": ["section_title"] },
+      {
+        "type": "Column",
+        "weight": 1,
+        "isScrollable": true,
+        "dynamicChildrenId": "menuButtons",
+        "fillMaxWidth": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Widgets Demo", "weight": 1, "classes": ["header_text"] }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "fillMaxWidth": true,
+        "isScrollable": true,
+        "classes": ["screen"],
+        "children": [
+          { "type": "Text", "text": "Dropdown & Switch (onChangeAction)", "classes": ["section_title"] },
+          {
+            "type": "Dropdown",
+            "id": "demo_dropdown",
+            "hint": "Select an Option",
+            "options": [
+              { "value": "Option A", "label": "Option A" },
+              { "value": "Option B", "label": "Option B" },
+              { "value": "Option C", "label": "Option C" }
+            ],
+            "onChangeAction": "onDropdownChange"
+          },
+          { "type": "Text", "id": "dropdown_status", "text": "Selected: None" },
+          
+          { "type": "Switch", "id": "demo_switch", "text": "Toggle Feature", "onChangeAction": "onSwitchToggle", "actionArgs": ["demo_switch"] },
+          { "type": "Text", "id": "switch_status", "text": "Switch State: false" },
+
+          { "type": "Text", "text": "Text Input (Value Binding)", "classes": ["section_title"] },
+          { "type": "TextField", "id": "demo_textfield", "hint": "Type something...", "singleLine": true },
+          { "type": "Text", "id": "textfield_status", "text": "Typing: " },
+          
+          { "type": "Text", "text": "Progress & Spinner", "classes": ["section_title"] },
+          { "type": "Progress", "progressId": "demo_progress" },
+          { "type": "Button", "text": "Increase Progress", "action": "increaseProgress" },
+          
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "text": "Loading:", "weight": 1 },
+              { "type": "Spinner", "visibilityId": "spinner_visible" }
+            ]
+          },
+          { "type": "Switch", "id": "spinner_switch", "text": "Show Spinner", "onChangeAction": "toggleSpinner", "actionArgs": [] }
+        ]
+      }
+    ]
+  }
+}

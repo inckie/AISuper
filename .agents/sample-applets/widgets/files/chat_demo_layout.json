@@ -1,0 +1,46 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "classes": ["screen"],
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "classes": ["header_bar"],
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu" },
+          { "type": "Text", "text": "Chat UI Demo", "weight": 1, "classes": ["header_text"] }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "fillMaxWidth": true,
+        "isScrollable": true,
+        "dynamicChildrenId": "chat_messages",
+        "classes": ["chat_container"]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "classes": ["input_bar"],
+        "children": [
+          { 
+            "type": "TextField", 
+            "id": "chat_input", 
+            "hint": "Type a message...", 
+            "weight": 1, 
+            "singleLine": true, 
+            "onImeAction": "send_message" 
+          },
+          { 
+            "type": "Button", 
+            "text": "Send", 
+            "action": "send_message" 
+          }
+        ]
+      }
+    ]
+  }
+}
