@@ -208,7 +208,17 @@ fun RenderWidget(
         }
 
         // Interactive widgets not renderable in home screen widget context — skip
-        is TextFieldWidget, is DropdownWidget, is SwitchWidget, is AudioPlayerWidget -> Unit
+        is TextFieldWidget, is DropdownWidget, is SwitchWidget, is AudioPlayerWidget -> {
+            if (widget is SwitchWidget && widget.text.isNotBlank()) {
+                val textColor = parseColorOrNull(style.textColor) ?: DEFAULT_TEXT_COLOR
+                val fontSize = (style.fontSize ?: 14).sp
+                Text(
+                    text = "[ ] ${widget.text}",
+                    style = TextStyle(color = ColorProvider(textColor), fontSize = fontSize),
+                    modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())
+                )
+            }
+        }
     }
 }
 

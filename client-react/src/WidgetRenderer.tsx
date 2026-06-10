@@ -285,6 +285,7 @@ export function WidgetRenderer({
     case 'Switch': {
       const widgetId = widget.id ?? undefined;
       const checked = widgetId ? booleanOrNull(values[widgetId]) ?? (widget.checked ?? false) : widget.checked ?? false;
+      const shouldGrow = widget.weight != null || widget.fillMaxWidth;
       return (
         <label
           style={{
@@ -292,10 +293,11 @@ export function WidgetRenderer({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 8
+            gap: 8,
+            flex: widget.weight != null ? `${widget.weight} 1 0` : baseStyle.flex
           }}
         >
-          <span>{widget.text ?? ''}</span>
+          <span style={{ flex: shouldGrow ? 1 : 'none' }}>{widget.text ?? ''}</span>
           <input
             type="checkbox"
             checked={checked}

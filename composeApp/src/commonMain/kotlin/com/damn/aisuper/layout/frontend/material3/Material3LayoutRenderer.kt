@@ -378,14 +378,20 @@ fun RenderWidget(
                 widget.checked
             }
 
-            Row(modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)) {
+            Row(
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                val internalWeight = if (widget.fillMaxWidth || widget.weight != null) Modifier.weight(1f) else Modifier
                 if (widget.text.isNotBlank()) {
                     val textColor = parseColorOrNull(style.textColor)
                     if (textColor != null) {
-                        Text(widget.text, color = textColor, modifier = Modifier.weight(1f))
+                        Text(widget.text, color = textColor, modifier = internalWeight)
                     } else {
-                        Text(widget.text, modifier = Modifier.weight(1f))
+                        Text(widget.text, modifier = internalWeight)
                     }
+                } else {
+                    Spacer(modifier = internalWeight)
                 }
 
                 Switch(

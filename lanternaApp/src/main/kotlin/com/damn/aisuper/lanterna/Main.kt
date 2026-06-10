@@ -328,7 +328,15 @@ private fun renderWidget(
                     applet.updateValue(id, JsonPrimitive(checked))
                 }
             }
-            checkBox
+            if (widget.fillMaxWidth || widget.fillMaxSize || widget.weight != null) {
+                // Already handled at the end of the function
+                checkBox
+            } else {
+                // If no layout data specified, center it vertically in its row if needed, 
+                // but Lanterna default is fine. We just want to ensure it doesn't 
+                // greedily consume everything if not told to.
+                checkBox
+            }
         }
 
         is ProgressWidget -> ProgressBar(0, 100).apply {
