@@ -147,7 +147,9 @@ data class SwitchWidget(
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
     val text: String = "",
-    val checked: Boolean = false
+    val checked: Boolean = false,
+    val onChangeAction: String? = null,
+    val actionArgs: List<JsonElement> = emptyList()
 ) : Widget()
 
 @Serializable

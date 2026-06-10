@@ -108,6 +108,8 @@ export interface SwitchWidget extends WidgetBase {
   type: 'Switch';
   text?: string;
   checked?: boolean;
+  onChangeAction?: string | null;
+  actionArgs?: JsonValue[];
 }
 
 export interface SpinnerWidget extends WidgetBase {

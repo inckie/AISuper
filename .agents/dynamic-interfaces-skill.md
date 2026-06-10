@@ -27,7 +27,7 @@ AISuper layouts are defined in JSON (e.g., [main_layout.json](file:///d:/Work/Mo
 | **`TextField`** | `hint` (String), `singleLine` (Boolean), `password` (Boolean), `imeAction` (String), `onImeAction` (String), `nextFocusId` (String) | Text input field. Updates the state key corresponding to its `id` automatically as the user types. |
 | **`Button`** | `text` (String), `action` (String), `actionArgs` (Array) | Action trigger button. Triggers the specified JS function name on click. |
 | **`Dropdown`** | `hint` (String), `options` (Array of value/label), `optionsValueId` (String), `onChangeAction` (String) | Dropdown selection field. Triggers the specified JS callback when selection changes. |
-| **`Switch`** | `text` (String), `checked` (Boolean) | Binary toggle switch. Automatically updates its bound `id` state, but **does not** trigger JS action callbacks. |
+| **`Switch`** | `text` (String), `checked` (Boolean), `onChangeAction` (String), `actionArgs` (Array) | Binary toggle switch. Triggers `onChangeAction` passing `actionArgs + [newValue]` when toggled. |
 | **`Spinner`** | `visibilityId` (String) | Circular loading progress indicator. Visually toggled by binding to a boolean state key. |
 | **`Progress`** | `progress` (Float), `progressId` (String), `indeterminate` (Boolean) | Linear progress bar. Can bind to a float state key (`0.0` to `1.0`). |
 
@@ -103,11 +103,10 @@ For lists that grow or shrink dynamically (like a chat interface, list of items,
 
 ---
 
-## 3. Dropdowns vs. Switches (Action Notification)
+## 3. Dropdowns and Switches (Action Notification)
 
-When designing a toggle (e.g. Unit Switcher, Dark Mode, Toggle Preferences):
-* ❌ **Avoid Switch widgets** if you need the layout to refresh immediately when toggled. Switches do not support `onChangeAction` or click actions. They update their state key silently, meaning the script won't know when to redraw until a separate submit action is triggered.
-* **Use Dropdown widgets** with `onChangeAction` instead. Selecting an option in a Dropdown immediately triggers the JS action, allowing you to re-evaluate and redraw the UI:
+When designing a toggle or selector (e.g. Unit Switcher, Dark Mode, Toggle Preferences):
+* **Switch and Dropdown widgets** natively support `onChangeAction`. Changing the state of a Switch or selecting an option in a Dropdown immediately triggers the JS action, allowing you to re-evaluate and redraw the UI without needing explicit subscriptions. Note that a Switch can optionally provide `actionArgs`, which will be passed to the callback along with the new boolean value.
 
 #### Layout Dropdown definition:
 ```json
@@ -144,6 +143,12 @@ Retrieves a value from the feature's active UI state values dictionary.
 
 ### `setValue(key: string, value: any): void`
 Sets a value in the feature's UI values dictionary. Renders and binds the update to UI components matching the `key` ID reactively.
+
+### `subscribeValue(key: string, callbackName: string): number`
+Subscribes to changes on a specific state `key`. The specified `callbackName` will be invoked with `[key, newValue]` whenever the state is updated. Returns a unique subscription ID token.
+
+### `unsubscribeValue(subscriptionId: number): void`
+Unsubscribes an existing value listener using the `subscriptionId` token returned from `subscribeValue`.
 
 ### `setLayout(layoutPath: string): Promise<void>`
 Dynamically replaces the current layout JSON with another JSON layout file from disk (e.g., `setLayout("files/other_layout.json")`).

@@ -400,6 +400,10 @@ fun RenderWidget(
                         if (widgetId != null) {
                             onValueChange(widgetId, JsonPrimitive(newValue))
                         }
+                        val action = widget.onChangeAction
+                        if (!action.isNullOrBlank()) {
+                            onAction(action, widget.actionArgs + JsonPrimitive(newValue))
+                        }
                     }
                 )
             }
