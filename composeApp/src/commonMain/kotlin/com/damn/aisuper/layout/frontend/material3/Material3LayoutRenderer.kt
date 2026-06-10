@@ -78,7 +78,7 @@ fun RenderWidget(
     widget: Widget,
     values: Map<String, JsonElement>,
     styleSheet: StyleSheet? = null,
-    onValueChange: (String, String) -> Unit,
+    onValueChange: (String, JsonElement) -> Unit,
     onAction: (String, List<JsonElement>) -> Unit,
     onModuleCommand: (String, String, String, List<JsonElement>) -> Unit,
     modifier: Modifier = Modifier
@@ -205,7 +205,7 @@ fun RenderWidget(
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style).focusRequester(focusRequester),
                 onValueChange = { newValue ->
                     if (widgetId != null) {
-                        onValueChange(widgetId, newValue)
+                        onValueChange(widgetId, JsonPrimitive(newValue))
                     }
                 },
                 placeholder = { Text(widget.hint) },
@@ -357,7 +357,7 @@ fun RenderWidget(
                             onClick = {
                                 expanded = false
                                 if (widgetId != null) {
-                                    onValueChange(widgetId, option.value)
+                                    onValueChange(widgetId, JsonPrimitive(option.value))
                                 }
                                 val action = widget.onChangeAction
                                 if (!action.isNullOrBlank()) {
@@ -398,7 +398,7 @@ fun RenderWidget(
                     checked = checked,
                     onCheckedChange = { newValue ->
                         if (widgetId != null) {
-                            onValueChange(widgetId, newValue.toString())
+                            onValueChange(widgetId, JsonPrimitive(newValue))
                         }
                     }
                 )

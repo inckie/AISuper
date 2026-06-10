@@ -159,11 +159,11 @@ fun App(
                                             remoteState = remoteClient.setValue(
                                                 sessionId = remoteSessionId!!,
                                                 id = id,
-                                                value = JsonPrimitive(value)
+                                                value = value
                                             )
                                         }
                                     } else {
-                                        applet.updateValue(id, JsonPrimitive(value))
+                                        applet.updateValue(id, value)
                                     }
                                 },
                                 onAction = { action, args ->
@@ -207,11 +207,11 @@ fun App(
                                             remoteState = remoteClient.setValue(
                                                 sessionId = remoteSessionId!!,
                                                 id = id,
-                                                value = JsonPrimitive(value)
+                                                value = value
                                             )
                                         }
                                     } else {
-                                        applet.updateValue(id, JsonPrimitive(value))
+                                        applet.updateValue(id, value)
                                     }
                                 },
                                 onAction = { action, args ->
