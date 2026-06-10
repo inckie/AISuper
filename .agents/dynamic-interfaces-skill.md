@@ -6,7 +6,7 @@ This skill documents how to build interactive, responsive, and growable user int
 
 ## 1. UI Layout Widgets Reference
 
-AISuper layouts are defined in JSON (e.g., [form_layout.json](../applet-provider/src/commonMain/composeResources/files/form_layout.json)). Every widget inherits from `WidgetBase` and supports standard attributes:
+AISuper layouts are defined in JSON. For a comprehensive set of working examples, see the [Widgets Demo Applet](../.agents/sample-applets/widgets). Every widget inherits from `WidgetBase` and supports standard attributes:
 
 ### Common Widget Properties (`WidgetBase`)
 * `type`: (String, Required) One of the widget types below.
@@ -100,6 +100,32 @@ For lists that grow or shrink dynamically (like a chat interface, list of items,
 > **Weight and fillMaxWidth/fillMaxSize Conflict**
 > Do **NOT** use `fillMaxWidth: true` (or `fillMaxSize: true`) on a child widget that has `weight` set inside a `Row` or `Column`.
 > In Compose, `weight` automatically handles stretching and filling the allocated space by default. Explicitly adding `fillMaxWidth: true` to a weighted child conflicts with the weight calculation and can disrupt the layout or break proportional child distributions (e.g., preventing items in a `Row` from aligning correctly to their weighted ratios).
+
+---
+
+### Pattern C: Multi-Layout UI Decomposition (Complex Features)
+For complex features, rather than building a single massive JSON layout and attempting to toggle the visibility of different sections, you should decompose the UI into multiple distinct layout files.
+
+For example, a chat feature or remote management tool might be broken down into:
+- `settings_layout.json`: A screen for entering API keys, host addresses, or credentials.
+- `main_layout.json`: The primary view (e.g., the active chat view, or a list of active connections).
+- `details_layout.json`: A drill-down view for inspecting a specific item.
+
+#### Implementation Strategy:
+1. Define each distinct screen as a separate JSON layout file in your applet's `files/` directory.
+2. In your `applet.json`, declare these layouts under a `layouts` dictionary instead of using a single `layout` field:
+   ```json
+   "my_feature": {
+     "layouts": {
+       "settings": "files/settings_layout.json",
+       "main": "files/main_layout.json"
+     },
+     "script": "files/feature_script.js"
+   }
+   ```
+3. In your feature script, use the asynchronous `setLayout(layoutName)` function to seamlessly transition the entire widget tree (e.g., transitioning from settings to main after a successful connection).
+
+For a concrete, working example of this approach, refer to the `multilayout` demo inside the [Widgets Demo Applet](../.agents/sample-applets/widgets).
 
 ---
 
