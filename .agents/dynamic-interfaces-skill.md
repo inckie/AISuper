@@ -6,7 +6,7 @@ This skill documents how to build interactive, responsive, and growable user int
 
 ## 1. UI Layout Widgets Reference
 
-AISuper layouts are defined in JSON (e.g., [main_layout.json](file:///d:/Work/Mobile/Android/AISuper/.temp/superapplet/applet/files/main_layout.json)). Every widget inherits from `WidgetBase` and supports standard attributes:
+AISuper layouts are defined in JSON (e.g., [form_layout.json](../applet-provider/src/commonMain/composeResources/files/form_layout.json)). Every widget inherits from `WidgetBase` and supports standard attributes:
 
 ### Common Widget Properties (`WidgetBase`)
 * `type`: (String, Required) One of the widget types below.
