@@ -1,24 +1,21 @@
 {
   "layout": {
     "type": "Column",
-    "modifier": { "fillMaxSize": true, "padding": 16 },
+    "modifier": { "fillMaxSize": true },
     "children": [
       {
         "type": "Text",
-        "text": "AISuper AI Harness Template",
-        "modifier": { "padding": 8 }
+        "text": "AISuper AI Harness Template"
       },
       {
         "type": "Text",
         "id": "mcp_url",
-        "text": "MCP URL: Loading...",
-        "modifier": { "padding": 8 }
+        "text": "MCP URL: Loading..."
       },
       {
         "type": "Button",
         "text": "Test Action",
-        "action": "testAction",
-        "modifier": { "padding": 8 }
+        "action": "testAction"
       }
     ]
   }
