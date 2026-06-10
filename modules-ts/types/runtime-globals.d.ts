@@ -17,6 +17,8 @@ declare function consoleError(...args: any[]): void;
 // UI State Management
 declare function getValue(key: string): any;
 declare function setValue(key: string, value: any): void;
+declare function subscribeValue(key: string, callbackName: string): number;
+declare function unsubscribeValue(subscriptionId: number): void;
 declare function setLayout(layoutPath: string): Promise<void>;
 
 // Navigation

@@ -18,10 +18,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 class Feature(
@@ -69,6 +71,9 @@ class Feature(
 
     private var moduleHost: FeatureModuleHost? = null
 
+    private var subscriptionIdCounter = 0
+    private val valueSubscriptions = mutableMapOf<String, MutableList<Pair<Int, String>>>()
+
     suspend fun load() {
         try {
             engine = engineFactory()
@@ -92,6 +97,26 @@ class Feature(
                     val key = args[0].jsonPrimitiveContentOrNull() ?: return@registerFunction JsonNull
                     val value = args[1]
                     updateValue(key, value)
+                }
+                JsonNull
+            }
+
+            // Register subscribeValue function for the script to use (SYNC)
+            engine.registerFunction("subscribeValue") { args ->
+                val key = args.getOrNull(0)?.jsonPrimitiveContentOrNull() ?: return@registerFunction JsonNull
+                val callbackName = args.getOrNull(1)?.jsonPrimitiveContentOrNull() ?: return@registerFunction JsonNull
+                val subId = ++subscriptionIdCounter
+                valueSubscriptions.getOrPut(key) { mutableListOf() }.add(subId to callbackName)
+                JsonPrimitive(subId)
+            }
+
+            // Register unsubscribeValue function for the script to use (SYNC)
+            engine.registerFunction("unsubscribeValue") { args ->
+                val subId = args.getOrNull(0)?.jsonPrimitive?.intOrNull ?: return@registerFunction JsonNull
+                for (subs in valueSubscriptions.values) {
+                    if (subs.removeAll { it.first == subId }) {
+                        break
+                    }
                 }
                 JsonNull
             }
@@ -198,6 +223,19 @@ class Feature(
 
     fun updateValue(id: String, value: JsonElement) {
         _values.update { it + (id to value) }
+
+        val subs = valueSubscriptions[id]?.toList() ?: return
+        if (subs.isNotEmpty()) {
+            scope.launch {
+                subs.forEach { (_, callbackName) ->
+                    try {
+                        engine.callFunction(callbackName, listOf(JsonPrimitive(id), value))
+                    } catch (e: Exception) {
+                        Logger.e("Runtime", "Subscription", throwable = e) { "Failed to call callback $callbackName" }
+                    }
+                }
+            }
+        }
     }
 
     suspend fun handleAction(action: String, args: List<JsonElement> = emptyList()) {
