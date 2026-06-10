@@ -181,6 +181,36 @@ It returns a JSON-encoded string envelope containing the full response context:
 ```
 *Note: You must `JSON.parse()` the result of `httpRequestRaw` before accessing these fields.*
 
+### Using `xmlParse` for XML processing
+If your module receives XML data (e.g., from an RSS feed or SOAP API), convert it to a JSON object using the `xmlParse` global function. 
+
+The parser automatically decodes XML entities, extracts attributes into an `@attributes` key, places inner text into a `#text` key, and groups repeated sibling tags into arrays.
+
+**Input XML:**
+```xml
+<MoverStations>
+  <Record id="1">
+    <StationID>DT</StationID>
+    <Station>Downtown</Station>
+  </Record>
+</MoverStations>
+```
+
+**Parser Output (JSON object):**
+```json
+{
+  "MoverStations": {
+    "Record": {
+      "@attributes": { "id": "1" },
+      "StationID": { "#text": "DT" },
+      "Station": { "#text": "Downtown" }
+    }
+  }
+}
+```
+
+*Note: The exact behavior of the parser is defined in the native Kotlin engine, but a fully compatible JavaScript implementation is available in [template/typescript/polyfills.ts](../template/typescript/polyfills.ts) for unit testing. For more details on the architecture and debugging, see [Architecture: XML Parsing Integration](../docs/ARCHITECTURE_XML_PARSING.md).*
+
 ## 8) Test strategy
 
 - Parser/unit checks (Node):
