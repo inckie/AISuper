@@ -10,10 +10,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.window.application
 import com.damn.aisuper.applet.AppletProviders
+import com.damn.aisuper.applet.ComposeAppletProvider
+import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.harness.McpServer
 import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.util.LogBufferSink
 import com.damn.aisuper.util.Logger
+import java.awt.Rectangle
 import java.io.File
 
 fun main(args: Array<String>) = application {
@@ -36,8 +39,8 @@ fun main(args: Array<String>) = application {
 
     val applet = remember(customProvider) {
         Applet(
-            engineFactory = { com.damn.aisuper.engine.createAppJSEngine("app-ui") },
-            resourceLoader = (customProvider ?: com.damn.aisuper.applet.ComposeAppletProvider()).createLoader()
+            engineFactory = { createAppJSEngine("app-ui") },
+            resourceLoader = (customProvider ?: ComposeAppletProvider()).createLoader()
         )
     }
 
@@ -68,7 +71,7 @@ fun main(args: Array<String>) = application {
             val window = this.window
             LaunchedEffect(window, mcpServer) {
                 mcpServer?.setWindowBoundsProvider {
-                    java.awt.Rectangle(window.x, window.y, window.width, window.height)
+                    Rectangle(window.x, window.y, window.width, window.height)
                 }
             }
         }

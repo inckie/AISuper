@@ -25,6 +25,7 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
+import kotlin.time.Duration.Companion.milliseconds
 
 @Serializable
 data class McpRequest(
@@ -160,7 +161,7 @@ class McpServer(
         
         scope.launch {
             try {
-                delay(500)
+                delay(500.milliseconds)
                 applet.updateValue("mcp_url", JsonPrimitive("http://127.0.0.1:$port/sse"))
                 Logger.i("Harness") { "MCP Server started on http://0.0.0.0:$port/sse" }
             } catch (e: Exception) {
@@ -174,7 +175,8 @@ class McpServer(
             "initialize" -> handleInitialize()
             "tools/list" -> handleListTools()
             "tools/call" -> handleCallTool(request.params)
-            "resources/list" -> buildJsonObject { put("resources", buildJsonArray { }) }
+            "resources/list" -> handleListResources()
+            "resources/read" -> handleReadResource(request.params)
             "prompts/list" -> buildJsonObject { put("prompts", buildJsonArray { }) }
             "logging/setLevel" -> JsonPrimitive("ok")
             else -> throw IllegalArgumentException("Unknown method: ${request.method}")
@@ -210,6 +212,10 @@ class McpServer(
             put("capabilities", buildJsonObject {
                 put("tools", buildJsonObject {
                     put("listChanged", true)
+                })
+                put("resources", buildJsonObject {
+                    put("listChanged", false)
+                    put("subscribe", false)
                 })
                 put("logging", buildJsonObject {})
             })
@@ -375,17 +381,11 @@ class McpServer(
                 }
             }
             "screenshot_take" -> {
-                val bounds = windowBoundsProvider?.invoke() ?: java.awt.Rectangle(0, 0, 1024, 768)
-                val robot = java.awt.Robot()
-                val screenShot = robot.createScreenCapture(bounds)
-                val baos = ByteArrayOutputStream()
-                withContext(Dispatchers.IO) {
-                    ImageIO.write(screenShot, "png", baos)
-                }
-                val base64Image = Base64.getEncoder().encodeToString(baos.toByteArray())
+                val base64Image = takeScreenshot()
                 buildJsonObject {
                     put("type", "image")
                     put("data", base64Image)
+                    put("mimeType", "image/png")
                 }
             }
             "adb_shell_input" -> {
@@ -411,12 +411,60 @@ class McpServer(
 
         return buildJsonObject {
             put("content", buildJsonArray {
+                if (result is JsonObject && result.containsKey("type") && result.containsKey("data") && result["type"]?.let { (it as? JsonPrimitive)?.content } == "image") {
+                    add(result)
+                } else {
+                    add(buildJsonObject {
+                        put("type", "text")
+                        put("text", result.toString())
+                    })
+                }
+            })
+        }
+    }
+
+    private suspend fun takeScreenshot(): String {
+        val bounds = windowBoundsProvider?.invoke() ?: java.awt.Rectangle(0, 0, 1024, 768)
+        val robot = java.awt.Robot()
+        val screenShot = robot.createScreenCapture(bounds)
+        val baos = ByteArrayOutputStream()
+        withContext(Dispatchers.IO) {
+            ImageIO.write(screenShot, "png", baos)
+        }
+        return Base64.getEncoder().encodeToString(baos.toByteArray())
+    }
+
+    private fun handleListResources(): JsonElement {
+        return buildJsonObject {
+            put("resources", buildJsonArray {
                 add(buildJsonObject {
-                    put("type", "text")
-                    put("text", result.toString())
+                    put("uri", "screenshot://current")
+                    put("name", "Current Screenshot")
+                    put("description", "A real-time screenshot of the current window")
+                    put("mimeType", "image/png")
                 })
             })
         }
+    }
+
+    private suspend fun handleReadResource(params: JsonObject): JsonElement {
+        val uri = params["uri"]?.let { (it as? JsonPrimitive)?.content }
+            ?: throw IllegalArgumentException("Missing uri")
+
+        if (uri == "screenshot://current") {
+            val base64Image = takeScreenshot()
+            return buildJsonObject {
+                put("contents", buildJsonArray {
+                    add(buildJsonObject {
+                        put("uri", uri)
+                        put("mimeType", "image/png")
+                        put("blob", base64Image)
+                    })
+                })
+            }
+        }
+
+        throw IllegalArgumentException("Unknown resource: $uri")
     }
 
     private fun getAppletRoot(): java.nio.file.Path? {
