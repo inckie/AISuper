@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
 
     private var customAppletProvider by mutableStateOf<AppletProvider?>(null)
     private var customAppletPath: String? = null
+    private var initialFeatureId by mutableStateOf<String?>(null)
 
     private val pickAppletLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
@@ -52,16 +53,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val entryPath = if (customAppletProvider != null) "applet.json" else "files/applet.json"
-            App(customProvider = customAppletProvider, entryPath = entryPath)
+            App(customProvider = customAppletProvider, entryPath = entryPath, initialFeatureId = initialFeatureId)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
     private fun handleIntent(intent: Intent) {
+        initialFeatureId = intent.getStringExtra("featureId")
         when (intent.action) {
             Intent.ACTION_VIEW -> {
                 intent.data?.let { uri ->
