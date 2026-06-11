@@ -320,14 +320,13 @@ class McpServer(
                 handleLogsGet(limit, offset, tagFilter)
             }
             "file_list" -> {
-                val path = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: ""
-                val root = getAppletRoot() ?: throw IllegalStateException("Applet root not found")
-                val dir = if (path.isEmpty()) root else root.resolve(path)
-                if (!dir.toFile().exists()) throw IllegalArgumentException("Directory not found: $path")
+                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: ""
+                val dir = resolveSafePath(pathString)
+                if (!dir.exists()) throw IllegalArgumentException("Directory not found: $pathString")
                 
                 buildJsonObject {
                     put("files", buildJsonArray {
-                        dir.toFile().listFiles()?.forEach { file ->
+                        dir.listFiles()?.forEach { file ->
                             add(buildJsonObject {
                                 put("name", file.name)
                                 put("isDirectory", file.isDirectory)
@@ -338,30 +337,27 @@ class McpServer(
                 }
             }
             "file_read" -> {
-                val path = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
-                val root = getAppletRoot() ?: throw IllegalStateException("Applet root not found")
-                val file = root.resolve(path).toFile()
-                if (!file.exists()) throw IllegalArgumentException("File not found: $path")
+                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
+                val file = resolveSafePath(pathString)
+                if (!file.exists()) throw IllegalArgumentException("File not found: $pathString")
                 JsonPrimitive(file.readText())
             }
             "file_write" -> {
-                val path = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
+                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
                 val content = args["content"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing content")
-                val root = getAppletRoot() ?: throw IllegalStateException("Applet root not found")
-                val file = root.resolve(path).toFile()
+                val file = resolveSafePath(pathString)
                 file.parentFile.mkdirs()
                 file.writeText(content)
-                JsonPrimitive("File written: $path")
+                JsonPrimitive("File written: $pathString")
             }
             "file_delete" -> {
-                val path = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
-                val root = getAppletRoot() ?: throw IllegalStateException("Applet root not found")
-                val file = root.resolve(path).toFile()
+                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
+                val file = resolveSafePath(pathString)
                 if (file.exists()) {
                     file.delete()
-                    JsonPrimitive("File deleted: $path")
+                    JsonPrimitive("File deleted: $pathString")
                 } else {
-                    JsonPrimitive("File not found: $path")
+                    JsonPrimitive("File not found: $pathString")
                 }
             }
             "layout_get" -> {
@@ -469,6 +465,17 @@ class McpServer(
 
     private fun getAppletRoot(): java.nio.file.Path? {
         return appletRoot?.toPath() ?: java.nio.file.Paths.get("").toAbsolutePath()
+    }
+
+    private fun resolveSafePath(pathString: String): File {
+        val root = getAppletRoot()?.toAbsolutePath()?.normalize()
+            ?: throw IllegalStateException("Applet root not found")
+
+        val resolved = root.resolve(pathString).toAbsolutePath().normalize()
+        if (!resolved.startsWith(root)) {
+            throw IllegalArgumentException("Access denied: path is outside of applet directory")
+        }
+        return resolved.toFile()
     }
 
     private fun handleLogsGet(limit: Int, offset: Int, tagFilter: String?): JsonElement {
