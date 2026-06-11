@@ -1,6 +1,5 @@
 package com.damn.aisuper.widget
 
-import aisuper.composeapp.generated.resources.Res
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -36,7 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.lifecycle.lifecycleScope
 import com.damn.aisuper.R
+import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
 import com.damn.aisuper.runtime.AppletManifest
 import kotlinx.coroutines.launch
@@ -79,13 +82,51 @@ class WidgetConfigurationActivity : ComponentActivity() {
 
     @OptIn(ExperimentalResourceApi::class)
     private fun confirmSelection(featureId: String, styleId: String?) {
-        val scope = kotlinx.coroutines.MainScope()
         val resultValue = Intent().apply { putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId) }
-        setResult(RESULT_OK, resultValue)
-        finish()
-        scope.launch {
-            val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
-            refreshWidgetData(applicationContext, glanceId, featureId, styleId)
+        
+        lifecycleScope.launch {
+            try {
+                val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
+                
+                // Read style JSON if a style was selected
+                var styleJson: String? = null
+                if (!styleId.isNullOrBlank()) {
+                    try {
+                        val bytes = ComposeAppletProvider().createLoader().readBytes("files/applet.json")
+                        val json = Json { ignoreUnknownKeys = true }
+                        val manifest = json.decodeFromString<AppletManifest>(bytes.decodeToString())
+                        val styleFile = manifest.styles[styleId]?.file
+                        if (styleFile != null) {
+                            styleJson = ComposeAppletProvider().createLoader().readBytes(styleFile).decodeToString()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                // Immediately save the featureId BEFORE finishing, so the initial OS update receives it
+                updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[PREF_FEATURE_ID] = featureId
+                        if (styleJson != null) {
+                            this[PREF_STYLE_JSON] = styleJson
+                        }
+                    }
+                }
+                
+                // Preheat the Applet so the JS engine spins up right away
+                WidgetAppletManager.getOrCreateApplet(glanceId, featureId)
+                
+                // Force an immediate update to ensure Glance recomposes
+                AISuperWidget().update(applicationContext, glanceId)
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            
+            // Now tell the OS the configuration is complete. It will trigger provideGlance.
+            setResult(RESULT_OK, resultValue)
+            finish()
         }
     }
 }
@@ -103,7 +144,7 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                val bytes = Res.readBytes("files/applet.json")
+                val bytes = ComposeAppletProvider().createLoader().readBytes("files/applet.json")
                 val json = Json { ignoreUnknownKeys = true }
                 val manifest = json.decodeFromString<AppletManifest>(bytes.decodeToString())
                 widgetFeatures = manifest.features

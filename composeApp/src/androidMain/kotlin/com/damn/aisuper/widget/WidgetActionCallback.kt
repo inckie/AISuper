@@ -1,20 +1,14 @@
 package com.damn.aisuper.widget
 
 import android.content.Context
+import androidx.annotation.Keep
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.damn.aisuper.applet.ComposeAppletProvider
-import com.damn.aisuper.engine.createAppJSEngine
-import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
-import com.damn.aisuper.runtime.Applet
-import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 
 /** ActionParameters key carrying the JS action name to invoke. */
 val KEY_ACTION = ActionParameters.Key<String>("widget_action")
@@ -29,6 +23,7 @@ val KEY_ARGS    = ActionParameters.Key<String>("widget_args")
  * 4. Waits for async work to settle.
  * 5. Snapshots the updated layout + values and pushes them back to the widget.
  */
+@Keep
 class WidgetActionCallback : ActionCallback {
 
     override suspend fun onAction(
@@ -51,43 +46,12 @@ class WidgetActionCallback : ActionCallback {
             else emptyList()
         } catch (_: Exception) { emptyList() }
 
-        val applet = Applet(
-            engineFactory = { createAppJSEngine("widget-action") },
-            resourceLoader = ComposeAppletProvider().createLoader()
-        )
-        applet.loadApplet("files/applet.json")
-        applet.launchFeature(featureId)
-
-        // Let initialize() run
-        delay(2000)
-
-        // Invoke the specific action (e.g. "refresh", "loadWeather")
+        val applet = WidgetAppletManager.getOrCreateApplet(glanceId, featureId)
         applet.handleAction(actionName, actionArgs)
-
-        // Wait for async work triggered by the action
-        delay(6000)
-
-        val feature    = applet.currentFeature.value
-        val layoutRoot = feature?.layoutRoot?.value
-        val valuesMap  = feature?.values?.value ?: emptyMap()
-
-        val layoutJson = if (layoutRoot != null) {
-            try { Json.encodeToString(LayoutRoot.serializer(), layoutRoot) } catch (_: Exception) { "" }
-        } else ""
-
-        val valuesJson = try {
-            Json.encodeToString(JsonObject.serializer(), JsonObject(valuesMap))
-        } catch (_: Exception) { "{}" }
-
-        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { p ->
-            p.toMutablePreferences().apply {
-                this[PREF_LAYOUT_JSON] = layoutJson
-                this[PREF_VALUES_JSON] = valuesJson
-            }
-        }
-
-        AISuperWidget().update(context, glanceId)
-        applet.close()
+        
+        // We don't need to manually serialize and save JSON snapshots anymore.
+        // The live applet's state flows are observed by provideGlance,
+        // so any state changes will automatically trigger a widget recomposition.
     }
 }
 

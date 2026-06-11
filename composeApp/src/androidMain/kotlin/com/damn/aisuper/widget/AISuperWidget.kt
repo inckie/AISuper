@@ -4,10 +4,16 @@ import aisuper.composeapp.generated.resources.Res
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceId
@@ -29,20 +35,19 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.damn.aisuper.R
-import com.damn.aisuper.applet.ComposeAppletProvider
-import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.LayoutRoot
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.Widget
 import com.damn.aisuper.layout.frontend.glance.RenderWidget
-import com.damn.aisuper.layout.parseLayout
+import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
 import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.runtime.AppletManifest
+import com.damn.aisuper.runtime.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -54,10 +59,6 @@ import java.net.URL
 
 /** Preference key: which featureId this widget instance is bound to. */
 val PREF_FEATURE_ID = stringPreferencesKey("feature_id")
-/** Serialised key→value snapshot from the feature's value state. */
-val PREF_VALUES_JSON = stringPreferencesKey("values_json")
-/** Layout JSON snapshot for this feature. */
-val PREF_LAYOUT_JSON = stringPreferencesKey("layout_json")
 /** Serialised StyleSheet JSON for the selected style. */
 val PREF_STYLE_JSON = stringPreferencesKey("style_json")
 
@@ -77,10 +78,8 @@ class AISuperWidget : GlanceAppWidget() {
     @SuppressLint("RestrictedApi")
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val prefs      = currentState<androidx.datastore.preferences.core.Preferences>()
+            val prefs      = currentState<Preferences>()
             val featureId  = prefs[PREF_FEATURE_ID]  ?: ""
-            val layoutJson = prefs[PREF_LAYOUT_JSON]  ?: ""
-            val valuesJson = prefs[PREF_VALUES_JSON]  ?: "{}"
             val styleJson  = prefs[PREF_STYLE_JSON]   ?: ""
 
             val styleSheet: StyleSheet? = styleJson.takeIf { it.isNotBlank() }?.let {
@@ -92,7 +91,7 @@ class AISuperWidget : GlanceAppWidget() {
                 }
             }
 
-            if (featureId.isEmpty() || layoutJson.isEmpty()) {
+            if (featureId.isEmpty()) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -102,27 +101,43 @@ class AISuperWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.Horizontal.CenterHorizontally
                 ) {
                     Text(
-                        stringResource(R.string.lbl_tap_hold_to_configure),
+                        androidx.glance.LocalContext.current.getString(R.string.lbl_tap_hold_to_configure),
                         style = TextStyle(color = ColorProvider(Color.White), fontSize = 13.sp)
                     )
                 }
                 return@provideContent
             }
 
-            val values: Map<String, JsonElement> = try {
-                (Json.parseToJsonElement(valuesJson) as? JsonObject)?.toMap() ?: emptyMap()
-            } catch (_: Exception) {
-                emptyMap()
+            var applet by remember { mutableStateOf<Applet?>(null) }
+
+            LaunchedEffect(featureId) {
+                if (featureId.isNotEmpty()) {
+                    if (AndroidAppContextHolder.appContext == null) {
+                        AndroidAppContextHolder.appContext = context.applicationContext
+                    }
+                    applet = WidgetAppletManager.getOrCreateApplet(id, featureId)
+                }
             }
 
-            val layoutRoot: LayoutRoot? = try {
-                parseLayout(layoutJson)
-            } catch (_: Exception) {
-                null
+            val currentFeatureFlow = applet?.currentFeature ?: MutableStateFlow<Feature?>(null)
+            val currentFeature by currentFeatureFlow.collectAsState()
+            
+            val layoutRootFlow = currentFeature?.layoutRoot ?: MutableStateFlow<LayoutRoot?>(null)
+            val layoutRoot by layoutRootFlow.collectAsState()
+            
+            val valuesFlow = currentFeature?.values ?: MutableStateFlow(emptyMap())
+            val valuesMap by valuesFlow.collectAsState()
+
+            LaunchedEffect(layoutRoot, valuesMap) {
+                if (layoutRoot != null) {
+                    withContext(Dispatchers.IO) {
+                        cacheImages(layoutRoot, valuesMap.toMutableMap(), context)
+                    }
+                }
             }
 
             // Use style's "screen" class background if available, else dark fallback
-            val screenBg = com.damn.aisuper.layout.parseColorOrNull(
+            val screenBg = parseColorOrNull(
                 styleSheet?.classes?.get("screen")?.backgroundColor
             ) ?: Color(0xFF121212.toInt())
 
@@ -134,19 +149,22 @@ class AISuperWidget : GlanceAppWidget() {
             ) {
                 if (layoutRoot != null) {
                     RenderWidget(
-                        widget = layoutRoot.layout,
-                        values = values,
+                        widget = layoutRoot!!.layout,
+                        values = valuesMap,
                         styleSheet = styleSheet,
                         modifier = GlanceModifier.fillMaxSize()
                     )
                 } else {
-                    Text(
-                        "Layout error",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFFFFCC80)),
-                            fontSize = 12.sp
+                    Column(
+                        modifier = GlanceModifier.fillMaxSize(),
+                        verticalAlignment = Alignment.Vertical.CenterVertically,
+                        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+                    ) {
+                        Text(
+                            "Loading...",
+                            style = TextStyle(color = ColorProvider(Color.White), fontSize = 13.sp)
                         )
-                    )
+                    }
                 }
             }
         }
@@ -166,11 +184,11 @@ private fun WidgetPreviewContent() {
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally
     ) {
         Text(
-            stringResource(R.string.lbl_aisuper_widget),
+            androidx.glance.LocalContext.current.getString(R.string.lbl_aisuper_widget),
             style = TextStyle(color = ColorProvider(Color.White), fontSize = 16.sp)
         )
         Text(
-            stringResource(R.string.lbl_tap_hold_to_configure),
+            androidx.glance.LocalContext.current.getString(R.string.lbl_tap_hold_to_configure),
             style = TextStyle(color = ColorProvider(Color(0xFFBBDEFB)), fontSize = 12.sp)
         )
     }
@@ -195,6 +213,7 @@ class AISuperWidgetReceiver : GlanceAppWidgetReceiver() {
                     ) { prefs ->
                         prefs.toMutablePreferences().apply { clear() }
                     }
+                    WidgetAppletManager.removeApplet(glanceId)
                     Log.d(TAG, "Cleared state for widget $appWidgetId")
                 } catch (e: Exception) {
                     Log.w(
@@ -207,72 +226,6 @@ class AISuperWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 }
 
-/**
- * Run the feature's normal script, wait for async initialisation to settle,
- * then persist a snapshot of the layout JSON + value map into widget prefs.
- */
-suspend fun refreshWidgetData(
-    context: Context,
-    glanceId: GlanceId,
-    featureId: String,
-    styleId: String? = null
-) {
-    withContext(Dispatchers.IO) {
-        try {
-            if (AndroidAppContextHolder.appContext == null) {
-                AndroidAppContextHolder.appContext = context.applicationContext
-            }
-
-            val applet = Applet(
-                engineFactory = { createAppJSEngine("widget-refresh") },
-                resourceLoader = ComposeAppletProvider().createLoader()
-            )
-            applet.loadApplet("files/applet.json")
-            applet.launchFeature(featureId)
-
-            // Allow initialize() + first async fetch to complete
-            delay(8000)
-
-            val feature = applet.currentFeature.value
-            val layoutRoot = feature?.layoutRoot?.value
-            val valuesMap = feature?.values?.value?.toMutableMap() ?: mutableMapOf()
-
-            cacheImages(layoutRoot, valuesMap, context)
-
-            val layoutJson = if (layoutRoot != null) {
-                try {
-                    Json.encodeToString(LayoutRoot.serializer(), layoutRoot)
-                } catch (_: Exception) {
-                    ""
-                }
-            } else ""
-
-            val valuesJson = try {
-                Json.encodeToString(JsonObject.serializer(), JsonObject(valuesMap))
-            } catch (_: Exception) {
-                "{}"
-            }
-
-            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[PREF_FEATURE_ID] = featureId
-                    this[PREF_LAYOUT_JSON] = layoutJson
-                    this[PREF_VALUES_JSON] = valuesJson
-                    // Load and persist stylesheet if styleId provided
-                    if (!styleId.isNullOrBlank()) {
-                        val styleJson = loadStyleJson(context, styleId)
-                        if (styleJson != null) this[PREF_STYLE_JSON] = styleJson
-                    }
-                }
-            }
-
-            AISuperWidget().update(context, glanceId)
-            applet.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-}
 
 private fun cacheImages(
     layoutRoot: LayoutRoot?,
