@@ -1,0 +1,38 @@
+{
+  "layout": {
+    "type": "Column",
+    "classes": ["screen"],
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Back", "action": "openMain" },
+          { "type": "Text", "text": "Settings", "classes": ["section_title"], "weight": 1 }
+        ]
+      },
+      { "type": "Text", "text": "Location Configuration" },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "My Location", "action": "loadWeatherCurrent" }
+        ]
+      },
+      { "type": "Text", "id": "weather_status", "text": "Pick a location" },
+      { "type": "Column", "dynamicChildrenId": "locationButtons", "fillMaxWidth": true },
+      { "type": "Text", "text": "Units Configuration" },
+      {
+        "type": "Dropdown",
+        "id": "unit_selection",
+        "hint": "Units",
+        "options": [
+          { "value": "metric", "label": "Metric" },
+          { "value": "imperial", "label": "Imperial" }
+        ],
+        "fillMaxWidth": true
+      }
+    ]
+  }
+}

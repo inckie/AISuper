@@ -10,7 +10,8 @@ const HOURLY_FIELDS = [
   "precipitation_probability",
   "apparent_temperature",
   "relative_humidity_2m",
-  "wind_speed_10m"
+  "wind_speed_10m",
+  "weathercode"
 ];
 const CURRENT_FIELDS = [
   "temperature_2m",
@@ -20,7 +21,13 @@ const CURRENT_FIELDS = [
   "showers",
   "snowfall",
   "precipitation_probability",
-  "wind_speed_10m"
+  "wind_speed_10m",
+  "weathercode"
+];
+const DAILY_FIELDS = [
+  "temperature_2m_max",
+  "temperature_2m_min",
+  "weathercode"
 ];
 async function get_current_weather(latitude, longitude, timezone = "auto") {
   validateCoordinates(latitude, longitude);
@@ -98,6 +105,45 @@ async function get_hourly_forecast(latitude, longitude, hours = 24, timezone = "
     availableHours: times.length
   };
 }
+async function get_daily_forecast(latitude, longitude, timezone = "auto") {
+  validateCoordinates(latitude, longitude);
+  const params = buildQueryString({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    daily: DAILY_FIELDS.join(","),
+    timezone
+  });
+  const url = `${API_BASE_URL}?${params}`;
+  const response = await fetchJson(url);
+  if (!response || typeof response !== "object") {
+    throw new Error("Invalid API response format");
+  }
+  const result = response;
+  const daily = result.daily;
+  if (!daily || typeof daily !== "object") {
+    throw new Error("API response did not contain a daily forecast block");
+  }
+  const times = daily.time;
+  if (!Array.isArray(times)) {
+    throw new Error("Daily forecast did not contain a time axis");
+  }
+  const rows = [];
+  for (let i = 0; i < times.length; i++) {
+    rows.push({
+      time: toString(times[i]),
+      temperature_2m_max: toNumber(Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max[i] : 0),
+      temperature_2m_min: toNumber(Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min[i] : 0),
+      weathercode: toNumber(Array.isArray(daily.weathercode) ? daily.weathercode[i] : 0)
+    });
+  }
+  return {
+    latitude: toNumber(result.latitude),
+    longitude: toNumber(result.longitude),
+    timezone: toString(result.timezone),
+    timezoneAbbreviation: toString(result.timezone_abbreviation),
+    daily: rows
+  };
+}
 function buildQueryString(params) {
   const pairs = [];
   const keys = Object.keys(params);
@@ -161,5 +207,6 @@ function errorToString(error) {
 }
 registerExports("weather", [
   "get_current_weather",
-  "get_hourly_forecast"
+  "get_hourly_forecast",
+  "get_daily_forecast"
 ]);

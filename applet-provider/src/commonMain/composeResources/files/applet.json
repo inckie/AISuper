@@ -110,9 +110,12 @@
         }
       ]
     },
-    "weatherLocal": {
-      "layout": "files/weather_layout.json",
-      "script": "files/weather_local_script.js",
+    "weather": {
+      "layouts": {
+        "main": "files/weather_main_layout.json",
+        "settings": "files/weather_settings_layout.json"
+      },
+      "script": "files/weather_script.js",
       "name": "Weather",
       "supportsWidget": true,
       "modules": [
@@ -124,25 +127,6 @@
         {
           "type": "http",
           "name": "httpMain"
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
-    },
-    "weather": {
-      "layout": "files/weather_layout.json",
-      "script": "files/weather_script.js",
-      "name": "Weather (MCP)",
-      "modules": [
-        {
-          "type": "mcpHttp",
-          "name": "mcp-host-http",
-          "config": {
-            "url": "http://127.0.0.1:8000/mcp",
-            "groups": "weather"
-          }
         },
         {
           "type": "geolocation",

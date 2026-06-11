@@ -19,6 +19,7 @@ type CurrentWeatherData = {
   precipitation_probability?: number;
   wind_speed_10m?: number;
   time?: string;
+  weathercode?: number;
 };
 
 type HourlyWeatherRow = {
@@ -31,6 +32,22 @@ type HourlyWeatherRow = {
   apparent_temperature?: number;
   relative_humidity_2m?: number;
   wind_speed_10m?: number;
+  weathercode?: number;
+};
+
+type DailyWeatherRow = {
+  time: string;
+  temperature_2m_max: number;
+  temperature_2m_min: number;
+  weathercode: number;
+};
+
+type DailyForecastResult = {
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  timezoneAbbreviation?: string;
+  daily: DailyWeatherRow[];
 };
 
 type CurrentWeatherResult = {
@@ -59,7 +76,8 @@ const HOURLY_FIELDS = [
   "precipitation_probability",
   "apparent_temperature",
   "relative_humidity_2m",
-  "wind_speed_10m"
+  "wind_speed_10m",
+  "weathercode"
 ];
 
 const CURRENT_FIELDS = [
@@ -70,7 +88,14 @@ const CURRENT_FIELDS = [
   "showers",
   "snowfall",
   "precipitation_probability",
-  "wind_speed_10m"
+  "wind_speed_10m",
+  "weathercode"
+];
+
+const DAILY_FIELDS = [
+  "temperature_2m_max",
+  "temperature_2m_min",
+  "weathercode"
 ];
 
 /**
@@ -198,6 +223,67 @@ async function get_hourly_forecast(
 }
 
 /**
+ * Get daily weather forecast for given coordinates.
+ *
+ * @param latitude - Station latitude
+ * @param longitude - Station longitude
+ * @param timezone - Optional timezone (default: "auto")
+ * @returns Daily forecast data including min/max temperatures and weathercode
+ * @throws If coordinates are invalid or API request fails
+ */
+async function get_daily_forecast(
+  latitude: number,
+  longitude: number,
+  timezone: string = "auto"
+): Promise<DailyForecastResult> {
+  validateCoordinates(latitude, longitude);
+
+  const params = buildQueryString({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    daily: DAILY_FIELDS.join(","),
+    timezone: timezone
+  });
+
+  const url = `${API_BASE_URL}?${params}`;
+  const response = await fetchJson(url);
+
+  if (!response || typeof response !== "object") {
+    throw new Error("Invalid API response format");
+  }
+
+  const result = response as UnknownRecord;
+  const daily = result.daily as UnknownRecord | undefined;
+
+  if (!daily || typeof daily !== "object") {
+    throw new Error("API response did not contain a daily forecast block");
+  }
+
+  const times = daily.time;
+  if (!Array.isArray(times)) {
+    throw new Error("Daily forecast did not contain a time axis");
+  }
+
+  const rows: DailyWeatherRow[] = [];
+  for (let i = 0; i < times.length; i++) {
+    rows.push({
+      time: toString(times[i]),
+      temperature_2m_max: toNumber(Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max[i] : 0),
+      temperature_2m_min: toNumber(Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min[i] : 0),
+      weathercode: toNumber(Array.isArray(daily.weathercode) ? daily.weathercode[i] : 0)
+    });
+  }
+
+  return {
+    latitude: toNumber(result.latitude),
+    longitude: toNumber(result.longitude),
+    timezone: toString(result.timezone),
+    timezoneAbbreviation: toString(result.timezone_abbreviation),
+    daily: rows
+  };
+}
+
+/**
  * Build a query string from key-value pairs without URLSearchParams.
  */
 function buildQueryString(params: Record<string, string>): string {
@@ -286,6 +372,7 @@ function errorToString(error: unknown): string {
 
 registerExports("weather", [
   "get_current_weather",
-  "get_hourly_forecast"
+  "get_hourly_forecast",
+  "get_daily_forecast"
 ]);
 

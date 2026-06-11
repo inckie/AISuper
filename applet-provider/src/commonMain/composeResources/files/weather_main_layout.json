@@ -1,0 +1,176 @@
+{
+  "layout": {
+    "type": "Column",
+    "classes": ["screen"],
+    "fillMaxSize": true,
+    "isScrollable": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Back", "action": "launch:menu" },
+          {
+            "type": "Text",
+            "text": "Weather",
+            "classes": ["section_title"],
+            "weight": 1
+          },
+          { "type": "Button", "text": "🔄", "action": "updateDashboard" },
+          { "type": "Button", "text": "⚙️", "action": "openSettings" }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "location_name",
+        "text": "Loading...",
+        "classes": ["header_text"]
+      },
+      {
+        "type": "Text",
+        "id": "current_temp",
+        "text": "--",
+        "align": "center"
+      },
+      {
+        "type": "Text",
+        "id": "current_condition",
+        "text": "--",
+        "align": "center"
+      },
+      {
+        "type": "Text",
+        "text": "Hourly Forecast",
+        "classes": ["section_title"]
+      },
+      {
+        "type": "Row",
+        "isScrollable": true,
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h0_time", "text": "--" },
+              { "type": "Text", "id": "h0_emoji", "text": "--" },
+              { "type": "Text", "id": "h0_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h1_time", "text": "--" },
+              { "type": "Text", "id": "h1_emoji", "text": "--" },
+              { "type": "Text", "id": "h1_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h2_time", "text": "--" },
+              { "type": "Text", "id": "h2_emoji", "text": "--" },
+              { "type": "Text", "id": "h2_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h3_time", "text": "--" },
+              { "type": "Text", "id": "h3_emoji", "text": "--" },
+              { "type": "Text", "id": "h3_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h4_time", "text": "--" },
+              { "type": "Text", "id": "h4_emoji", "text": "--" },
+              { "type": "Text", "id": "h4_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h5_time", "text": "--" },
+              { "type": "Text", "id": "h5_emoji", "text": "--" },
+              { "type": "Text", "id": "h5_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h6_time", "text": "--" },
+              { "type": "Text", "id": "h6_emoji", "text": "--" },
+              { "type": "Text", "id": "h6_temp", "text": "--" }
+            ]
+          },
+          {
+            "type": "Column",
+            "children": [
+              { "type": "Text", "id": "h7_time", "text": "--" },
+              { "type": "Text", "id": "h7_emoji", "text": "--" },
+              { "type": "Text", "id": "h7_temp", "text": "--" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Text",
+        "text": "5-Day Forecast",
+        "classes": ["section_title"]
+      },
+      {
+        "type": "Column",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "id": "d0_day", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d0_emoji", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 2 }
+            ]
+          },
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "id": "d1_day", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d1_emoji", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 2 }
+            ]
+          },
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "id": "d2_day", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d2_emoji", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 2 }
+            ]
+          },
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "id": "d3_day", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d3_emoji", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 2 }
+            ]
+          },
+          {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+              { "type": "Text", "id": "d4_day", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d4_emoji", "text": "--", "weight": 1 },
+              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 2 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
