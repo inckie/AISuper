@@ -38,7 +38,9 @@ class Applet(
 
     private var manifest: AppletManifest? = null
 
-    suspend fun loadApplet(manifestPath: String) {
+    suspend fun loadApplet(
+        manifestPath: String,
+        entryFeatureId: String? = null) {
         try {
             _currentFeature.value?.close()
             _currentFeature.value = null
@@ -51,8 +53,8 @@ class Applet(
 
             ui.loadStyleSheets(json, manifest, resourceLoader)
 
-            val entryFeatureId = manifest!!.entryFeature
-            launchFeature(entryFeatureId)
+            val featureToLaunch = entryFeatureId ?: manifest!!.entryFeature
+            launchFeature(featureToLaunch)
 
         } catch (e: Exception) {
             Logger.e("Runtime", "Applet", throwable = e) { "Failed to load manifest $manifestPath" }
@@ -123,7 +125,7 @@ class Applet(
             val input = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
             } ?: ""
-            
+
             val result = when {
                 input.isBlank() -> 0.0
                 else -> input.toDoubleOrNull() ?: 0.0

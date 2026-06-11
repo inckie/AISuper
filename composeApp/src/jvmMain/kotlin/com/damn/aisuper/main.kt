@@ -73,6 +73,6 @@ fun main(args: Array<String>) = application {
             }
         }
         val entryPath = if (customProvider != null) "applet.json" else "files/applet.json"
-        App(customProvider, entryPath, applet)
+        App(customProvider, entryPath, providedApplet = applet)
     }
 }
