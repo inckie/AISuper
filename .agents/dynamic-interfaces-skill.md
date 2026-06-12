@@ -14,16 +14,16 @@ AISuper layouts are defined in JSON. For a comprehensive set of working examples
 * `fillMaxWidth`: (Boolean, Optional) Forces the widget to stretch to the parent's width.
 * `fillMaxSize`: (Boolean, Optional) Forces the widget to fill the entire parent space.
 * `weight`: (Float, Optional) Proportion of layout space the widget should occupy compared to siblings in a `Row` or `Column`.
-* `classes`: (Array of Strings, Optional) List of class names defined in the active stylesheet (e.g., `["screen", "header_text"]`) to apply margins, paddings, and colors.
+* `classes`: (Array of Strings, Optional) List of class names defined in the active stylesheet (e.g., `["screen", "message_bubble"]`) to apply margins, paddings, colors, alignment, and typography.
 * **Note:** The `modifier` property is **NOT** supported by the Kotlin layout renderer. All spacing and styling must be defined in a `StyleSheet` and applied using `classes` or defaults.
 
 ### Supported Widgets
 
 | Widget | Properties | Description |
 |---|---|---|
-| **`Column`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children vertically. Set `isScrollable: true` to enable vertical scrolling. |
-| **`Row`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children horizontally. Set `isScrollable: true` to enable horizontal scrolling. Supports dynamic children list population via `dynamicChildrenId`. |
-| **`Text`** | `text` (String), `align` (String - "center"/"left"/"right") | Renders a text label. |
+| **`Column`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children vertically. Set `isScrollable: true` to enable vertical scrolling. Supports `alignment` in styles (start, center, end) to align children horizontally. |
+| **`Row`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children horizontally. Set `isScrollable: true` to enable horizontal scrolling. Supports dynamic children list population via `dynamicChildrenId`. Supports `alignment` in styles (top, center, bottom) to align children vertically. |
+| **`Text`** | `text` (String), `align` (String - "center"/"left"/"right") | Renders a text label. Supports `fontWeight` (normal, bold) and `textAlign` via styles. |
 | **`TextField`** | `hint` (String), `singleLine` (Boolean), `password` (Boolean), `imeAction` (String), `onImeAction` (String), `nextFocusId` (String) | Text input field. Updates the state key corresponding to its `id` automatically as the user types. |
 | **`Button`** | `text` (String), `action` (String), `actionArgs` (Array) | Action trigger button. Triggers the specified JS function name on click. |
 | **`Dropdown`** | `hint` (String), `options` (Array of value/label), `optionsValueId` (String), `onChangeAction` (String) | Dropdown selection field. Triggers the specified JS callback when selection changes. |
@@ -160,7 +160,58 @@ function onUnitsChanged() {
 
 ---
 
-## 4. UI Scripting API Reference
+## 4. Layout Design Patterns & Utility Styles
+
+Modern interfaces in AISuper use "orthogonal" styles—modular utility classes that can be combined to create complex layouts without hardcoding values in JSON.
+
+### A. Decorative Utility Styles
+Stylesheets should provide utility classes for quick layout adjustments:
+*   **Alignment**: `align-start`, `align-center`, `align-end`. Note that `Column` children align horizontally, while `Row` children align vertically.
+*   **Text Alignment**: `text-center`, `text-right` to control text flow within a widget's allocated width.
+*   **Spacing**: `p-1`, `p-2` for standard padding increments.
+*   **Typography**: `bold`, `header-text` for weight and size.
+
+### B. Chat Bubble Pattern
+Combine background colors, corner radii, and alignments to create chat bubbles.
+**StyleSheet:**
+```json
+"message_bubble": { "padding": 10, "cornerRadius": 16, "fontSize": 15 },
+"user_bubble": { "backgroundColor": "#4F46E5", "textColor": "#FFFFFF", "alignment": "end" },
+"echo_bubble": { "backgroundColor": "#1F2937", "textColor": "#E5E7EB", "alignment": "start" }
+```
+**Layout/Script Usage:**
+```javascript
+widgets.push({
+    "type": "Text",
+    "text": message.content,
+    "classes": ["message_bubble", message.isUser ? "user_bubble" : "echo_bubble"]
+});
+```
+
+### C. Card & Group Pattern
+Use a `Column` or `Row` with a background and padding to group elements together visually.
+**StyleSheet:**
+```json
+"card": { "backgroundColor": "#FFFFFF", "cornerRadius": 12, "padding": 12 }
+```
+**Layout:**
+```json
+{
+  "type": "Column",
+  "classes": ["card"],
+  "children": [ ... ]
+}
+```
+
+### D. Table-like (Weighted) Layouts
+To create clean dashboards (like a weather forecast), use a combination of `weight`, `fillMaxWidth`, and `textAlign`.
+*   Assign `weight` to columns that should occupy proportional space (e.g., a "Day" column with `weight: 2` and a "Temp" column with `weight: 1`).
+*   Ensure the parent container has `fillMaxWidth: true`.
+*   Use `text-right` for numerical data to ensure proper vertical alignment across rows.
+
+---
+
+## 5. UI Scripting API Reference
 
 The JS engine exposes the following global synchronization functions inside features:
 
