@@ -238,7 +238,7 @@ When adding or modifying properties in the style system, the following files mus
 
 **1. Model Definitions (Kotlin & TypeScript)**
 *   `shared/src/commonMain/kotlin/com/damn/aisuper/layout/StyleModels.kt`: Update `StyleRule` data class and its `mergedWith` method.
-*   `client-react/src/types.ts`: Update the `StyleRule` interface to match the Kotlin changes.
+*   `client-react/src/types.ts`: Update the `StyleRule` interface to match the Kotlin changes. **Note:** After updating this file, you must run `node modules-ts/scripts/sync-template.mjs` to synchronize the changes to the applet template.
 
 **2. Layout Utilities**
 *   `shared/src/commonMain/kotlin/com/damn/aisuper/layout/WidgetUtils.kt`: (Optional) Update `resolveStyleRule` or `applyTokenFallbacks` if the new property depends on tokens or specific widget logic.

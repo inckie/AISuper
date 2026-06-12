@@ -15,7 +15,9 @@ export interface StyleRule {
   paddingVertical?: number | null;
   cornerRadius?: number | null;
   fontSize?: number | null;
+  fontWeight?: string | null;
   textAlign?: string | null;
+  alignment?: string | null;
 }
 
 export interface StyleTokens {
