@@ -31,6 +31,8 @@
     "rounded-lg": { "cornerRadius": 12 },
     "align-end": { "alignment": "end" },
     "align-start": { "alignment": "start" },
-    "align-center": { "alignment": "center" }
+    "align-center": { "alignment": "center" },
+    "text-right": { "textAlign": "right" },
+    "text-center": { "textAlign": "center" }
   }
 }

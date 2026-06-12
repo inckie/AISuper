@@ -128,45 +128,45 @@
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d0_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d0_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d0_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d0_emoji", "text": "--" },
+              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d1_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d1_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d1_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d1_emoji", "text": "--" },
+              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d2_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d2_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d2_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d2_emoji", "text": "--" },
+              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d3_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d3_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d3_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d3_emoji", "text": "--" },
+              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d4_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d4_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d4_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d4_emoji", "text": "--" },
+              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
             ]
           }
         ]
