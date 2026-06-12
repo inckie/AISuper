@@ -11,18 +11,23 @@
       {
         "type": "Column",
         "weight": 1,
+        "fillMaxWidth": true,
         "isScrollable": true,
-        "dynamicChildrenId": "messageList"
+        "dynamicChildrenId": "messageList",
+        "classes": ["p-2"]
       },
       {
         "type": "Row",
         "fillMaxWidth": true,
+        "classes": ["p-2"],
         "children": [
           {
             "type": "TextField",
             "id": "input_field",
             "hint": "Type here...",
-            "weight": 1
+            "weight": 1,
+            "imeAction": "done",
+            "onImeAction": "process"
           },
           {
             "type": "Button",

@@ -233,6 +233,27 @@ Applet manifest declares reusable style files:
 *   `Applet` loads all styles at startup; exposes `currentStyleSheet` flow.
 *   JS can query/switch styles via `getAvailableThemes()`, `getCurrentTheme()`, `setCurrentTheme(themeId)`.
 
+### Modifying the Style System
+When adding or modifying properties in the style system, the following files must be updated to ensure consistency across all platforms:
+
+**1. Model Definitions (Kotlin & TypeScript)**
+*   `shared/src/commonMain/kotlin/com/damn/aisuper/layout/StyleModels.kt`: Update `StyleRule` data class and its `mergedWith` method.
+*   `client-react/src/types.ts`: Update the `StyleRule` interface to match the Kotlin changes.
+
+**2. Layout Utilities**
+*   `shared/src/commonMain/kotlin/com/damn/aisuper/layout/WidgetUtils.kt`: (Optional) Update `resolveStyleRule` or `applyTokenFallbacks` if the new property depends on tokens or specific widget logic.
+*   `composeApp/src/commonMain/kotlin/com/damn/aisuper/layout/LayoutRenderUtils.kt`: Update `applyStyleRule` (Modifier extension) and `childModifier` (for alignment/weight) to apply the new style to Compose nodes.
+*   `client-react/src/layoutUtils.ts`: Update `resolveStyleRule` if custom resolution logic is needed.
+
+**3. Frontend Renderers**
+*   `composeApp/src/commonMain/kotlin/com/damn/aisuper/layout/frontend/rikka/RikkaLayoutRenderer.kt`: Update `RenderWidget` for specific widgets (e.g., `Text` for `fontWeight`).
+*   `composeApp/src/commonMain/kotlin/com/damn/aisuper/layout/frontend/material3/Material3LayoutRenderer.kt`: Update to apply the new style property in Material3 rendering.
+*   `client-react/src/WidgetRenderer.tsx`: Update `widgetBaseStyle` and individual widget render cases to apply the new CSS properties.
+*   `composeApp/src/androidMain/kotlin/com/damn/aisuper/layout/frontend/glance/GlanceLayoutRenderer.kt`: Update `toGlanceModifier` or widget-specific logic for App Widgets.
+
+**4. Theme Assets**
+*   `applet-provider/src/commonMain/composeResources/files/styles/*.json`: Update the default themes (light, dark, pink, neon, blue_orange) to use the new properties or classes.
+
 ### 7. Feature Manifest (Module Declarations)
 
 ```json

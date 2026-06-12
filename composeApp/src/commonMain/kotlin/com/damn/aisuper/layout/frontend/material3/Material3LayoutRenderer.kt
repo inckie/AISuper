@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -93,13 +94,15 @@ fun RenderWidget(
             }
             Column(modifier = columnModifier) {
                 widget.children.forEach { child ->
-                    RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
+                    val childStyle = resolveStyleRule(child, styleSheet)
+                    RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                 }
 
                 if (widget.dynamicChildrenId != null) {
                     val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
                     dynamicWidgets.forEach { child ->
-                        RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
+                        val childStyle = resolveStyleRule(child, styleSheet)
+                        RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                     }
                 }
             }
@@ -112,13 +115,15 @@ fun RenderWidget(
             }
             Row(modifier = rowModifier) {
                 widget.children.forEach { child ->
-                    RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
+                    val childStyle = resolveStyleRule(child, styleSheet)
+                    RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                 }
 
                 if (widget.dynamicChildrenId != null) {
                     val dynamicWidgets = resolveDynamicWidgets(values[widget.dynamicChildrenId])
                     dynamicWidgets.forEach { child ->
-                        RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child))
+                        val childStyle = resolveStyleRule(child, styleSheet)
+                        RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                     }
                 }
             }
@@ -144,11 +149,21 @@ fun RenderWidget(
                 else -> null
             }
 
+            val fontWeight = when (style.fontWeight?.lowercase()) {
+                "bold" -> FontWeight.Bold
+                "black" -> FontWeight.Black
+                "light" -> FontWeight.Light
+                "medium" -> FontWeight.Medium
+                "thin" -> FontWeight.Thin
+                else -> FontWeight.Normal
+            }
+
             Text(
                 text = displayText,
                 color = textColor,
                 fontSize = fontSize,
                 textAlign = textAlign,
+                fontWeight = fontWeight,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
             )
         }

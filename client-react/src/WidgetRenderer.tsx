@@ -23,14 +23,27 @@ interface RenderProps {
 
 function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
   const textAlign = style.textAlign?.toLowerCase();
+  const alignment = style.alignment?.toLowerCase();
+
+  let alignSelf = undefined;
+  if (alignment === 'start' || alignment === 'left') {
+    alignSelf = 'flex-start';
+  } else if (alignment === 'end' || alignment === 'right') {
+    alignSelf = 'flex-end';
+  } else if (alignment === 'center') {
+    alignSelf = 'center';
+  }
+
   return {
     width: widget.fillMaxWidth ? '100%' : undefined,
     height: widget.fillMaxSize ? '100%' : undefined,
     flex: widget.weight != null ? `${widget.weight} 1 0` : undefined,
+    alignSelf,
     color: parseColorOrNull(style.textColor),
     background: parseColorOrNull(style.backgroundColor),
     borderRadius: style.cornerRadius ?? undefined,
     fontSize: style.fontSize ?? undefined,
+    fontWeight: style.fontWeight ?? undefined,
     textAlign:
       textAlign === 'center' || textAlign === 'right' || textAlign === 'left' || textAlign === 'justify'
         ? textAlign

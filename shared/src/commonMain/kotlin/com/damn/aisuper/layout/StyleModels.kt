@@ -28,7 +28,9 @@ data class StyleRule(
     val paddingVertical: Int? = null,
     val cornerRadius: Int? = null,
     val fontSize: Int? = null,
-    val textAlign: String? = null // "left", "center", "right", "justify"
+    val fontWeight: String? = null, // "normal", "bold"
+    val textAlign: String? = null, // "left", "center", "right", "justify"
+    val alignment: String? = null // "start", "center", "end", "top", "bottom"
 ) {
     fun mergedWith(other: StyleRule?): StyleRule {
         if (other == null) return this
@@ -41,7 +43,9 @@ data class StyleRule(
             paddingVertical = other.paddingVertical ?: paddingVertical,
             cornerRadius = other.cornerRadius ?: cornerRadius,
             fontSize = other.fontSize ?: fontSize,
-            textAlign = other.textAlign ?: textAlign
+            fontWeight = other.fontWeight ?: fontWeight,
+            textAlign = other.textAlign ?: textAlign,
+            alignment = other.alignment ?: alignment
         )
     }
 }

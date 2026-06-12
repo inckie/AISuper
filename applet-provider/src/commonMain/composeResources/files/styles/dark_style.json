@@ -20,6 +20,17 @@
     "section_title": { "textColor": "#93C5FD", "paddingVertical": 6 },
     "menu_button": { "containerColor": "#1D4ED8", "textColor": "#E0E7FF", "cornerRadius": 14 },
     "back_button": { "containerColor": "#334155", "textColor": "#E2E8F0" },
-    "theme_dropdown": { "containerColor": "#111827", "textColor": "#E5E7EB", "cornerRadius": 12 }
+    "theme_dropdown": { "containerColor": "#111827", "textColor": "#E5E7EB", "cornerRadius": 12 },
+    "message_bubble": { "padding": 10, "cornerRadius": 16, "fontSize": 15 },
+    "user_bubble": { "backgroundColor": "#4F46E5", "textColor": "#FFFFFF", "alignment": "end" },
+    "echo_bubble": { "backgroundColor": "#1F2937", "textColor": "#E5E7EB", "alignment": "start" },
+    "system_message": { "textColor": "#93C5FD", "fontSize": 14, "alignment": "center", "fontWeight": "bold" },
+    "bg-accent": { "backgroundColor": "#4F46E5" },
+    "bg-accent-light": { "backgroundColor": "#1F2937" },
+    "p-2": { "padding": 8 },
+    "rounded-lg": { "cornerRadius": 12 },
+    "align-end": { "alignment": "end" },
+    "align-start": { "alignment": "start" },
+    "align-center": { "alignment": "center" }
   }
 }

@@ -5,23 +5,22 @@ function refreshMessages() {
     for (var i = 0; i < messages.length; i = i + 1) {
         var msg = messages[i];
         var text = "";
-        var alignVal = "start";
+        var classes = ["message_bubble"];
         if (msg.sender === "user") {
-            text = "You: " + msg.text;
-            alignVal = "end";
+            text = msg.text;
+            classes.push("user_bubble");
         } else if (msg.sender === "echo") {
-            text = "Echo: " + msg.text;
-            alignVal = "start";
+            text = msg.text;
+            classes.push("echo_bubble");
         } else {
-            text = "System: " + msg.text;
-            alignVal = "center";
+            text = msg.text;
+            classes = ["system_message"];
         }
 
         var item = {
             "type": "Text",
             "text": text,
-            "align": alignVal,
-            "fillMaxWidth": true
+            "classes": classes
         };
         widgets.push(item);
     }

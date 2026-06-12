@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -44,10 +45,34 @@ fun Widget.layoutModifier(): Modifier {
         .let { if (fillMaxWidth) it.fillMaxWidth() else it }
 }
 
-fun ColumnScope.childModifier(widget: Widget): Modifier {
-    return widget.weight?.let { Modifier.weight(it) } ?: Modifier
+fun ColumnScope.childModifier(widget: Widget, style: StyleRule? = null): Modifier {
+    var m = widget.weight?.let { Modifier.weight(it) } ?: Modifier
+    style?.alignment?.lowercase()?.let { align ->
+        val alignment = when (align) {
+            "start", "left" -> Alignment.Start
+            "center" -> Alignment.CenterHorizontally
+            "end", "right" -> Alignment.End
+            else -> null
+        }
+        if (alignment != null) {
+            m = m.align(alignment)
+        }
+    }
+    return m
 }
 
-fun RowScope.childModifier(widget: Widget): Modifier {
-    return widget.weight?.let { Modifier.weight(it) } ?: Modifier
+fun RowScope.childModifier(widget: Widget, style: StyleRule? = null): Modifier {
+    var m = widget.weight?.let { Modifier.weight(it) } ?: Modifier
+    style?.alignment?.lowercase()?.let { align ->
+        val alignment = when (align) {
+            "top" -> Alignment.Top
+            "center" -> Alignment.CenterVertically
+            "bottom" -> Alignment.Bottom
+            else -> null
+        }
+        if (alignment != null) {
+            m = m.align(alignment)
+        }
+    }
+    return m
 }
