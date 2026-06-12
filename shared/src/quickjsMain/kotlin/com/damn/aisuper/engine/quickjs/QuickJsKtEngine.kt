@@ -65,7 +65,7 @@ class QuickJsKtEngine : AppJSEngine {
                 jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
                 Logger.e("JS", "CallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
-                null
+                throw e
             }
         }
     }
@@ -77,7 +77,7 @@ class QuickJsKtEngine : AppJSEngine {
                 jsonElementToQuickJsAny(callback(jsonArgs))
             } catch (e: Exception) {
                 Logger.e("JS", "SuspendCallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
-                null
+                throw e
             }
         }
     }

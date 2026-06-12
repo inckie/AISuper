@@ -45,10 +45,13 @@ my-applet/
 ```
 
 ## 5. Storage Scopes
-- `Applet`: Shared across all features.
-- `Feature`: Local to the current feature.
-- `Module`: Private to a native module instance.
-- Add `persistent` to the scope name (e.g., `AppletPersistent`) to use durable storage.
+- `applet`: Shared across all features.
+- `feature`: Local to the current feature.
+- `module`: Private to a native module instance.
+- `module.global`: Shared across all instances of the same native module.
+
+**Persistence**:
+To use durable storage, use the functions prefixed with `persistentStorage` (e.g., `persistentStorageGetObject("feature", "key")`). Do NOT add "Persistent" to the scope name (e.g., `AppletPersistent` is invalid).
 
 ## 7. Template and TypeScript Modules
 

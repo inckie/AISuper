@@ -84,7 +84,7 @@ class KeightJSEngine : AppJSEngine {
                 jsonElementToJsAny(result, this)
             } catch (e: Exception) {
                 Logger.e("JS", "CallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
-                null
+                throw e
             }
         })
     }
@@ -101,7 +101,7 @@ class KeightJSEngine : AppJSEngine {
                     jsonElementToJsAny(result, runtime)
                 } catch (e: Exception) {
                     Logger.e("JS", "SuspendCallbackError", throwable = e) { "name=$name args=${safeArgs(jsonArgs)} message=${e.message}" }
-                    null
+                    throw e
                 }
             }
             deferred.js
