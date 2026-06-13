@@ -10,7 +10,6 @@ declare function httpRequestRaw(method: string, url: string, body?: string, head
 declare function jsonParse(json: string): unknown;
 declare function xmlParse(xmlString: string): Record<string, unknown>;
 declare function encodeURIComponent(s: string): string;
-declare function stringToNumber(s: string): number;
 declare function consoleLog(...args: any[]): void;
 declare function consoleError(...args: any[]): void;
 

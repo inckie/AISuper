@@ -115,8 +115,8 @@ async function updateDashboard() {
     } else {
         var parts = lastLoadedLocation.split("|");
         if (parts.length >= 3) {
-            lat = stringToNumber(parts[0]);
-            lon = stringToNumber(parts[1]);
+            lat = parseFloat(parts[0]);
+            lon = parseFloat(parts[1]);
             locName = parts[2];
         }
     }

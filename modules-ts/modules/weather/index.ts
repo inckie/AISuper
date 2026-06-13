@@ -5,7 +5,6 @@ const USER_AGENT = "weather-module/1.0";
 declare function httpGet(url: string): Promise<string>;
 declare function consoleLog(args: any[]): void;
 declare function consoleError(args: any[]): void;
-declare function stringToNumber(value: string): number;
 
 type UnknownRecord = Record<string, unknown>;
 

@@ -353,7 +353,7 @@ function stringToDouble(value) {
   if (typeof value !== "string") {
     value = String(value);
   }
-  return stringToNumber(value);
+  return parseFloat(value);
 }
 function parseIntSafe(value) {
   if (!value) return 0;

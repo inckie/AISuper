@@ -69,7 +69,6 @@ The embedded JS engine is **not a browser or Node.js**. Many standard Web APIs a
 | `encodeURIComponent` | Available as host bridge | OK to use |
 | `JSON.parse` / `JSON.stringify` | Available | OK to use |
 | `Promise`, `async/await` | Available | OK to use |
-| `switch` with `return` | May fail to return or error | Use `if/else if` chains |
 | `Array.isArray`, spread, destructuring | Generally OK | OK to use |
 
 ### ✅ Safe query string building (no URLSearchParams)
@@ -101,38 +100,6 @@ for (let i = 0; i < arr.length; i++) {
 }
 ```
 
-### ✅ Safe switch replacement (if/else chain)
-
-#### ❌ Incompatible (switch with return)
-```typescript
-function getStatusString(status) {
-  switch (status) {
-    case STATUS_STOPPED: return "Paused";
-    case STATUS_CHECK_WAIT: return "Queued for checking";
-    case STATUS_CHECK: return "Checking";
-    case STATUS_DOWNLOAD_WAIT: return "Queued for download";
-    case STATUS_DOWNLOAD: return "Downloading";
-    case STATUS_SEED_WAIT: return "Queued for seeding";
-    case STATUS_SEED: return "Seeding";
-    default: return "Unknown (" + status + ")";
-  }
-}
-```
-
-#### ✅ Safe replacement
-```typescript
-function getStatusString(status) {
-  if (status === STATUS_STOPPED) return "Paused";
-  if (status === STATUS_CHECK_WAIT) return "Queued for checking";
-  if (status === STATUS_CHECK) return "Checking";
-  if (status === STATUS_DOWNLOAD_WAIT) return "Queued for download";
-  if (status === STATUS_DOWNLOAD) return "Downloading";
-  if (status === STATUS_SEED_WAIT) return "Queued for seeding";
-  if (status === STATUS_SEED) return "Seeding";
-  return "Unknown (" + status + ")";
-}
-```
-
 ## 5) Module lifetime
 
 - **Feature-level** `jsModule` entries in `applet.json` are **owned by the Feature**.
@@ -160,7 +127,6 @@ Declared via `declare function` in TypeScript:
 | `jsonParse(json: string): unknown` | Safe JSON parse |
 | `xmlParse(xml: string): Record<string, unknown>` | XML → JSON parse |
 | `encodeURIComponent(s: string): string` | URI encoding |
-| `stringToNumber(s: string): number` | Safe string→double conversion (use instead of `parseFloat` for longitude/lat) |
 | `consoleLog(...)` | Logging |
 | `consoleError(...)` | Error logging |
 
@@ -284,7 +250,6 @@ Use conservative JS for Keight runtime:
 
 - Prefer `var` + function declarations
 - Avoid `Map`, `Set`, advanced regex-heavy parsing, complex transpiled helpers
-- Avoid `switch` with `return` expressions; use `if/else` chains instead.
 - Avoid reliance on `String.indexOf(substr, fromIndex)` in parser loops
   - use helper: `indexOfFrom(text, needle, fromIndex)` via `substring(fromIndex).indexOf(...)`
 - Prefer plain object caches over ES collections

@@ -6,7 +6,6 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const PREFIXES = ["first", "second", "third", "forth", "fifth"] as const;
 
 // Host functions - declared here and implemented in Kotlin
-declare function stringToNumber(value: string): number;
 declare function xmlParse(xml: string): Record<string, unknown>;
 declare function httpGet(url: string): Promise<string>;
 declare function consoleLog(args: any[]): void;
@@ -537,7 +536,7 @@ function parseFloatSafe(value: string | null): number {
 
 /**
  * Bridge function to safely convert string to double.
- * Uses the stringToNumber host function registered in Kotlin.
+ * Uses the parseFloat host function registered in Kotlin.
  */
 function stringToDouble(value: string | null | undefined): number {
   if (value === null || value === undefined || value === "") {
@@ -548,8 +547,7 @@ function stringToDouble(value: string | null | undefined): number {
     value = String(value);
   }
 
-  // Call the host function to do the conversion in Kotlin
-  return stringToNumber(value);
+  return parseFloat(value);
 }
 
 function parseIntSafe(value: string | null): number {

@@ -120,18 +120,6 @@ class Applet(
         // Register UI-related functions (themes, frameworks)
         ui.registerFunctions(engine)
 
-        // Helper function to safely parse strings to numbers, bypassing Keight VM conversion issues
-        engine.registerFunction("stringToNumber") { args ->
-            val input = args.firstOrNull()?.let {
-                try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
-            } ?: ""
-
-            val result = when {
-                input.isBlank() -> 0.0
-                else -> input.toDoubleOrNull() ?: 0.0
-            }
-            JsonPrimitive(result)
-        }
         engine.registerSuspendFunction("launchFeature") { args ->
             val featureId = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }
