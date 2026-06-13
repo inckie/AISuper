@@ -237,6 +237,8 @@ class McpServer(
                 addTool("storage_get", "Gets a value from storage", listOf("scope", "key"))
                 addTool("storage_set", "Sets a value in storage", listOf("scope", "key", "value"))
                 addTool("logs_get", "Gets recent logs", listOf("limit", "offset", "tagFilter"))
+                addTool("logs_tail", "Gets the last N logs", listOf("count", "tagFilter"))
+                addTool("logs_since", "Gets logs since a specific timestamp", listOf("timestamp", "limit", "tagFilter"))
                 addTool("file_list", "Lists files in the applet directory", listOf("path"))
                 addTool("file_read", "Reads a file from the applet directory", listOf("path"))
                 addTool("file_write", "Writes/Overwrites a file in the applet directory", listOf("path", "content"))
@@ -318,6 +320,18 @@ class McpServer(
                 val offset = args["offset"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 0
                 val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
                 handleLogsGet(limit, offset, tagFilter)
+            }
+            "logs_tail" -> {
+                val count = args["count"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 50
+                val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
+                handleLogsTail(count, tagFilter)
+            }
+            "logs_since" -> {
+                val timestamp = args["timestamp"]?.let { (it as? JsonPrimitive)?.content?.toLongOrNull() }
+                    ?: throw IllegalArgumentException("Missing or invalid timestamp")
+                val limit = args["limit"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 100
+                val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
+                handleLogsSince(timestamp, limit, tagFilter)
             }
             "file_list" -> {
                 val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: ""
@@ -488,9 +502,35 @@ class McpServer(
 
         val resultLogs = filtered.drop(offset).take(limit)
 
+        return formatLogEntries(resultLogs)
+    }
+
+    private fun handleLogsTail(count: Int, tagFilter: String?): JsonElement {
+        val allLogs = logBuffer.entries
+        val filtered = if (tagFilter != null) {
+            allLogs.filter { it.tag.contains(tagFilter, ignoreCase = true) }
+        } else {
+            allLogs
+        }
+
+        val resultLogs = filtered.takeLast(count)
+        return formatLogEntries(resultLogs)
+    }
+
+    private fun handleLogsSince(timestamp: Long, limit: Int, tagFilter: String?): JsonElement {
+        val allLogs = logBuffer.entries
+        val filtered = allLogs.filter { 
+            it.timestamp > timestamp && (tagFilter == null || it.tag.contains(tagFilter, ignoreCase = true))
+        }
+
+        val resultLogs = filtered.take(limit)
+        return formatLogEntries(resultLogs)
+    }
+
+    private fun formatLogEntries(entries: List<com.damn.aisuper.util.LogEntry>): JsonElement {
         return buildJsonObject {
             put("content", buildJsonArray {
-                resultLogs.forEach { log ->
+                entries.forEach { log ->
                     add(buildJsonObject {
                         put("level", log.level.name)
                         put("tag", log.tag)

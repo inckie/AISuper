@@ -15,7 +15,9 @@ The AISuper JVM app starts an MCP server on port 8081 (default) when launched wi
 | `values_get` | None | Returns all current feature state variables. |
 | `storage_get` | `scope`, `key` | Reads from `Applet`, `Feature`, or `Module` storage. |
 | `storage_set` | `scope`, `key`, `value` | Writes to storage. |
-| `logs_get` | `limit`, `offset`, `tagFilter` | Fetches the in-memory log buffer. |
+| `logs_get` | `limit`, `offset`, `tagFilter` | Fetches the in-memory log buffer from start. |
+| `logs_tail` | `count`, `tagFilter` | Returns the last `count` log entries. Useful for quick status checks. |
+| `logs_since` | `timestamp`, `limit`, `tagFilter` | Returns logs after `timestamp` (ms) up to `limit`. Ideal for continuous log streaming. |
 | `file_list` | `path` | Lists files in the applet directory. |
 | `file_read` | `path` | Reads a file from the applet directory. |
 | `file_write` | `path`, `content` | Writes/Overwrites a file in the applet directory. |
@@ -30,7 +32,9 @@ The AISuper JVM app starts an MCP server on port 8081 (default) when launched wi
 1. **Setup**: Identify the applet directory passed to the app.
 2. **Develop**: Write/Edit `.json` (layouts) and `.js` (scripts) in the applet folder.
 3. **Apply**: Call `applet_reload` via MCP.
-4. **Inspect**: Use `logs_get` (tagFilter: "Runtime" or "JS") to check for syntax or runtime errors.
+4. **Inspect**: Use `logs_tail` or `logs_since` to check for syntax or runtime errors.
+   - `logs_tail(count=20)` is great for immediate feedback after reload.
+   - `logs_since(lastTimestamp)` allows you to see only new logs since your last check.
 5. **Debug**: Use `values_get` to see the current state of UI-bound variables.
 6. **Interact**: Use `action_send` to simulate button clicks or trigger logic if the UI is not yet ready.
 

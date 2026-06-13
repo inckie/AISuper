@@ -58,6 +58,11 @@
       },
       "script": "files/multilayout_script.js",
       "name": "Multi-Layout Demo"
+    },
+    "todo": {
+      "layout": "files/todo_layout.json",
+      "script": "files/todo_script.js",
+      "name": "Task Manager"
     }
   }
 }

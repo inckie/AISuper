@@ -21,7 +21,7 @@ As an applet developer, you should rely entirely on these defined interfaces rat
 - **Widget Types**: Use [layout-types.ts](../template/applet/types/layout-types.ts) as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
 - **Runtime Native APIs**: See [runtime-globals.d.ts](../template/typescript/types/runtime-globals.d.ts) for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
 - **JS Module Creation**: See [JS Modules Creation Skill](js-modules-creation-skill.md) for critical guidelines on engine quirks (e.g., avoiding `switch` statements) and writing safe TS/JS modules.
-- **Interactive Execution**: See [AI Harness Skill](ai-harness-skill.md) for using the MCP to interactively test, debug, and reload applets.
+- **Interactive Execution**: See [AI Harness Skill](ai-harness-skill.md) for using the MCP to interactively test, debug, and reload applets. Use `logs_tail` for quick status updates after reloads and `logs_since` to monitor logs in real-time.
 
 ## 3. Working with TypeScript Modules (`jsModule`)
 
