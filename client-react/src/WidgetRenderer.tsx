@@ -8,7 +8,7 @@ import {
   resolveStyleRule,
   stringOrNull
 } from './layoutUtils';
-import type { JsonValue, StyleSheet, Widget } from './types';
+import type { JsonValue, StyleSheet, Widget, StyleRule } from './types';
 
 interface RenderProps {
   widget: Widget;
@@ -227,7 +227,9 @@ export function WidgetRenderer({
     }
 
     case 'Image': {
-      const imageModel = widget.data?.trim() ? widget.data : widget.url ?? '';
+      const widgetId = widget.id ?? undefined;
+      const dataFromValues = widgetId ? stringOrNull(values[widgetId]) : null;
+      const imageModel = dataFromValues || widget.data?.trim() || widget.url || '';
       if (!imageModel) return null;
       return (
         <img
@@ -236,7 +238,8 @@ export function WidgetRenderer({
           style={{
             ...baseStyle,
             width: widget.fillMaxWidth ? '100%' : 64,
-            height: widget.fillMaxWidth ? 200 : 64,
+            height: widget.fillMaxWidth ? undefined : 64,
+            maxHeight: widget.fillMaxWidth ? 300 : undefined,
             objectFit: 'contain'
           }}
         />
@@ -300,7 +303,7 @@ export function WidgetRenderer({
       const checked = widgetId ? booleanOrNull(values[widgetId]) ?? (widget.checked ?? false) : widget.checked ?? false;
       const shouldGrow = widget.weight != null || widget.fillMaxWidth;
       return (
-        <label
+        <div
           style={{
             ...baseStyle,
             display: 'flex',
@@ -311,16 +314,23 @@ export function WidgetRenderer({
           }}
         >
           <span style={{ flex: shouldGrow ? 1 : 'none' }}>{widget.text ?? ''}</span>
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(event) => {
-              if (widgetId) {
-                onValueChange(widgetId, String(event.target.checked));
-              }
-            }}
-          />
-        </label>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(event) => {
+                const isChecked = event.target.checked;
+                if (widgetId) {
+                  onValueChange(widgetId, String(isChecked));
+                }
+                if (widget.onChangeAction) {
+                  onAction(widget.onChangeAction, widget.actionArgs ?? [isChecked]);
+                }
+              }}
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
       );
     }
 

@@ -4,34 +4,11 @@ import { serverApi } from './api';
 import { parseColorOrNull, parseJsonInput } from './layoutUtils';
 import { useFocusRegistry, useFrameworkLabel, WidgetRenderer } from './WidgetRenderer';
 import type { HeadlessSessionSnapshot, JsonValue } from './types';
-
-interface SettingsState {
-  baseUrl: string;
-  manifestPath: string;
-}
-
-const DEFAULT_SETTINGS: SettingsState = {
-  baseUrl: 'http://localhost:8080',
-  manifestPath: 'files/applet.json'
-};
-
-function readStoredSettings(): SettingsState {
-  try {
-    const raw = localStorage.getItem('aisuper-web-settings');
-    if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<SettingsState>;
-    return {
-      baseUrl: parsed.baseUrl?.trim() || DEFAULT_SETTINGS.baseUrl,
-      manifestPath: parsed.manifestPath?.trim() || DEFAULT_SETTINGS.manifestPath
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
+import { SettingsPanel, SettingsState, readStoredSettings } from './SettingsPanel';
+import { DebugPanel } from './DebugPanel';
 
 export default function App(): JSX.Element {
   const [settings, setSettings] = useState<SettingsState>(() => readStoredSettings());
-  const [draftSettings, setDraftSettings] = useState<SettingsState>(() => readStoredSettings());
   const [snapshot, setSnapshot] = useState<HeadlessSessionSnapshot | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
   const [status, setStatus] = useState<string>('Idle');
@@ -39,22 +16,8 @@ export default function App(): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
 
-  const [debugAction, setDebugAction] = useState('');
-  const [debugActionArgs, setDebugActionArgs] = useState('[]');
-  const [debugValueId, setDebugValueId] = useState('');
-  const [debugValue, setDebugValue] = useState('');
-  const [debugModuleType, setDebugModuleType] = useState('audioPlayer');
-  const [debugModuleTarget, setDebugModuleTarget] = useState('');
-  const [debugModuleCommand, setDebugModuleCommand] = useState('');
-  const [debugModuleArgs, setDebugModuleArgs] = useState('[]');
-
   const focusRegistry = useFocusRegistry();
   const frameworkLabel = useFrameworkLabel(snapshot?.framework);
-
-  function parseArgsInput(input: string): JsonValue[] {
-    const parsed = parseJsonInput(input);
-    return Array.isArray(parsed) ? parsed : [];
-  }
 
   useEffect(() => {
     localStorage.setItem('aisuper-web-settings', JSON.stringify(settings));
@@ -92,18 +55,19 @@ export default function App(): JSX.Element {
 
   const hasLayout = Boolean(snapshot?.layout?.layout);
 
-  async function connectSession(): Promise<void> {
+  async function connectSession(overrideSettings?: SettingsState): Promise<void> {
+    const activeSettings = overrideSettings || settings;
     setError('');
     setStatus('Creating session...');
     try {
-      const created = await serverApi.createSession(settings.baseUrl, settings.manifestPath);
+      const created = await serverApi.createSession(activeSettings.baseUrl, activeSettings.manifestPath);
       setSessionId(created.id);
       let nextSnapshot = created.state;
 
       // Many applets publish layout after an initial action.
       if (!nextSnapshot.layout?.layout) {
         try {
-          nextSnapshot = await serverApi.sendAction(settings.baseUrl, created.id, 'init', []);
+          nextSnapshot = await serverApi.sendAction(activeSettings.baseUrl, created.id, 'init', []);
         } catch {
           // Keep created state visible if init is not supported.
         }
@@ -198,7 +162,7 @@ export default function App(): JSX.Element {
         {!hasLayout && (
           <div className="empty-state">
             <p>No layout loaded.</p>
-            <button className="primary-btn" onClick={connectSession}>
+            <button className="primary-btn" onClick={() => connectSession()}>
               Create Session
             </button>
           </div>
@@ -218,98 +182,26 @@ export default function App(): JSX.Element {
       </main>
 
       {settingsOpen && (
-        <aside className="panel right-panel">
-          <h2>Settings</h2>
-          <label>
-            Server URL
-            <input
-              value={draftSettings.baseUrl}
-              onChange={(event) => setDraftSettings((s) => ({ ...s, baseUrl: event.target.value }))}
-            />
-          </label>
-          <label>
-            Manifest Path
-            <input
-              value={draftSettings.manifestPath}
-              onChange={(event) => setDraftSettings((s) => ({ ...s, manifestPath: event.target.value }))}
-            />
-          </label>
-          <div className="panel-actions">
-            <button
-              className="primary-btn"
-              onClick={() => {
-                setSettings(draftSettings);
-                connectSession();
-              }}
-            >
-              Save + Connect
-            </button>
-            <button className="secondary-btn" onClick={() => setSettingsOpen(false)}>
-              Close
-            </button>
-          </div>
-        </aside>
+        <SettingsPanel
+          onClose={() => setSettingsOpen(false)}
+          initialSettings={settings}
+          onSaveAndConnect={(newSettings) => {
+            setSettings(newSettings);
+            connectSession(newSettings);
+          }}
+        />
       )}
 
       {debugOpen && (
-        <aside className="panel left-panel">
-          <h2>Debug</h2>
-
-          <section>
-            <h3>Action</h3>
-            <input placeholder="action" value={debugAction} onChange={(e) => setDebugAction(e.target.value)} />
-            <textarea value={debugActionArgs} onChange={(e) => setDebugActionArgs(e.target.value)} rows={3} />
-            <button className="primary-btn" onClick={() => onAction(debugAction, parseArgsInput(debugActionArgs))}>
-              Send Action
-            </button>
-          </section>
-
-          <section>
-            <h3>Set Value</h3>
-            <input placeholder="id" value={debugValueId} onChange={(e) => setDebugValueId(e.target.value)} />
-            <textarea value={debugValue} onChange={(e) => setDebugValue(e.target.value)} rows={2} />
-            <button className="primary-btn" onClick={() => onValueChange(debugValueId, String(parseJsonInput(debugValue)))}>
-              Set Value
-            </button>
-          </section>
-
-          <section>
-            <h3>Module Command</h3>
-            <input
-              placeholder="module type"
-              value={debugModuleType}
-              onChange={(e) => setDebugModuleType(e.target.value)}
-            />
-            <input
-              placeholder="target"
-              value={debugModuleTarget}
-              onChange={(e) => setDebugModuleTarget(e.target.value)}
-            />
-            <input
-              placeholder="command"
-              value={debugModuleCommand}
-              onChange={(e) => setDebugModuleCommand(e.target.value)}
-            />
-            <textarea value={debugModuleArgs} onChange={(e) => setDebugModuleArgs(e.target.value)} rows={3} />
-            <button
-              className="primary-btn"
-              onClick={() =>
-                onModuleCommand(debugModuleType, debugModuleTarget, debugModuleCommand, parseArgsInput(debugModuleArgs))
-              }
-            >
-              Send Command
-            </button>
-          </section>
-
-          <section>
-            <h3>Live Snapshot</h3>
-            <pre>{JSON.stringify(snapshot, null, 2)}</pre>
-          </section>
-        </aside>
+        <DebugPanel
+          snapshot={snapshot}
+          onAction={onAction}
+          onValueChange={onValueChange}
+          onModuleCommand={onModuleCommand}
+        />
       )}
 
       {error && <div className="error-banner">{error}</div>}
     </div>
   );
 }
-
