@@ -1,0 +1,65 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "classes": ["screen"],
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "launch:menu", "classes": ["back_button"] },
+          { "type": "Text", "text": "Task Manager", "weight": 1, "classes": ["header_text"] }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "TextField",
+            "id": "todo_input",
+            "hint": "What needs to be done?",
+            "weight": 1,
+            "singleLine": true,
+            "onImeAction": "addTask"
+          },
+          {
+            "type": "Button",
+            "text": "Add",
+            "action": "addTask"
+          }
+        ]
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "id": "filter_all", "text": "All", "weight": 1, "action": "setFilter", "actionArgs": ["all"] },
+          { "type": "Button", "id": "filter_active", "text": "Active", "weight": 1, "action": "setFilter", "actionArgs": ["active"] },
+          { "type": "Button", "id": "filter_completed", "text": "Completed", "weight": 1, "action": "setFilter", "actionArgs": ["completed"] }
+        ]
+      },
+      {
+        "type": "Text",
+        "id": "todo_stats",
+        "text": "0 tasks remaining",
+        "classes": ["section_title"]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "fillMaxWidth": true,
+        "isScrollable": true,
+        "dynamicChildrenId": "todo_list"
+      },
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "Clear Completed", "fillMaxWidth": true, "action": "clearCompleted" }
+        ]
+      }
+    ]
+  }
+}
