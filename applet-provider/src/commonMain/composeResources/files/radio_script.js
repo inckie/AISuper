@@ -1,6 +1,7 @@
 var playerName = "radioMain";
 var stationApiBase = "https://de1.api.radio-browser.info/json/stations/byname/";
 var stationLimit = 20;
+var defaultStationSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImdyYXkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIyIiB5PSI4IiB3aWR0aD0iMjAiIGhlaWdodD0iMTAiIHJ4PSIyIj48L3JlY3Q+PHBhdGggZD0iTTEyIDEyaC4wMSI+PC9wYXRoPjxwYXRoIGQ9Ik0xNSAxMmguMDEiPjwvcGF0aD48cGF0aCBkPSJNMTggMTJoLjAxIj48L3BhdGg+PHBhdGggZD0iTT0gMTJoNCI+PC9wYXRoPjxwYXRoIGQ9Ik0xMiA0djQiPjwvcGF0aD48L3N2Zz4=";
 
 function initialize() {
     audioSubscribe(playerName, "onAudioEvent");
@@ -33,13 +34,16 @@ async function findStations() {
             var s = stations[i];
             var rowChildren = [];
 
-            if (s.favicon != undefined && s.favicon != null && s.favicon != "") {
-                rowChildren.push({
-                    "type": "Image",
-                    "url": s.favicon,
-                    "description": s.name
-                });
+            var imageUrl = s.favicon;
+            if (!imageUrl || imageUrl === "") {
+                imageUrl = defaultStationSvg;
             }
+
+            rowChildren.push({
+                "type": "Image",
+                "url": imageUrl,
+                "description": s.name
+            });
 
             var infoChildren = [
                 { "type": "Text", "text": s.name }
