@@ -137,6 +137,10 @@ async function updateDashboard() {
 
             setValue("current_temp", cEmoji + " " + cTemp);
             setValue("current_condition", cCondition);
+
+            var rainProb = curr.precipitation_probability || 0;
+            var rainAmount = curr.rain || 0;
+            setValue("current_rain", "Rain: " + rainProb + "% (" + rainAmount + "mm)");
         }
 
         // Update Hourly Forecast (take every 3 hours)
@@ -152,10 +156,13 @@ async function updateDashboard() {
                     var timeStr = formatHourlyTime(hr.time, is24h);
                     var tempStr = formatTempNoUnit(hr.temperature_2m, units);
                     var emojiStr = mapCodeToEmoji(hr.weathercode);
+                    var rainProb = hr.precipitation_probability || 0;
+                    var rainAmount = hr.rain || 0;
 
                     setValue("h" + i + "_time", timeStr);
                     setValue("h" + i + "_emoji", emojiStr);
                     setValue("h" + i + "_temp", tempStr);
+                    setValue("h" + i + "_rain", rainProb + "%/" + rainAmount + "mm");
                 }
             }
         }
@@ -163,6 +170,15 @@ async function updateDashboard() {
         // Update Daily Forecast (5 days)
         if (dailyRes && dailyRes.daily) {
             var daily = dailyRes.daily;
+
+            // Current day sunrise/sunset
+            if (daily.length > 0) {
+                var today = daily[0];
+                var is24h = (units === "metric");
+                setValue("current_sunrise", "🌅 " + formatShortTime(today.sunrise, is24h));
+                setValue("current_sunset", "🌇 " + formatShortTime(today.sunset, is24h));
+            }
+
             for (var j = 0; j < 5; j++) {
                 if (j < daily.length) {
                     var dy = daily[j];
@@ -173,7 +189,11 @@ async function updateDashboard() {
 
                     setValue("d" + j + "_day", dayName);
                     setValue("d" + j + "_emoji", emojiStr);
-                    setValue("d" + j + "_temp", minTemp + " - " + maxTemp);
+                    setValue("d" + j + "_temp", minTemp + "-" + maxTemp);
+
+                    var dRainProb = dy.precipitation_probability_max || 0;
+                    var dRainSum = dy.precipitation_sum || 0;
+                    setValue("d" + j + "_rain", dRainProb + "%/" + dRainSum + "mm");
                 }
             }
         }
@@ -244,9 +264,9 @@ function formatHourlyTime(dateTimeStr, is24h) {
 function formatTemp(tempC, units) {
     if (units === "imperial") {
         var tempF = Math.round(tempC * 9 / 5 + 32);
-        return tempF + "°F";
+        return tempF + "°";
     } else {
-        return Math.round(tempC) + "°C";
+        return Math.round(tempC) + "°";
     }
 }
 
@@ -256,5 +276,23 @@ function formatTempNoUnit(tempC, units) {
         return tempF + "°";
     } else {
         return Math.round(tempC) + "°";
+    }
+}
+
+function formatShortTime(dateTimeStr, is24h) {
+    if (!dateTimeStr) return "--";
+    var timePart = dateTimeStr.split("T")[1];
+    if (!timePart) return dateTimeStr;
+    var parts = timePart.split(":");
+    var hourPart = parseInt(parts[0], 10);
+    var minutePart = parts[1];
+
+    if (is24h) {
+        return (hourPart < 10 ? "0" + hourPart : hourPart) + ":" + minutePart;
+    } else {
+        var suffix = hourPart >= 12 ? "PM" : "AM";
+        var displayHour = hourPart % 12;
+        if (displayHour === 0) displayHour = 12;
+        return displayHour + ":" + minutePart + " " + suffix;
     }
 }

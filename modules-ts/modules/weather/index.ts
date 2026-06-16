@@ -39,6 +39,10 @@ type DailyWeatherRow = {
   temperature_2m_max: number;
   temperature_2m_min: number;
   weathercode: number;
+  precipitation_sum?: number;
+  precipitation_probability_max?: number;
+  sunrise?: string;
+  sunset?: string;
 };
 
 type DailyForecastResult = {
@@ -94,7 +98,11 @@ const CURRENT_FIELDS = [
 const DAILY_FIELDS = [
   "temperature_2m_max",
   "temperature_2m_min",
-  "weathercode"
+  "weathercode",
+  "precipitation_sum",
+  "precipitation_probability_max",
+  "sunrise",
+  "sunset"
 ];
 
 /**
@@ -269,7 +277,11 @@ async function get_daily_forecast(
       time: toString(times[i]),
       temperature_2m_max: toNumber(Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max[i] : 0),
       temperature_2m_min: toNumber(Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min[i] : 0),
-      weathercode: toNumber(Array.isArray(daily.weathercode) ? daily.weathercode[i] : 0)
+      weathercode: toNumber(Array.isArray(daily.weathercode) ? daily.weathercode[i] : 0),
+      precipitation_sum: toNumber(Array.isArray(daily.precipitation_sum) ? daily.precipitation_sum[i] : 0),
+      precipitation_probability_max: toNumber(Array.isArray(daily.precipitation_probability_max) ? daily.precipitation_probability_max[i] : 0),
+      sunrise: toString(Array.isArray(daily.sunrise) ? daily.sunrise[i] : ""),
+      sunset: toString(Array.isArray(daily.sunset) ? daily.sunset[i] : "")
     });
   }
 

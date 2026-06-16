@@ -33,6 +33,7 @@
     "align-start": { "alignment": "start" },
     "align-center": { "alignment": "center" },
     "text-right": { "textAlign": "right" },
-    "text-center": { "textAlign": "center" }
+    "text-center": { "textAlign": "center" },
+    "small_text": { "fontSize": 12 }
   }
 }

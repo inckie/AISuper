@@ -13,7 +13,7 @@
           {
             "type": "Text",
             "text": "Weather",
-            "classes": ["section_title"],
+            "classes": ["section_title", "text-center"],
             "weight": 1
           },
           { "type": "Button", "text": "🔄", "action": "updateDashboard" },
@@ -28,16 +28,41 @@
         "classes": ["header_text"]
       },
       {
-        "type": "Text",
-        "id": "current_temp",
-        "text": "--",
-        "align": "center"
-      },
-      {
-        "type": "Text",
-        "id": "current_condition",
-        "text": "--",
-        "align": "center"
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Column",
+            "weight": 1,
+            "children": [
+              {
+                "type": "Text",
+                "id": "current_temp",
+                "text": "--"
+              },
+              {
+                "type": "Text",
+                "id": "current_condition",
+                "text": "--"
+              },
+              {
+                "type": "Text",
+                "id": "current_rain",
+                "text": "--",
+                "classes": ["small_text"]
+              }
+            ]
+          },
+          {
+            "type": "Column",
+            "weight": 1,
+            "classes": ["align-end"],
+            "children": [
+              { "type": "Text", "id": "current_sunrise", "text": "--", "classes": ["small_text"] },
+              { "type": "Text", "id": "current_sunset", "text": "--", "classes": ["small_text"] }
+            ]
+          }
+        ]
       },
       {
         "type": "Text",
@@ -52,65 +77,73 @@
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h0_time", "text": "--" },
-              { "type": "Text", "id": "h0_emoji", "text": "--" },
-              { "type": "Text", "id": "h0_temp", "text": "--" }
+              { "type": "Text", "id": "h0_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h0_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h0_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h0_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h1_time", "text": "--" },
-              { "type": "Text", "id": "h1_emoji", "text": "--" },
-              { "type": "Text", "id": "h1_temp", "text": "--" }
+              { "type": "Text", "id": "h1_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h1_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h1_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h1_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h2_time", "text": "--" },
-              { "type": "Text", "id": "h2_emoji", "text": "--" },
-              { "type": "Text", "id": "h2_temp", "text": "--" }
+              { "type": "Text", "id": "h2_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h2_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h2_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h2_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h3_time", "text": "--" },
-              { "type": "Text", "id": "h3_emoji", "text": "--" },
-              { "type": "Text", "id": "h3_temp", "text": "--" }
+              { "type": "Text", "id": "h3_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h3_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h3_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h3_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h4_time", "text": "--" },
-              { "type": "Text", "id": "h4_emoji", "text": "--" },
-              { "type": "Text", "id": "h4_temp", "text": "--" }
+              { "type": "Text", "id": "h4_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h4_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h4_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h4_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h5_time", "text": "--" },
-              { "type": "Text", "id": "h5_emoji", "text": "--" },
-              { "type": "Text", "id": "h5_temp", "text": "--" }
+              { "type": "Text", "id": "h5_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h5_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h5_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h5_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h6_time", "text": "--" },
-              { "type": "Text", "id": "h6_emoji", "text": "--" },
-              { "type": "Text", "id": "h6_temp", "text": "--" }
+              { "type": "Text", "id": "h6_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h6_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h6_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h6_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           },
           {
             "type": "Column",
             "children": [
-              { "type": "Text", "id": "h7_time", "text": "--" },
-              { "type": "Text", "id": "h7_emoji", "text": "--" },
-              { "type": "Text", "id": "h7_temp", "text": "--" }
+              { "type": "Text", "id": "h7_time", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h7_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h7_temp", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "h7_rain", "text": "--", "classes": ["small_text", "text-center"] }
             ]
           }
         ]
@@ -128,45 +161,50 @@
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d0_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d0_day", "text": "--", "weight": 5 },
               { "type": "Text", "id": "d0_emoji", "text": "--" },
-              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
+              { "type": "Text", "id": "d0_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d1_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d1_day", "text": "--", "weight": 5 },
               { "type": "Text", "id": "d1_emoji", "text": "--" },
-              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
+              { "type": "Text", "id": "d1_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d2_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d2_day", "text": "--", "weight": 5 },
               { "type": "Text", "id": "d2_emoji", "text": "--" },
-              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
+              { "type": "Text", "id": "d2_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d3_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d3_day", "text": "--", "weight": 5 },
               { "type": "Text", "id": "d3_emoji", "text": "--" },
-              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
+              { "type": "Text", "id": "d3_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
             ]
           },
           {
             "type": "Row",
             "fillMaxWidth": true,
             "children": [
-              { "type": "Text", "id": "d4_day", "text": "--", "weight": 2 },
+              { "type": "Text", "id": "d4_day", "text": "--", "weight": 5 },
               { "type": "Text", "id": "d4_emoji", "text": "--" },
-              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 1, "classes": ["text-right"] }
+              { "type": "Text", "id": "d4_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
             ]
           }
         ]
