@@ -1,7 +1,6 @@
 package com.damn.aisuper.harness
 
 import com.damn.aisuper.runtime.Applet
-import com.damn.aisuper.storage.StorageScope
 import com.damn.aisuper.util.LogBufferSink
 import com.damn.aisuper.util.Logger
 import io.ktor.http.*
@@ -64,6 +63,27 @@ class McpServer(
 
     private val scope = CoroutineScope(Dispatchers.Default)
     private val sessions = ConcurrentHashMap<String, Channel<JsonObject>>()
+
+    val tools = listOf(
+        AppletReloadTool(applet, scope),
+        FeatureLaunchTool(applet, scope),
+        ActionSendTool(applet, scope),
+        ValuesGetTool(applet),
+        ValueSetTool(applet),
+        StorageGetTool(applet),
+        StorageSetTool(applet),
+        LogsGetTool(logBuffer),
+        LogsTailTool(logBuffer),
+        LogsSinceTool(logBuffer),
+        FileListTool(this),
+        FileReadTool(this),
+        FileWriteTool(this),
+        FileDeleteTool(this),
+        LayoutGetTool(applet),
+        LayoutGetTool(applet, "ui_state_get"),
+        ScreenshotTakeTool(this),
+        AdbShellInputTool()
+    ).associateBy { it.name }
 
     fun start() {
         val server = embeddedServer(Netty, port = port, host = "0.0.0.0") {
@@ -229,195 +249,36 @@ class McpServer(
     private fun handleListTools(): JsonElement {
         return buildJsonObject {
             put("tools", buildJsonArray {
-                addTool("applet_reload", "Reloads the current applet from disk")
-                addTool("feature_launch", "Launches a specific feature by ID", listOf("featureId"))
-                addTool("action_send", "Sends an action to the current feature", listOf("action", "args"))
-                addTool("values_get", "Gets all current feature values")
-                addTool("value_set", "Sets a specific feature value", listOf("id", "value"))
-                addTool("storage_get", "Gets a value from storage", listOf("scope", "key"))
-                addTool("storage_set", "Sets a value in storage", listOf("scope", "key", "value"))
-                addTool("logs_get", "Gets recent logs", listOf("limit", "offset", "tagFilter"))
-                addTool("logs_tail", "Gets the last N logs", listOf("count", "tagFilter"))
-                addTool("logs_since", "Gets logs since a specific timestamp", listOf("timestamp", "limit", "tagFilter"))
-                addTool("file_list", "Lists files in the applet directory", listOf("path"))
-                addTool("file_read", "Reads a file from the applet directory", listOf("path"))
-                addTool("file_write", "Writes/Overwrites a file in the applet directory", listOf("path", "content"))
-                addTool("file_delete", "Deletes a file in the applet directory", listOf("path"))
-                addTool("layout_get", "Gets the current feature layout tree")
-                addTool("screenshot_take", "Takes a screenshot of the window")
-                addTool("ui_state_get", "Gets the current UI state (alias for layout_get)")
-                addTool("adb_shell_input", "Executes an adb shell input command", listOf("args"))
+                tools.values.forEach { tool ->
+                    add(buildJsonObject {
+                        put("name", tool.name)
+                        put("description", tool.description)
+                        put("inputSchema", buildJsonObject {
+                            put("type", "object")
+                            put("properties", buildJsonObject {
+                                tool.parameters.forEach { param ->
+                                    put(param.name, buildJsonObject {
+                                        put("type", param.type)
+                                        put("description", param.description)
+                                    })
+                                }
+                            })
+                            put("required", buildJsonArray {
+                                tool.parameters.filter { it.required }.forEach { add(it.name) }
+                            })
+                        })
+                    })
+                }
             })
         }
-    }
-
-    private fun JsonArrayBuilder.addTool(name: String, description: String, params: List<String> = emptyList()) {
-        add(buildJsonObject {
-            put("name", name)
-            put("description", description)
-            put("inputSchema", buildJsonObject {
-                put("type", "object")
-                put("properties", buildJsonObject {
-                    params.forEach { param ->
-                        put(param, buildJsonObject { put("type", "string") })
-                    }
-                })
-            })
-        })
     }
 
     private suspend fun handleCallTool(params: JsonObject): JsonElement {
-        val name = params["name"]?.let { (it as? JsonPrimitive)?.content }
+        val name = params["name"]?.jsonPrimitive?.content
         val args = params["arguments"] as? JsonObject ?: JsonObject(emptyMap())
 
-        val result: JsonElement = when (name) {
-            "applet_reload" -> {
-                scope.launch { applet.loadApplet("applet.json") }
-                JsonPrimitive("Reload triggered")
-            }
-            "feature_launch" -> {
-                val featureId = args["featureId"]?.let { (it as? JsonPrimitive)?.content }
-                    ?: throw IllegalArgumentException("Missing featureId")
-                scope.launch { applet.launchFeature(featureId) }
-                JsonPrimitive("Launch triggered")
-            }
-            "action_send" -> {
-                val action = args["action"]?.let { (it as? JsonPrimitive)?.content }
-                    ?: throw IllegalArgumentException("Missing action")
-                val actionArgs = args["args"] as? JsonArray ?: JsonArray(emptyList())
-                scope.launch { applet.handleAction(action, actionArgs) }
-                JsonPrimitive("Action sent")
-            }
-            "values_get" -> {
-                val values = applet.currentFeature.value?.values?.value ?: emptyMap()
-                JsonObject(values)
-            }
-            "value_set" -> {
-                val id = args["id"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing id")
-                val value = args["value"] ?: JsonNull
-                applet.updateValue(id, value)
-                JsonPrimitive("Value updated")
-            }
-            "storage_get" -> {
-                val scopeStr = args["scope"]?.let { (it as? JsonPrimitive)?.content } ?: "Applet"
-                val key = args["key"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing key")
-                val scope = StorageScope.entries.find { it.name.equals(scopeStr, ignoreCase = true) } ?: StorageScope.Applet
-                val storage = if (scopeStr.contains("persistent", ignoreCase = true)) applet.appletPersistentStorage else applet.appletTransientStorage
-                val value = storage.getObject(scope, key) ?: JsonPrimitive("null")
-                value
-            }
-            "storage_set" -> {
-                val scopeStr = args["scope"]?.let { (it as? JsonPrimitive)?.content } ?: "Applet"
-                val key = args["key"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing key")
-                val value = args["value"] ?: JsonNull
-                val scope = StorageScope.entries.find { it.name.equals(scopeStr, ignoreCase = true) } ?: StorageScope.Applet
-                val storage = if (scopeStr.contains("persistent", ignoreCase = true)) applet.appletPersistentStorage else applet.appletTransientStorage
-                storage.putObject(scope, key, value)
-                JsonPrimitive("Value set")
-            }
-            "logs_get" -> {
-                val limit = args["limit"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 100
-                val offset = args["offset"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 0
-                val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
-                handleLogsGet(limit, offset, tagFilter)
-            }
-            "logs_tail" -> {
-                val count = args["count"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 50
-                val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
-                handleLogsTail(count, tagFilter)
-            }
-            "logs_since" -> {
-                val timestamp = args["timestamp"]?.let { (it as? JsonPrimitive)?.content?.toLongOrNull() }
-                    ?: throw IllegalArgumentException("Missing or invalid timestamp")
-                val limit = args["limit"]?.let { (it as? JsonPrimitive)?.content?.toIntOrNull() } ?: 100
-                val tagFilter = args["tagFilter"]?.let { (it as? JsonPrimitive)?.content }
-                handleLogsSince(timestamp, limit, tagFilter)
-            }
-            "file_list" -> {
-                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: ""
-                val dir = resolveSafePath(pathString)
-                if (!dir.exists()) throw IllegalArgumentException("Directory not found: $pathString")
-                
-                buildJsonObject {
-                    put("files", buildJsonArray {
-                        dir.listFiles()?.forEach { file ->
-                            add(buildJsonObject {
-                                put("name", file.name)
-                                put("isDirectory", file.isDirectory)
-                                put("size", file.length())
-                            })
-                        }
-                    })
-                }
-            }
-            "file_read" -> {
-                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
-                val file = resolveSafePath(pathString)
-                if (!file.exists()) throw IllegalArgumentException("File not found: $pathString")
-                JsonPrimitive(file.readText())
-            }
-            "file_write" -> {
-                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
-                val content = args["content"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing content")
-                val file = resolveSafePath(pathString)
-                file.parentFile.mkdirs()
-                file.writeText(content)
-                JsonPrimitive("File written: $pathString")
-            }
-            "file_delete" -> {
-                val pathString = args["path"]?.let { (it as? JsonPrimitive)?.content } ?: throw IllegalArgumentException("Missing path")
-                val file = resolveSafePath(pathString)
-                if (file.exists()) {
-                    file.delete()
-                    JsonPrimitive("File deleted: $pathString")
-                } else {
-                    JsonPrimitive("File not found: $pathString")
-                }
-            }
-            "layout_get" -> {
-                val layout = applet.currentFeature.value?.layoutRoot?.value
-                if (layout != null) {
-                    Json.encodeToJsonElement(layout)
-                } else {
-                    JsonNull
-                }
-            }
-            "ui_state_get" -> {
-                val layout = applet.currentFeature.value?.layoutRoot?.value
-                if (layout != null) {
-                    Json.encodeToJsonElement(layout)
-                } else {
-                    JsonNull
-                }
-            }
-            "screenshot_take" -> {
-                val base64Image = takeScreenshot()
-                buildJsonObject {
-                    put("type", "image")
-                    put("data", base64Image)
-                    put("mimeType", "image/png")
-                }
-            }
-            "adb_shell_input" -> {
-                val adbArgs = args["args"]?.let { (it as? JsonPrimitive)?.content }
-                    ?: throw IllegalArgumentException("Missing args")
-                val fullCommand = "adb shell input $adbArgs"
-                val process = withContext(Dispatchers.IO) {
-                    Runtime.getRuntime().exec(fullCommand)
-                }
-                val output = withContext(Dispatchers.IO) {
-                    process.inputStream.bufferedReader().readText()
-                }
-                val error = withContext(Dispatchers.IO) {
-                    process.errorStream.bufferedReader().readText()
-                }
-                buildJsonObject {
-                    put("stdout", output)
-                    put("stderr", error)
-                }
-            }
-            else -> throw IllegalArgumentException("Unknown tool: $name")
-        }
+        val tool = tools[name] ?: throw IllegalArgumentException("Unknown tool: $name")
+        val result = tool.execute(args)
 
         return buildJsonObject {
             put("content", buildJsonArray {
@@ -433,7 +294,7 @@ class McpServer(
         }
     }
 
-    private suspend fun takeScreenshot(): String {
+    suspend fun takeScreenshot(): String {
         val bounds = windowBoundsProvider?.invoke() ?: java.awt.Rectangle(0, 0, 1024, 768)
         val robot = java.awt.Robot()
         val screenShot = robot.createScreenCapture(bounds)
@@ -481,7 +342,7 @@ class McpServer(
         return appletRoot?.toPath() ?: java.nio.file.Paths.get("").toAbsolutePath()
     }
 
-    private fun resolveSafePath(pathString: String): File {
+    fun resolveSafePath(pathString: String): File {
         val root = getAppletRoot()?.toAbsolutePath()?.normalize()
             ?: throw IllegalStateException("Applet root not found")
 
@@ -492,7 +353,7 @@ class McpServer(
         return resolved.toFile()
     }
 
-    private fun handleLogsGet(limit: Int, offset: Int, tagFilter: String?): JsonElement {
+    fun handleLogsGet(limit: Int, offset: Int, tagFilter: String?): JsonElement {
         val allLogs = logBuffer.entries
         val filtered = if (tagFilter != null) {
             allLogs.filter { it.tag.contains(tagFilter, ignoreCase = true) }
@@ -502,44 +363,6 @@ class McpServer(
 
         val resultLogs = filtered.drop(offset).take(limit)
 
-        return formatLogEntries(resultLogs)
-    }
-
-    private fun handleLogsTail(count: Int, tagFilter: String?): JsonElement {
-        val allLogs = logBuffer.entries
-        val filtered = if (tagFilter != null) {
-            allLogs.filter { it.tag.contains(tagFilter, ignoreCase = true) }
-        } else {
-            allLogs
-        }
-
-        val resultLogs = filtered.takeLast(count)
-        return formatLogEntries(resultLogs)
-    }
-
-    private fun handleLogsSince(timestamp: Long, limit: Int, tagFilter: String?): JsonElement {
-        val allLogs = logBuffer.entries
-        val filtered = allLogs.filter { 
-            it.timestamp > timestamp && (tagFilter == null || it.tag.contains(tagFilter, ignoreCase = true))
-        }
-
-        val resultLogs = filtered.take(limit)
-        return formatLogEntries(resultLogs)
-    }
-
-    private fun formatLogEntries(entries: List<com.damn.aisuper.util.LogEntry>): JsonElement {
-        return buildJsonObject {
-            put("content", buildJsonArray {
-                entries.forEach { log ->
-                    add(buildJsonObject {
-                        put("level", log.level.name)
-                        put("tag", log.tag)
-                        put("message", log.message)
-                        put("timestamp", log.timestamp)
-                        log.throwable?.let { put("throwable", it) }
-                    })
-                }
-            })
-        }
+        return McpTool.formatLogEntries(resultLogs)
     }
 }

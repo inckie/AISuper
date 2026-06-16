@@ -7,13 +7,9 @@ description: Recipes and hints for debugging applets using the MCP bridge. Conta
 
 This skill provides practical recipes and hints for debugging AISuper applets through the MCP bridge. It acts as a companion to the `ai-harness-skill.md`.
 
-## 1. Action Sending Quirk (`action_send`)
+## 1. Action Sending (`action_send`)
 The `action_send` tool is used to simulate user interactions by calling JS functions directly. 
-**Important Hint:** While the MCP schema might report that `args` should be of type `"string"`, the Kotlin backend explicitly expects a `JsonArray`:
-```kotlin
-// From McpServer.kt
-val actionArgs = args["args"] as? JsonArray ?: JsonArray(emptyList())
-```
+
 **Recipe for calling `action_send`:**
 When using `call_mcp_tool`, ensure your `Arguments` object contains a proper JSON array for `args`, and the `action` matches the exact string name of your JS function:
 ```json
@@ -22,26 +18,23 @@ When using `call_mcp_tool`, ensure your `Arguments` object contains a proper JSO
   "args": [0]
 }
 ```
-*(Note: If your MCP client wraps the arguments incorrectly, you may see a "Missing action" error. Ensure the arguments are placed directly at the root of the tool call payload.)*
 
 ## 2. Layout Inspection (`layout_get` and `ui_state_get`)
 If you're unsure why an applet is not rendering correctly (e.g., you see a blank screen after an action), use the `layout_get` or `ui_state_get` tools.
 **Hint:** These tools pull the current JSON layout tree directly from the `currentFeature.value?.layoutRoot?.value`. This is exactly what the engine is attempting to render. If this is `null` or missing children, your script logic hasn't populated the layouts correctly via `setValue` or `setLayout`.
 
 ## 3. Storage Scopes and Types
-When using `storage_get` and `storage_set`, be mindful of the `scope` parameter. 
-**Hint:** The Kotlin implementation matches the `scope` string (case-insensitively) against `StorageScope` entries (`Applet`, `Feature`, `Module`). 
-If the `scope` string contains "persistent" (e.g., `"AppletPersistent"`), it routes to `appletPersistentStorage`. Otherwise, it goes to `appletTransientStorage` (in-memory).
-```kotlin
-val scopeStr = args["scope"]?.let { (it as? JsonPrimitive)?.content } ?: "Applet"
-val storage = if (scopeStr.contains("persistent", ignoreCase = true)) applet.appletPersistentStorage else applet.appletTransientStorage
-```
+When using `storage_get` and `storage_set`, be mindful of the `scope` parameter and the `persistent` flag.
+**Hint:** The Kotlin implementation matches the `scope` string (case-insensitively) against `StorageScope` entries (`applet`, `feature`, `module`, `module.global`).
+Use the `persistent: true` parameter for `appletPersistentStorage`. Otherwise, it defaults to `appletTransientStorage` (in-memory).
+
 **Recipe for inspecting saved data:**
 To verify that your applet is successfully saving data, call `storage_get` with:
 ```json
 {
-  "scope": "AppletPersistent",
-  "key": "feature:your_storage_key" 
+  "scope": "applet",
+  "key": "your_storage_key",
+  "persistent": true
 }
 ```
 
