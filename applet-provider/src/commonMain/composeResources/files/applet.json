@@ -94,7 +94,8 @@
     "transmission": {
       "layouts": {
         "settings": "files/transmission_settings_layout.json",
-        "list": "files/transmission_list_layout.json"
+        "list": "files/transmission_list_layout.json",
+        "add": "files/transmission_add_layout.json"
       },
       "script": "files/transmission_script.js",
       "name": "Transmission RPC",

@@ -8,8 +8,9 @@
         "fillMaxWidth": true,
         "children": [
           { "type": "Button", "text": "<< Back", "action": "launch:menu" },
-          { "type": "Text", "text": "Transmission Torrents", "classes": ["section_title"], "weight": 1 },
-          { "type": "Button", "text": "Settings", "action": "goToSettings" }
+          { "type": "Text", "text": "Transmission", "classes": ["section_title"], "weight": 1 },
+          { "type": "Button", "text": "Add", "action": "goToAddTorrent" },
+          { "type": "Button", "text": "⚙️", "action": "goToSettings" }
         ]
       },
       {

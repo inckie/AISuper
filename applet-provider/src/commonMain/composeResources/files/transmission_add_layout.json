@@ -1,0 +1,47 @@
+{
+  "layout": {
+    "type": "Column",
+    "classes": ["screen"],
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "goToList" },
+          { "type": "Text", "text": "Add Torrent", "classes": ["section_title"], "weight": 1 }
+        ]
+      },
+      {
+        "type": "TextField",
+        "id": "magnet_input",
+        "hint": "Magnet link (magnet:?xt=...)",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "TextField",
+        "id": "download_path_input",
+        "hint": "Download path (/downloads)",
+        "singleLine": true,
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Switch",
+        "id": "start_when_added",
+        "text": "Start when added",
+        "checked": true
+      },
+      {
+        "type": "Button",
+        "text": "Add",
+        "action": "confirmAddTorrent",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Text",
+        "id": "add_status_text",
+        "text": ""
+      }
+    ]
+  }
+}

@@ -85,4 +85,16 @@ async function transmission_resumeTorrent(host, login, password, id) {
   if (!res.ok) return res;
   return { ok: true };
 }
-registerExports("transmission", ["transmission_getTorrents", "transmission_pauseTorrent", "transmission_resumeTorrent"]);
+async function transmission_addTorrent(host, login, password, magnet, downloadDir, paused) {
+  const args = {
+    filename: magnet,
+    paused: paused != null ? paused : false
+  };
+  if (downloadDir) {
+    args["download-dir"] = downloadDir;
+  }
+  const res = await rpcCall(host, login, password, "torrent-add", args);
+  if (!res.ok) return res;
+  return { ok: true };
+}
+registerExports("transmission", ["transmission_getTorrents", "transmission_pauseTorrent", "transmission_resumeTorrent", "transmission_addTorrent"]);

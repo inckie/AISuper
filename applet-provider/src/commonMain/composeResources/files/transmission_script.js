@@ -1,6 +1,7 @@
 var HOST_KEY = "transmission_host";
 var LOGIN_KEY = "transmission_login";
 var PASS_KEY = "transmission_pass";
+var DOWNLOAD_PATH_KEY = "transmission_last_download_path";
 
 var STATUS_STOPPED = 0;
 var STATUS_CHECK_WAIT = 1;
@@ -14,6 +15,7 @@ var STATUS_SEED = 6;
 var currentHost = "";
 var currentLogin = "";
 var currentPass = "";
+var lastDownloadPath = "";
 
 async function initialize() {
     setValue("spinner_visible", false);
@@ -24,6 +26,9 @@ async function initialize() {
         var host = await persistentStorageGet("feature", HOST_KEY);
         var login = await persistentStorageGet("feature", LOGIN_KEY);
         var pass = await persistentStorageGet("feature", PASS_KEY);
+        var path = await persistentStorageGet("feature", DOWNLOAD_PATH_KEY);
+
+        if (path) lastDownloadPath = path;
 
         if (host) {
             currentHost = host;
@@ -190,5 +195,50 @@ async function resumeTorrent(id) {
         await refreshTorrents();
     } catch(e) {
          setValue("status_text", "Error resuming: " + e);
+    }
+}
+
+async function goToAddTorrent() {
+    await setLayout("add");
+    setValue("magnet_input", "");
+    setValue("download_path_input", lastDownloadPath);
+    setValue("start_when_added", true);
+    setValue("add_status_text", "");
+}
+
+async function goToList() {
+    await setLayout("list");
+    refreshTorrents();
+}
+
+async function confirmAddTorrent() {
+    var magnet = getValue("magnet_input");
+    var path = getValue("download_path_input");
+    var startWhenAdded = getValue("start_when_added");
+
+    if (!magnet) {
+        setValue("add_status_text", "Error: Magnet link is required");
+        return;
+    }
+
+    if (path) {
+        lastDownloadPath = path;
+        try {
+            await persistentStoragePut("feature", DOWNLOAD_PATH_KEY, path);
+        } catch (e) {
+            consoleError("Failed to save download path", e);
+        }
+    }
+
+    setValue("add_status_text", "Adding torrent...");
+    try {
+        var res = await transmission_transmission_addTorrent(currentHost, currentLogin, currentPass, magnet, path, !startWhenAdded);
+        if (!res.ok) {
+            setValue("add_status_text", "Error: " + (res.error || "Unknown"));
+            return;
+        }
+        await goToList();
+    } catch (e) {
+        setValue("add_status_text", "Error: " + e);
     }
 }
