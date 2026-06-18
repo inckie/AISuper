@@ -18,6 +18,8 @@ export interface StyleRule {
   fontWeight?: string | null;
   textAlign?: string | null;
   alignment?: string | null;
+  iconPosition?: string | null;
+  iconOnly?: boolean | null;
 }
 
 export interface StyleTokens {
@@ -76,6 +78,7 @@ export interface TextFieldWidget extends WidgetBase {
 export interface ButtonWidget extends WidgetBase {
   type: 'Button';
   text?: string;
+  icon?: string | null;
   action?: string;
   actionArgs?: JsonValue[];
 }

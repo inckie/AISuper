@@ -42,6 +42,7 @@ export function floatOrNull(value: JsonValue | undefined): number | null {
 
 export function parseColorOrNull(raw?: string | null): string | undefined {
   if (!raw) return undefined;
+  if (raw.trim().toLowerCase() === 'transparent') return 'transparent';
   const hex = raw.startsWith('#') ? raw.slice(1) : raw;
   if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(hex)) return undefined;
   if (hex.length === 6) return `#${hex}`;

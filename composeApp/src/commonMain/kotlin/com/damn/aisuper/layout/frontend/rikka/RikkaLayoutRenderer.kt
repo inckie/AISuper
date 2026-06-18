@@ -216,11 +216,42 @@ fun RenderWidget(
         }
 
         is ButtonWidget -> {
+            val showIcon = !widget.icon.isNullOrBlank()
+            val showText = style.iconOnly != true || !showIcon
+            val iconOnRight = style.iconPosition == "end" || style.iconPosition == "right"
+
+            val isGhost = widget.classes.any { it.equals("ghost_button", ignoreCase = true) }
+            val variant = if (isGhost) zed.rainxch.rikkaui.components.ui.button.ButtonVariant.Ghost
+                          else zed.rainxch.rikkaui.components.ui.button.ButtonVariant.Default
+
             Button(
-                text = widget.text,
                 onClick = { onAction(widget.action, widget.actionArgs) },
-                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
-            )
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
+                variant = variant,
+                size = if (style.iconOnly == true) zed.rainxch.rikkaui.components.ui.button.ButtonSize.Icon else zed.rainxch.rikkaui.components.ui.button.ButtonSize.Default
+            ) {
+                if (showIcon && !iconOnRight) {
+                    AsyncImage(
+                        model = widget.icon,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp).height(18.dp)
+                    )
+                    if (showText) Spacer(modifier = Modifier.width(6.dp))
+                }
+
+                if (showText) {
+                    Text(text = widget.text)
+                }
+
+                if (showIcon && iconOnRight) {
+                    if (showText) Spacer(modifier = Modifier.width(6.dp))
+                    AsyncImage(
+                        model = widget.icon,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp).height(18.dp)
+                    )
+                }
+            }
         }
 
         is ImageWidget -> {

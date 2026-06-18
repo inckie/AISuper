@@ -89,6 +89,7 @@ data class ButtonWidget(
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
     val text: String = "",
+    val icon: String? = null,
     val action: String = "",
     val actionArgs: List<JsonElement> = emptyList()
 ) : Widget()

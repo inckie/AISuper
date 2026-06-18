@@ -30,7 +30,9 @@ data class StyleRule(
     val fontSize: Int? = null,
     val fontWeight: String? = null, // "normal", "bold"
     val textAlign: String? = null, // "left", "center", "right", "justify"
-    val alignment: String? = null // "start", "center", "end", "top", "bottom"
+    val alignment: String? = null, // "start", "center", "end", "top", "bottom"
+    val iconPosition: String? = null, // "start", "end"
+    val iconOnly: Boolean? = null
 ) {
     fun mergedWith(other: StyleRule?): StyleRule {
         if (other == null) return this
@@ -45,7 +47,9 @@ data class StyleRule(
             fontSize = other.fontSize ?: fontSize,
             fontWeight = other.fontWeight ?: fontWeight,
             textAlign = other.textAlign ?: textAlign,
-            alignment = other.alignment ?: alignment
+            alignment = other.alignment ?: alignment,
+            iconPosition = other.iconPosition ?: iconPosition,
+            iconOnly = other.iconOnly ?: iconOnly
         )
     }
 }

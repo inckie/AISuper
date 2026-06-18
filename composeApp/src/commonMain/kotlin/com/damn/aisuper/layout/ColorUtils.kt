@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
  */
 fun parseColorOrNull(raw: String?): Color? {
     if (raw.isNullOrBlank()) return null
+    if (raw.equals("transparent", ignoreCase = true)) return Color.Transparent
     val hex = raw.removePrefix("#")
     return try {
         when (hex.length) {

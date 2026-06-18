@@ -207,6 +207,22 @@ export function WidgetRenderer({
     }
 
     case 'Button': {
+      const showIcon = !!widget.icon;
+      const showText = !style.iconOnly || !showIcon;
+      const iconOnRight = style.iconPosition === 'end' || style.iconPosition === 'right';
+
+      const content = (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          {showIcon && !iconOnRight && (
+            <img src={widget.icon!} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+          )}
+          {showText && <span>{widget.text ?? 'Button'}</span>}
+          {showIcon && iconOnRight && (
+            <img src={widget.icon!} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+          )}
+        </div>
+      );
+
       return (
         <button
           style={{
@@ -217,11 +233,11 @@ export function WidgetRenderer({
             borderRadius: style.cornerRadius ?? 8,
             background: parseColorOrNull(style.containerColor ?? style.backgroundColor) ?? '#2563eb',
             color: parseColorOrNull(style.textColor) ?? '#ffffff',
-            padding: '8px 12px'
+            padding: style.padding ?? '8px 12px'
           }}
           onClick={() => onAction(widget.action ?? '', widget.actionArgs ?? [])}
         >
-          {widget.text ?? 'Button'}
+          {content}
         </button>
       );
     }

@@ -261,19 +261,43 @@ fun RenderWidget(
             val containerColor = parseColorOrNull(style.containerColor ?: style.backgroundColor)
             val buttonColors = if (textColor != null || containerColor != null) {
                 ButtonDefaults.buttonColors(
-                    containerColor = containerColor ?: Color.Unspecified,
-                    contentColor = textColor ?: Color.Unspecified
+                    containerColor = containerColor ?: ButtonDefaults.buttonColors().containerColor,
+                    contentColor = textColor ?: ButtonDefaults.buttonColors().contentColor
                 )
             } else {
                 ButtonDefaults.buttonColors()
             }
+
+            val showIcon = !widget.icon.isNullOrBlank()
+            val showText = style.iconOnly != true || !showIcon
+            val iconOnRight = style.iconPosition == "end" || style.iconPosition == "right"
 
             Button(
                 onClick = { onAction(widget.action, widget.actionArgs) },
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
                 colors = buttonColors
             ) {
-                Text(widget.text)
+                if (showIcon && !iconOnRight) {
+                    AsyncImage(
+                        model = widget.icon,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp).height(18.dp)
+                    )
+                    if (showText) Spacer(modifier = Modifier.width(6.dp))
+                }
+                
+                if (showText) {
+                    Text(widget.text)
+                }
+
+                if (showIcon && iconOnRight) {
+                    if (showText) Spacer(modifier = Modifier.width(6.dp))
+                    AsyncImage(
+                        model = widget.icon,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp).height(18.dp)
+                    )
+                }
             }
         }
 
