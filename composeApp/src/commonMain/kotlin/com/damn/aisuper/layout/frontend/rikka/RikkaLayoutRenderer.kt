@@ -77,6 +77,9 @@ fun RenderWidget(
     onModuleCommand: (String, String, String, List<JsonElement>) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val visible = widget.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
+    if (!visible) return
+
     val style = resolveStyleRule(widget, styleSheet)
 
     when (widget) {
@@ -348,15 +351,9 @@ fun RenderWidget(
         }
 
         is SpinnerWidget -> {
-            val visible = widget.visibilityId
-                ?.let { values[it]?.booleanOrNull() }
-                ?: true
-
-            if (visible) {
-                CircularProgressIndicator(
-                    modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
-                )
-            }
+            CircularProgressIndicator(
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+            )
         }
 
         is ProgressWidget -> {

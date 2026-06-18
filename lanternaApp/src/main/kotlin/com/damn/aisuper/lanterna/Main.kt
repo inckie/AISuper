@@ -207,6 +207,9 @@ private fun renderWidget(
     styleSheet: StyleSheet?,
     lastTypedValues: MutableMap<String, String>
 ): Component {
+    val visible = widget.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
+    if (!visible) return Label("")
+
     val component = when (widget) {
         is ColumnWidget -> {
             val panel = Panel(LinearLayout(Direction.VERTICAL))
@@ -345,10 +348,7 @@ private fun renderWidget(
             value = (progressVal * 100).toInt()
         }
 
-        is SpinnerWidget -> {
-            val visible = widget.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
-            if (visible) Label("...") else Label("")
-        }
+        is SpinnerWidget -> Label("...")
 
         is AudioPlayerWidget -> {
             val panel = Panel()

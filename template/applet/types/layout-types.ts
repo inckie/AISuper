@@ -43,6 +43,7 @@ interface WidgetBase {
   fillMaxSize?: boolean;
   weight?: number | null;
   classes?: string[];
+  visibilityId?: string | null;
 }
 
 export interface ColumnWidget extends WidgetBase {
@@ -119,7 +120,6 @@ export interface SwitchWidget extends WidgetBase {
 
 export interface SpinnerWidget extends WidgetBase {
   type: 'Spinner';
-  visibilityId?: string | null;
 }
 
 export interface ProgressWidget extends WidgetBase {

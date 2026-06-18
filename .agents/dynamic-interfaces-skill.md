@@ -11,6 +11,7 @@ AISuper layouts are defined in JSON. For a comprehensive set of working examples
 ### Common Widget Properties (`WidgetBase`)
 * `type`: (String, Required) One of the widget types below.
 * `id`: (String, Optional) State binding key. If a widget has an `id`, its value is reactively synchronized with the feature state.
+* `visibilityId`: (String, Optional) State binding key for visibility. If the value of this key is `false`, the widget is not rendered. Defaults to `true` if null or key is missing.
 * `fillMaxWidth`: (Boolean, Optional) Forces the widget to stretch to the parent's width.
 * `fillMaxSize`: (Boolean, Optional) Forces the widget to fill the entire parent space.
 * `weight`: (Float, Optional) Proportion of layout space the widget should occupy compared to siblings in a `Row` or `Column`.

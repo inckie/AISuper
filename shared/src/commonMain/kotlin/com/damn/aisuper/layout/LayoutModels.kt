@@ -20,6 +20,7 @@ sealed class Widget {
     abstract val fillMaxSize: Boolean
     abstract val weight: Float?
     abstract val classes: List<String>
+    abstract val visibilityId: String?
 }
 
 @Serializable
@@ -30,6 +31,7 @@ data class ColumnWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val children: List<Widget> = emptyList(),
     val dynamicChildrenId: String? = null,
     val isScrollable: Boolean = false
@@ -43,6 +45,7 @@ data class RowWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val children: List<Widget> = emptyList(),
     val dynamicChildrenId: String? = null,
     val isScrollable: Boolean = false
@@ -56,6 +59,7 @@ data class TextWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val text: String = "",
     val align: String? = null
 ) : Widget()
@@ -68,6 +72,7 @@ data class TextFieldWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val hint: String = "",
     // single line input (default true)
     val singleLine: Boolean = true,
@@ -88,6 +93,7 @@ data class ButtonWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val text: String = "",
     val icon: String? = null,
     val action: String = "",
@@ -102,6 +108,7 @@ data class ImageWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val url: String = "",
     val data: String? = null,
     val description: String = ""
@@ -115,6 +122,7 @@ data class AudioPlayerWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val player: String,
     val title: String = "Audio Player"
 ) : Widget()
@@ -133,6 +141,7 @@ data class DropdownWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val hint: String = "Select",
     val options: List<DropdownOption> = emptyList(),
     val optionsValueId: String? = null,
@@ -147,6 +156,7 @@ data class SwitchWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val text: String = "",
     val checked: Boolean = false,
     val onChangeAction: String? = null,
@@ -161,7 +171,7 @@ data class SpinnerWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
-    val visibilityId: String? = null
+    override val visibilityId: String? = null
 ) : Widget()
 
 @Serializable
@@ -172,6 +182,7 @@ data class ProgressWidget(
     override val fillMaxSize: Boolean = false,
     override val weight: Float? = null,
     override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
     val progress: Float? = null,
     val progressId: String? = null,
     val indeterminate: Boolean = false

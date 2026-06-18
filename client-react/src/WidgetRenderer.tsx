@@ -73,6 +73,9 @@ export function WidgetRenderer({
   parentDirection = 'column',
   focusRegistry
 }: RenderProps): JSX.Element | null {
+  const visible = widget.visibilityId ? booleanOrNull(values[widget.visibilityId]) ?? true : true;
+  if (!visible) return null;
+
   const style = resolveStyleRule(widget, styleSheet);
   const baseStyle = widgetBaseStyle(widget, style);
   const focusMap = focusRegistry ?? {};
@@ -351,8 +354,6 @@ export function WidgetRenderer({
     }
 
     case 'Spinner': {
-      const visible = widget.visibilityId ? booleanOrNull(values[widget.visibilityId]) ?? true : true;
-      if (!visible) return null;
       return <div className="spinner" style={baseStyle} />;
     }
 
