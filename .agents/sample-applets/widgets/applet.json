@@ -63,6 +63,11 @@
       "layout": "files/todo_layout.json",
       "script": "files/todo_script.js",
       "name": "Task Manager"
+    },
+    "timeout": {
+      "layout": "files/timeout_layout.json",
+      "script": "files/timeout_script.js",
+      "name": "Timeout Demo"
     }
   }
 }
