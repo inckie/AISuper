@@ -20,6 +20,7 @@ import kotlinx.serialization.json.longOrNull
 
 class QuickJsKtEngine : AppJSEngine {
 
+    private var cleanup: Cleanup? = null
     private val quickJs = QuickJs.create(Dispatchers.Default)
     private var loadedScript: String? = null
 
@@ -30,6 +31,7 @@ class QuickJsKtEngine : AppJSEngine {
         }
 
         try {
+            cleanup = quickJs.defineSetTimeout()
             quickJs.evaluate<Unit>(script)
             loadedScript = script
         } catch (e: Exception) {
@@ -83,6 +85,10 @@ class QuickJsKtEngine : AppJSEngine {
     }
 
     override fun close() {
+        cleanup?.let {
+            cleanup = null
+            it()
+        }
         quickJs.close()
     }
 
