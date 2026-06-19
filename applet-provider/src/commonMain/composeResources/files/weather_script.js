@@ -95,7 +95,7 @@ async function updateDashboard() {
 
     if (lastLoadedLocation.startsWith("MY_LOCATION")) {
         try {
-            var granted = geoRequestPermission();
+            var granted = await geoRequestPermission();
             if (granted === true) {
                 var geo = await geoGetCurrent();
                 if (geo && geo.success && geo.latitude !== undefined && geo.longitude !== undefined) {

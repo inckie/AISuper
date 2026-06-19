@@ -30,7 +30,7 @@ class GeoIpGeolocationFeatureModule : FeatureModule {
     private val resolver = GeoIpResolver()
 
     override suspend fun attach(context: FeatureModuleContext) {
-        context.registerFunction("geoRequestPermission") { _ ->
+        context.registerSuspendFunction("geoRequestPermission") { _ ->
             JsonPrimitive(true)
         }
 

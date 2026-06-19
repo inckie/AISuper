@@ -50,7 +50,7 @@ declare function persistentStorageGetObject(scope: StorageScope, key: string): P
 declare function persistentStoragePutObject(scope: StorageScope, key: string, value: any): Promise<any>;
 
 // Geolocation Module (Native)
-declare function geoRequestPermission(): boolean;
+declare function geoRequestPermission(): Promise<boolean>;
 declare function geoGetCurrent(): Promise<{
     success: boolean;
     latitude?: number;

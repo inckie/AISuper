@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.damn.aisuper.modules.FeatureModule
 import com.damn.aisuper.modules.FeatureModuleContext
@@ -21,8 +20,8 @@ import kotlinx.serialization.json.buildJsonObject
 
 class AndroidGeolocationFeatureModule : FeatureModule {
     override suspend fun attach(context: FeatureModuleContext) {
-        context.registerFunction("geoRequestPermission") { _ ->
-            JsonPrimitive(requestLocationPermissionIfNeeded())
+        context.registerSuspendFunction("geoRequestPermission") { _ ->
+            JsonPrimitive(requestLocationPermissionAsync())
         }
 
         context.registerSuspendFunction("geoGetCurrent") { _ ->
@@ -86,22 +85,16 @@ class AndroidGeolocationFeatureModule : FeatureModule {
         return fine || coarse
     }
 
-    private fun requestLocationPermissionIfNeeded(): Boolean {
+    private suspend fun requestLocationPermissionAsync(): Boolean {
         val context = AndroidAppContextHolder.appContext ?: return false
         if (hasLocationPermission(context)) return true
 
-        val activity = AndroidAppContextHolder.currentActivity ?: return false
-        ActivityCompat.requestPermissions(
-            activity,
+        return AndroidAppContextHolder.requestPermissions(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
-            ),
-            LOCATION_PERMISSION_REQUEST_CODE
+            )
         )
-
-        // The user decision arrives asynchronously; caller should retry geolocation after prompt.
-        return false
     }
 
     private fun locationError(message: String): JsonObject {
@@ -117,8 +110,6 @@ class AndroidGeolocationFeatureModule : FeatureModule {
         }
     }
 }
-
-private const val LOCATION_PERMISSION_REQUEST_CODE = 1107
 
 object AndroidGeolocationFeatureModuleFactory : FeatureModuleFactory {
     override val type: String = "geolocation"

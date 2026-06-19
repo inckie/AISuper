@@ -67,9 +67,9 @@ async function findNearestStation() {
     setValue("metromover_spinner_visible", true);
 
     try {
-        var granted = geoRequestPermission();
+        var granted = await geoRequestPermission();
         if (granted !== true) {
-            setValue("metromover_status", "Location permission requested. Tap Nearest again after granting.");
+            setValue("metromover_status", "Location permission denied.");
             setValue("metromover_spinner_visible", false);
             return;
         }
