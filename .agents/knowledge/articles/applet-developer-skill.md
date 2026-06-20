@@ -1,6 +1,16 @@
 ---
-name: applet-developer
-description: Core skill for AI agents acting as Applet Developers. Explains the AISuper architecture from an applet perspective, providing essential context, reference links, and guidelines for building applet features, layouts, and modules.
+categories:
+- applet-developer
+created: '2026-06-20T04:50:28.009872+00:00'
+id: applet-developer-skill
+modified: '2026-06-20T05:04:26.704519+00:00'
+tags:
+- skills
+- development
+- applets
+- guidelines
+title: Applet Developer Skill
+type: leaf
 ---
 
 # Applet Developer Skill (AISuper)
@@ -17,18 +27,18 @@ Instead of building large monolithic applications for every need (like a standal
 
 As an applet developer, you should rely entirely on these defined interfaces rather than inventing properties:
 
-- **UI & Layouts**: See [Dynamic Interfaces Skill](dynamic-interfaces-skill.md) for how to construct valid JSON widget trees.
-- **Widget Types**: Use [layout-types.ts](../template/applet/types/layout-types.ts) as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
-- **Runtime Native APIs**: See [runtime-globals.d.ts](../template/typescript/types/runtime-globals.d.ts) for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
-- **JS Module Creation**: See [JS Modules Creation Skill](js-modules-creation-skill.md) for critical guidelines on engine quirks (e.g., avoiding `switch` statements) and writing safe TS/JS modules.
-- **Interactive Execution**: See [AI Harness Skill](ai-harness-skill.md) for using the MCP to interactively test, debug, and reload applets. Use `logs_tail` for quick status updates after reloads and `logs_since` to monitor logs in real-time.
+- **UI & Layouts**: See [[dynamic-interfaces-skill|Dynamic Interfaces Skill]] for how to construct valid JSON widget trees.
+- **Widget Types**: Use `template/applet/types/layout-types.ts` as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
+- **Runtime Native APIs**: See `template/typescript/types/runtime-globals.d.ts` for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
+- **JS Module Creation**: See [[js-modules-creation-skill|JS Modules Creation Skill]] for critical guidelines on engine quirks (e.g., avoiding `switch` statements) and writing safe TS/JS modules.
+- **Interactive Execution**: See [[ai-harness-skill|AI Harness Skill]] for using the MCP to interactively test, debug, and reload applets. Use `logs_tail` for quick status updates after reloads and `logs_since` to monitor logs in real-time.
 
 ## 3. Working with TypeScript Modules (`jsModule`)
 
 While simple scripts can be written in vanilla JavaScript (e.g. `files/main_script.js`), more complex business logic should be broken out into typed TypeScript modules. 
 
 ### The Template Directory
-When creating a new TS module, use [template/typescript/modules/hello](../template/typescript/modules/hello) as your reference structure.
+When creating a new TS module, use `template/typescript/modules/hello` as your reference structure.
 It typically contains:
 - `module.config.json` - defines the module configuration.
 - `index.ts` - Contains your typed logic. You MUST export the module functions to the engine using `registerExports("moduleName", ["functionName1"])`.
@@ -38,8 +48,7 @@ The `template/typescript` project includes polyfills that mock the native runtim
 
 ## 4. Reference Applets
 
-Whenever you are unsure of how a feature is wired up, refer to the fully working Widgets Demo Applet:
-**[Widgets Demo Applet Location](sample-applets/widgets)**
+Whenever you are unsure of how a feature is wired up, refer to the fully working Widgets Demo Applet.
 
 The Widgets applet contains exhaustive examples of data binding (`progressId`, `dynamicChildrenId`), onChange actions, nested layouts, and multi-layout switching.
 

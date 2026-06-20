@@ -1,3 +1,18 @@
+---
+categories:
+- applet-developer
+created: '2026-06-20T04:50:22.677893+00:00'
+id: ai-harness-skill
+modified: '2026-06-20T04:57:29.030068+00:00'
+tags:
+- skills
+- mcp
+- debugging
+- harness
+title: AI Harness Skill
+type: leaf
+---
+
 # AI Harness Skill (AISuper)
 
 This skill enables a "strong" AI model to develop, test, and debug AISuper applets in real-time by controlling a running JVM instance via MCP.

@@ -1,6 +1,16 @@
 ---
-name: applet-interactive-generator
-description: Skill for interactively interviewing the user to generate a new AISuper applet or feature from scratch. Guides the AI through a structured step-by-step development process.
+categories:
+- applet-developer
+created: '2026-06-20T04:51:07.875607+00:00'
+id: applet-interactive-generator-skill
+modified: '2026-06-20T04:58:13.560895+00:00'
+tags:
+- skills
+- generation
+- workflow
+- interactive
+title: Applet Interactive Generator Skill
+type: leaf
 ---
 
 # Applet Interactive Generator Skill
@@ -18,19 +28,19 @@ You MUST execute the following steps in sequence. Do not jump ahead. Present one
 
 ### Step 2: UI Prototyping
 - **Action**: Draft the JSON UI layouts.
-- **Reference**: Strictly adhere to the [layout-types.ts](../template/applet/types/layout-types.ts) type definitions.
+- **Reference**: Strictly adhere to the `template/applet/types/layout-types.ts` type definitions.
 - **Objective**: Create the `main_layout.json` (or equivalent). Bind UI elements to state variables (`id`, `progressId`, `dynamicChildrenId`, etc.) and define action strings for buttons (`"action": "submit_form"`).
 - **Output**: Write the JSON layout file and use the MCP `applet_reload` to visually present the layout prototype to the user for feedback.
 
 ### Step 3: Top-Level Scripts & Stubs
 - **Action**: Write the top-level JavaScript (`main_script.js`).
-- **Reference**: Use [runtime-globals.d.ts](../template/typescript/types/runtime-globals.d.ts) for the available native functions.
+- **Reference**: Use `template/typescript/types/runtime-globals.d.ts` for the available native functions.
 - **Objective**: Implement the `initialize()` function and event handlers (e.g., `submit_form()`). Wire up the UI state bindings using `setValue` and `getValue`. 
 - **Stubs**: If the feature requires heavy business logic (like fetching a radio stream, parsing weather data, or complex math), write a stub function that returns mock data. Do not implement the heavy logic directly in the top-level script.
 - **Output**: Test the stubbed script interactively. The user should be able to click buttons and see the UI react with the mock data.
 
 ### Step 4: jsModule Development
 - **Action**: Develop the actual TypeScript modules (`.ts`).
-- **Reference**: Use the [template/typescript/modules/hello](../template/typescript/modules/hello) structure.
+- **Reference**: Use the `template/typescript/modules/hello` structure.
 - **Objective**: Replace the stubs with real implementation. Create a new `jsModule` (e.g., `weather`, `radio_search`), register it via `registerExports`, and then hook it up in your top-level script by calling the module function.
 - **Output**: Finalize the feature, reload the applet, and ask the user to verify the end-to-end functionality.

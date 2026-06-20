@@ -1,3 +1,19 @@
+---
+categories:
+- skills
+created: '2026-06-20T04:51:14.261146+00:00'
+id: native-modules-skill
+modified: '2026-06-20T04:51:14.261168+00:00'
+tags:
+- skills
+- native-modules
+- kotlin
+- factory-pattern
+- bridge
+title: Native Module Development Skill
+type: leaf
+---
+
 # Native Module Development Skill
 
 This guide outlines the process for adding new native capabilities (modules) to the AISuper runtime.
@@ -82,7 +98,7 @@ npm run sync-template
 - **State Updates**: Use `context.updateValue(id, value)` to push updates to the UI state.
 - **Naming Conventions**: Prefix module-specific functions (e.g., `audioPlay`, `geoGetCurrent`) to avoid global namespace collisions.
 - **Error Handling**: Catch exceptions within callbacks and return a meaningful `JsonElement` (or `JsonNull`) to the JS environment.
-- **Documentation**: Update the `ai-harness-skill.md` if the new module introduces significant new capabilities that an external AI model should be aware of.
+- **Documentation**: Update the [[ai-harness-skill|AI Harness Skill]] if the new module introduces significant new capabilities that an external AI model should be aware of.
 
 ## 4. Troubleshooting
 
