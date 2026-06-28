@@ -22,10 +22,10 @@ kotlinx-serialization = "1.11.0"
 material3 = "1.11.0-alpha07"
 keight = "0.0.06"
 quickjsKt = "1.0.5"
-ktor = "3.5.0"
+ktor = "3.5.1"
 coil = "3.5.0"
 glance = "1.2.0-rc01"
-klibsKstorage = "5.1.0"
+klibsKstorage = "5.2.0"
 kotlinx-browser = "0.5.0"
 
 [libraries]
