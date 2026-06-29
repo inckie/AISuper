@@ -1,0 +1,38 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          { "type": "Button", "text": "<< Back", "action": "openMain" },
+          { "type": "Text", "text": "Metromover Settings", "classes": ["section_title"], "weight": 1 }
+        ]
+      },
+      {
+        "type": "Text",
+        "text": "Miami Dade Transit API Key"
+      },
+      {
+        "type": "TextField",
+        "id": "metromover_apikey_input",
+        "hint": "API Key",
+        "singleLine": true,
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Button",
+        "text": "Save",
+        "action": "saveSettings",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Text",
+        "id": "settings_status_text",
+        "text": ""
+      }
+    ]
+  }
+}

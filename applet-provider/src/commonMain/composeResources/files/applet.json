@@ -136,7 +136,10 @@
       ]
     },
     "metromoverJs": {
-      "layout": "files/metromover_layout.json",
+      "layouts": {
+        "main": "files/metromover_layout.json",
+        "settings": "files/metromover_settings_layout.json"
+      },
       "script": "files/metromover_js_script.js",
       "name": "Miami Metromover",
       "modules": [

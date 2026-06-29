@@ -13,6 +13,35 @@ function initialize() {
     refreshOverview();
 }
 
+async function openSettings() {
+    await setLayout("files/metromover_settings_layout.json");
+    var savedApiKey = "";
+    try {
+        savedApiKey = await persistentStorageGet("feature", "metromover_api_key") || "";
+    } catch (e) {
+        consoleError("Failed to load api key", e);
+    }
+    setValue("metromover_apikey_input", savedApiKey);
+    setValue("settings_status_text", "");
+}
+
+async function saveSettings() {
+    var apiKey = getValue("metromover_apikey_input") || "";
+    try {
+        await persistentStoragePut("feature", "metromover_api_key", apiKey);
+        setValue("settings_status_text", "Settings saved!");
+        await openMain();
+    } catch (e) {
+        consoleError("Failed to save api key", e);
+        setValue("settings_status_text", "Failed to save: " + stringifySafe(e));
+    }
+}
+
+async function openMain() {
+    await setLayout("files/metromover_layout.json");
+    initialize();
+}
+
 async function refreshOverview() {
     setValue("metromover_status", "Fetching loops and stations...");
     setValue("metromover_spinner_visible", true);

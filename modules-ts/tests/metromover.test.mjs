@@ -1,182 +1,194 @@
 import assert from "node:assert";
 import { test } from "node:test";
 
-// Mock XML responses (simplified versions of real API responses)
-const MOCK_STATIONS_XML = `<?xml version="1.0"?>
-<MoverStations>
-  <Record>
-    <StationID>DT</StationID>
-    <Station>Downtown</Station>
-    <Latitude>25.7617</Latitude>
-    <Longitude>-80.1918</Longitude>
-    <Address>110 SE 6th St</Address>
-    <City>Miami</City>
-    <State>FL</State>
-    <Zip>33131</Zip>
-  </Record>
-  <Record>
-    <StationID>BRI</StationID>
-    <Station>Brickell</Station>
-    <Latitude>25.7589</Latitude>
-    <Longitude>-80.1925</Longitude>
-    <Address>88 SW 8th St</Address>
-    <City>Miami</City>
-    <State>FL</State>
-    <Zip>33130</Zip>
-  </Record>
-</MoverStations>`;
-
-const MOCK_LOOPS_XML = `<?xml version="1.0"?>
-<MoverMapShapeLoops>
-  <Record><LoopID>OVR</LoopID></Record>
-  <Record><LoopID>IRL</LoopID></Record>
-  <Record><LoopID>ORL</LoopID></Record>
-  <Record><LoopID>PRY</LoopID></Record>
-</MoverMapShapeLoops>`;
-
-const MOCK_ARRIVALS_XML = `<?xml version="1.0"?>
-<MoverTracker>
-  <Info>
-    <firstLoopID>OVR</firstLoopID>
-    <firstLoopName>Omni</firstLoopName>
-    <firstTime1>2 min</firstTime1>
-    <firstTime2>11 min</firstTime2>
-    <secondLoopID>IRL</secondLoopID>
-    <secondLoopName>Brickell</secondLoopName>
-    <secondTime1>5 min</secondTime1>
-  </Info>
-</MoverTracker>`;
-
-const MOCK_LOOP_SHAPE_XML = `<?xml version="1.0"?>
-<MoverMapShape>
-  <Record>
-    <LoopID>OVR</LoopID>
-    <OrderNum>1</OrderNum>
-    <Latitude>25.3921</Latitude>
-    <Longitude>-80.2345</Longitude>
-  </Record>
-  <Record>
-    <LoopID>OVR</LoopID>
-    <OrderNum>2</OrderNum>
-    <Latitude>25.3925</Latitude>
-    <Longitude>-80.2340</Longitude>
-  </Record>
-  <Record>
-    <LoopID>OVR</LoopID>
-    <OrderNum>3</OrderNum>
-    <Latitude>25.3930</Latitude>
-    <Longitude>-80.2335</Longitude>
-  </Record>
-</MoverMapShape>`;
-
-const MOCK_TRAINS_XML = `<?xml version="1.0"?>
-<MoverTrains>
-  <Train>
-    <TrainID>101</TrainID>
-    <Latitude>25.3925</Latitude>
-    <Longitude>-80.2340</Longitude>
-    <LoopID>OVR</LoopID>
-    <LoopName>Omni</LoopName>
-    <vehDirection>North</vehDirection>
-  </Train>
-  <Train>
-    <TrainID>102</TrainID>
-    <Latitude>25.7600</Latitude>
-    <Longitude>-80.1920</Longitude>
-    <LoopID>IRL</LoopID>
-    <LoopName>Brickell</LoopName>
-    <vehDirection>South</vehDirection>
-  </Train>
-</MoverTrains>`;
-
-// Helper functions extracted from the module for testing
-function findBlocks(xml, tagName) {
-  const escaped = escapeRegex(tagName);
-  const pattern = new RegExp(`<${escaped}\\b[^>]*>([\\s\\S]*?)<\\/${escaped}>`, "gi");
-  const blocks = [];
-  let match = pattern.exec(xml);
-  while (match) {
-    blocks.push(match[1]);
-    match = pattern.exec(xml);
+// Mock JSON responses (simplified versions of real API responses)
+const MOCK_STATIONS_JSON = JSON.stringify([
+  {
+    "StationID": "DT",
+    "Station": "Downtown",
+    "Lat": 25.7617,
+    "Long": -80.1918,
+    "Address": "110 SE 6th St",
+    "City": "Miami",
+    "State": "FL",
+    "Zip": "33131"
+  },
+  {
+    "StationID": "BRI",
+    "Station": "Brickell",
+    "Lat": 25.7589,
+    "Long": -80.1925,
+    "Address": "88 SW 8th St",
+    "City": "Miami",
+    "State": "FL",
+    "Zip": "33130"
   }
-  return blocks;
-}
+]);
 
-function readTag(xmlBlock, tagName) {
-  const escaped = escapeRegex(tagName);
-  const pattern = new RegExp(`<${escaped}\\b[^>]*>([\\s\\S]*?)<\\/${escaped}>`, "i");
-  const match = pattern.exec(xmlBlock);
-  if (!match || !match[1]) {
-    return null;
+const MOCK_SHAPE_JSON = JSON.stringify([
+  {
+    "RouteID": "OMN",
+    "Points": [
+      {"Latitude": 25.3921, "Longitude": -80.2345},
+      {"Latitude": 25.3925, "Longitude": -80.2340}
+    ]
+  },
+  {
+    "RouteID": "BKL",
+    "Points": [
+      {"Latitude": 25.7589, "Longitude": -80.1925}
+    ]
   }
-  const text = decodeXmlEntities(match[1].trim());
-  return text.length > 0 ? text : null;
-}
+]);
 
-function decodeXmlEntities(value) {
-  return value
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
-}
+const MOCK_TRACKER_JSON = JSON.stringify([
+  {
+    "LoopID": "OMN",
+    "LoopName": "Omni",
+    "Time1Est": "2 min",
+    "Time2Est": "11 min"
+  },
+  {
+    "LoopID": "BKL",
+    "LoopName": "Brickell",
+    "Time1Est": "5 min"
+  }
+]);
 
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
-}
+const MOCK_VEHICLES_JSON = JSON.stringify([
+  {
+    "ID": "101",
+    "Latitude": 25.3925,
+    "Longitude": -80.2340,
+    "ShapeID": "OMN",
+    "OutOfService": "0"
+  },
+  {
+    "ID": "102",
+    "Latitude": 25.7600,
+    "Longitude": -80.1920,
+    "ShapeID": "BKL",
+    "OutOfService": "0"
+  }
+]);
 
-function parseStationsXml(xml) {
+// Helper functions (identical to modules-ts/modules/miami_metromover/index.ts)
+function parseStationsJson(jsonStr) {
+  const data = JSON.parse(jsonStr);
   const stations = [];
-  for (const block of findBlocks(xml, "Record")) {
-    const stationId = readTag(block, "StationID");
-    const title = readTag(block, "Station");
-    const latitudeRaw = readTag(block, "Latitude");
-    const longitudeRaw = readTag(block, "Longitude");
-
-    if (!stationId || !title || !latitudeRaw || !longitudeRaw) continue;
-
+  for (const item of data) {
+    const stationId = item.StationID;
+    const title = item.Station;
+    const lat = item.Lat;
+    const lon = item.Long;
+    if (!stationId || !title || lat === undefined || lon === undefined) {
+      continue;
+    }
     stations.push({
       id: stationId,
       title,
-      latitude: parseFloatSafe(latitudeRaw),
-      longitude: parseFloatSafe(longitudeRaw),
-      address: readTag(block, "Address") || undefined,
-      city: readTag(block, "City") || undefined,
-      state: readTag(block, "State") || undefined,
-      zip: readTag(block, "Zip") || undefined
+      latitude: lat,
+      longitude: lon,
+      address: item.Address || undefined,
+      city: item.City || undefined,
+      state: item.State || undefined,
+      zip: item.Zip || undefined,
+      stationIdShow: item.StationIDshow || undefined,
+      connectingOther: item.ConnectingOther || undefined,
+      placesOfInterest: item.PlacesOfInterest || undefined,
+      other: item.Other || undefined
     });
   }
   return stations;
 }
 
-function parseShapeLoopsXml(xml) {
+function parseShapeLoopsJson(jsonStr) {
+  const data = JSON.parse(jsonStr);
   const loops = [];
-  for (const block of findBlocks(xml, "Record")) {
-    const loopId = readTag(block, "LoopID");
-    if (loopId) loops.push(loopId);
+  for (const item of data) {
+    if (item.RouteID && !loops.includes(item.RouteID)) {
+      loops.push(item.RouteID);
+    }
   }
   return loops;
 }
 
-function parseArrivalsXml(xml) {
-  const infoBlock = findBlocks(xml, "Info")[0];
-  if (!infoBlock) return [];
+function parseLoopShapeJson(jsonStr, loopId) {
+  const data = JSON.parse(jsonStr);
+  const points = [];
+  const route = data.find((item) => (item.RouteID || "").toUpperCase() === loopId.toUpperCase());
+  if (route && route.Points) {
+    route.Points.forEach((pt, index) => {
+      if (pt.Latitude !== undefined && pt.Longitude !== undefined) {
+        points.push({
+          loopId: loopId,
+          order: index + 1,
+          latitude: pt.Latitude,
+          longitude: pt.Longitude
+        });
+      }
+    });
+  }
+  return points;
+}
 
-  const PREFIXES = ["first", "second", "third", "forth", "fifth"];
+function parseTrainsJson(jsonStr) {
+  const data = JSON.parse(jsonStr);
+  const trains = [];
+  const loopNames = {
+    "OMN": "Omni",
+    "BKL": "Brickell",
+    "INN": "Inner"
+  };
+
+  for (const item of data) {
+    if (item.OutOfService === "1") {
+      continue;
+    }
+    const idVal = parseIntSafe(item.ID || "");
+    if (!idVal || item.Latitude === undefined || item.Longitude === undefined) {
+      continue;
+    }
+    trains.push({
+      id: idVal,
+      latitude: item.Latitude,
+      longitude: item.Longitude,
+      loopId: item.ShapeID || undefined,
+      loopName: item.ShapeID ? (loopNames[item.ShapeID] || item.ShapeID) : undefined
+    });
+  }
+  return trains;
+}
+
+function parseArrivalsJson(jsonStr) {
+  const data = JSON.parse(jsonStr);
   const arrivals = [];
-
-  for (const prefix of PREFIXES) {
-    const loopId = readTag(infoBlock, `${prefix}LoopID`);
-    if (!loopId) break;
-
-    const loopName = readTag(infoBlock, `${prefix}LoopName`);
-    if (!loopName || loopName === "*****") break;
-
-    const time1 = readTag(infoBlock, `${prefix}Time1`);
-    const time2 = readTag(infoBlock, `${prefix}Time2`);
-    const times = [time1, time2].filter((value) => Boolean(value));
-
+  
+  for (const item of data) {
+    const loopId = item.LoopID;
+    const loopName = item.LoopName;
+    if (!loopId || !loopName || loopName === "***") {
+      continue;
+    }
+    
+    const times = [];
+    
+    if (item.Time1Est && item.Time1Est.trim() !== "") {
+      times.push(item.Time1Est.trim());
+    } else if (item.Estimate1 !== null && item.Estimate1 !== undefined && String(item.Estimate1).trim() !== "") {
+      times.push(`${String(item.Estimate1).trim()} min`);
+    } else if (item.ArrivalTime1 && item.ArrivalTime1.trim() !== "") {
+      times.push(item.ArrivalTime1.trim());
+    }
+    
+    if (item.Time2Est && item.Time2Est.trim() !== "") {
+      times.push(item.Time2Est.trim());
+    } else if (item.Estimate2 !== null && item.Estimate2 !== undefined && String(item.Estimate2).trim() !== "") {
+      times.push(`${String(item.Estimate2).trim()} min`);
+    } else if (item.ArrivalTime2 && item.ArrivalTime2.trim() !== "") {
+      times.push(item.ArrivalTime2.trim());
+    }
+    
     if (times.length > 0) {
       arrivals.push({
         loopId,
@@ -185,59 +197,25 @@ function parseArrivalsXml(xml) {
       });
     }
   }
-
   return arrivals;
 }
 
-function parseLoopShapeXml(xml) {
-  const points = [];
-
-  for (const block of findBlocks(xml, "Record")) {
-    const loopId = readTag(block, "LoopID");
-    const orderRaw = readTag(block, "OrderNum");
-    const latitudeRaw = readTag(block, "Latitude");
-    const longitudeRaw = readTag(block, "Longitude");
-
-    if (!loopId || !orderRaw || !latitudeRaw || !longitudeRaw) continue;
-
-    points.push({
-      loopId,
-      order: parseIntSafe(orderRaw),
-      latitude: parseFloatSafe(latitudeRaw),
-      longitude: parseFloatSafe(longitudeRaw)
-    });
-  }
-
-  points.sort((left, right) => left.order - right.order);
-  return points;
-}
-
-function parseTrainsXml(xml) {
-  const trains = [];
-  for (const block of findBlocks(xml, "Train")) {
-    const trainIdText = readTag(block, "TrainID");
-    if (!trainIdText) continue;
-
-    trains.push({
-      id: parseIntSafe(trainIdText),
-      latitude: parseFloatSafe(readTag(block, "Latitude")),
-      longitude: parseFloatSafe(readTag(block, "Longitude")),
-      loopId: readTag(block, "LoopID") || undefined,
-      loopName: readTag(block, "LoopName") || undefined,
-      direction: readTag(block, "vehDirection") || undefined
-    });
-  }
-  return trains;
-}
-
 function parseFloatSafe(value) {
-  if (!value) return 0;
+  if (value === null || value === undefined) {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function parseIntSafe(value) {
-  if (!value) return 0;
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.floor(value) : 0;
+  }
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -302,8 +280,8 @@ function shapeToSvg(points, loopId, width, height, padding) {
 }
 
 // Tests
-test("XML Parsing - parseStationsXml", () => {
-  const stations = parseStationsXml(MOCK_STATIONS_XML);
+test("JSON Parsing - parseStationsJson", () => {
+  const stations = parseStationsJson(MOCK_STATIONS_JSON);
   assert.strictEqual(stations.length, 2, "Should parse 2 stations");
   assert.strictEqual(stations[0].id, "DT", "First station ID should be DT");
   assert.strictEqual(stations[0].title, "Downtown", "First station title should be Downtown");
@@ -312,49 +290,46 @@ test("XML Parsing - parseStationsXml", () => {
   assert.strictEqual(stations[1].id, "BRI", "Second station ID should be BRI");
 });
 
-test("XML Parsing - parseShapeLoopsXml", () => {
-  const loops = parseShapeLoopsXml(MOCK_LOOPS_XML);
-  assert.strictEqual(loops.length, 4, "Should parse 4 loops");
-  assert.deepEqual(loops, ["OVR", "IRL", "ORL", "PRY"], "Loop IDs should match");
+test("JSON Parsing - parseShapeLoopsJson", () => {
+  const loops = parseShapeLoopsJson(MOCK_SHAPE_JSON);
+  assert.strictEqual(loops.length, 2, "Should parse 2 loops");
+  assert.deepEqual(loops, ["OMN", "BKL"], "Loop IDs should match");
 });
 
-test("XML Parsing - parseArrivalsXml", () => {
-  const arrivals = parseArrivalsXml(MOCK_ARRIVALS_XML);
+test("JSON Parsing - parseArrivalsJson", () => {
+  const arrivals = parseArrivalsJson(MOCK_TRACKER_JSON);
   assert.strictEqual(arrivals.length, 2, "Should parse 2 arrival groups");
-  assert.strictEqual(arrivals[0].loopId, "OVR", "First loop ID should be OVR");
+  assert.strictEqual(arrivals[0].loopId, "OMN", "First loop ID should be OMN");
   assert.strictEqual(arrivals[0].loopName, "Omni", "First loop name should be Omni");
   assert.strictEqual(arrivals[0].arrivals.length, 2, "First group should have 2 times");
   assert.deepEqual(arrivals[0].arrivals, ["2 min", "11 min"], "Arrival times should match");
 });
 
-test("XML Parsing - parseLoopShapeXml", () => {
-  const points = parseLoopShapeXml(MOCK_LOOP_SHAPE_XML);
-  assert.strictEqual(points.length, 3, "Should parse 3 shape points");
+test("JSON Parsing - parseLoopShapeJson", () => {
+  const points = parseLoopShapeJson(MOCK_SHAPE_JSON, "OMN");
+  assert.strictEqual(points.length, 2, "Should parse 2 shape points");
   assert.strictEqual(points[0].order, 1, "First point order should be 1");
   assert.strictEqual(points[0].latitude, 25.3921, "First point latitude should match");
-  assert.strictEqual(points[2].order, 3, "Third point order should be 3");
 });
 
-test("XML Parsing - parseTrainsXml", () => {
-  const trains = parseTrainsXml(MOCK_TRAINS_XML);
+test("JSON Parsing - parseTrainsJson", () => {
+  const trains = parseTrainsJson(MOCK_VEHICLES_JSON);
   assert.strictEqual(trains.length, 2, "Should parse 2 trains");
   assert.strictEqual(trains[0].id, 101, "First train ID should be 101");
   assert.strictEqual(trains[0].loopName, "Omni", "First train loop name should be Omni");
-  assert.strictEqual(trains[1].direction, "South", "Second train direction should be South");
 });
 
 test("Geo - haversineKm distance calculation", () => {
-  // Distance from Downtown Miami to Brickell (roughly 1-2 km)
   const dist = haversineKm(25.7617, -80.1918, 25.7589, -80.1925);
   assert(dist > 0.3 && dist < 1, `Distance should be ~0.5 km, got ${dist.toFixed(3)}`);
 });
 
 test("SVG Generation - shapeToSvg", () => {
-  const points = parseLoopShapeXml(MOCK_LOOP_SHAPE_XML);
-  const svg = shapeToSvg(points, "OVR", 400, 400, 10);
+  const points = parseLoopShapeJson(MOCK_SHAPE_JSON, "OMN");
+  const svg = shapeToSvg(points, "OMN", 400, 400, 10);
   assert(svg.includes("<svg"), "SVG should contain <svg> tag");
   assert(svg.includes("polyline"), "SVG should contain polyline");
-  assert(svg.includes("MetroMover loop OVR"), "SVG should have proper label");
+  assert(svg.includes("MetroMover loop OMN"), "SVG should have proper label");
   assert(svg.length > 100, "Generated SVG should have reasonable length");
 });
 
@@ -370,4 +345,3 @@ test("Number Parsing - parseIntSafe", () => {
   assert.strictEqual(parseIntSafe(""), 0, "Should return 0 for empty string");
   assert.strictEqual(parseIntSafe(null), 0, "Should return 0 for null");
 });
-
