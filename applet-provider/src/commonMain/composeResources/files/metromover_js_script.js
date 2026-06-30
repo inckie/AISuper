@@ -232,6 +232,34 @@ function renderContent() {
         widgets.push({ "type": "Text", "text": nearestStationText });
     }
 
+    if (selectedArrivals != undefined && selectedArrivals != null) {
+        widgets.push({ "type": "Text", "text": "Arrivals: " + selectedStationTitle });
+
+        var groups = selectedArrivals.arrivals;
+        if (groups == undefined || groups == null || groups.length == 0) {
+            widgets.push({ "type": "Text", "text": "No arrivals currently available." });
+        } else {
+            for (var k = 0; k < groups.length; k = k + 1) {
+                var g = groups[k];
+                var loopName = readField(g, ["loopName", "loopId"]);
+                if (loopName == "") {
+                    loopName = "Loop";
+                }
+
+                var times = g.arrivals;
+                var timesText = "No ETA";
+                if (times != undefined && times != null && times.length > 0) {
+                    timesText = times.join(", ");
+                }
+
+                widgets.push({
+                    "type": "Text",
+                    "text": loopName + ": " + timesText
+                });
+            }
+        }
+    }
+
     widgets.push({ "type": "Text", "text": "Stations" });
     for (var j = 0; j < stations.length; j = j + 1) {
         var station = stations[j];
@@ -263,34 +291,6 @@ function renderContent() {
                 }
             ]
         });
-    }
-
-    if (selectedArrivals != undefined && selectedArrivals != null) {
-        widgets.push({ "type": "Text", "text": "Arrivals: " + selectedStationTitle });
-
-        var groups = selectedArrivals.arrivals;
-        if (groups == undefined || groups == null || groups.length == 0) {
-            widgets.push({ "type": "Text", "text": "No arrivals currently available." });
-        } else {
-            for (var k = 0; k < groups.length; k = k + 1) {
-                var g = groups[k];
-                var loopName = readField(g, ["loopName", "loopId"]);
-                if (loopName == "") {
-                    loopName = "Loop";
-                }
-
-                var times = g.arrivals;
-                var timesText = "No ETA";
-                if (times != undefined && times != null && times.length > 0) {
-                    timesText = times.join(", ");
-                }
-
-                widgets.push({
-                    "type": "Text",
-                    "text": loopName + ": " + timesText
-                });
-            }
-        }
     }
 
     setValue("metromoverContent", widgets);
