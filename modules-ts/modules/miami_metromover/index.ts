@@ -397,10 +397,10 @@ function parseTrainsJson(jsonStr: string): Train[] {
 type TrackerJson = {
   LoopID?: string;
   LoopName?: string;
-  Time1Est?: string | null;
+  Time1Est?: number | string | null;
   Estimate1?: number | string | null;
   ArrivalTime1?: string | null;
-  Time2Est?: string | null;
+  Time2Est?: number | string | null;
   Estimate2?: number | string | null;
   ArrivalTime2?: string | null;
   MessageAlert?: string | null;
@@ -419,20 +419,44 @@ function parseArrivalsJson(jsonStr: string): ArrivalGroup[] {
     
     const times: string[] = [];
     
-    if (item.Time1Est && item.Time1Est.trim() !== "") {
-      times.push(item.Time1Est.trim());
-    } else if (item.Estimate1 !== null && item.Estimate1 !== undefined && String(item.Estimate1).trim() !== "") {
-      times.push(`${String(item.Estimate1).trim()} min`);
-    } else if (item.ArrivalTime1 && item.ArrivalTime1.trim() !== "") {
-      times.push(item.ArrivalTime1.trim());
+    // Process First Arrival Estimate
+    if (item.Estimate1 !== null && item.Estimate1 !== undefined && String(item.Estimate1).trim() !== "") {
+      const est1 = String(item.Estimate1).trim();
+      times.push(est1.toLowerCase().includes("min") ? est1 : `${est1} min`);
+    } else if (item.Time1Est !== null && item.Time1Est !== undefined && String(item.Time1Est).trim() !== "") {
+      const val1 = String(item.Time1Est).trim();
+      if (val1.toLowerCase().includes("min")) {
+        times.push(val1);
+      } else {
+        const secs = Number(val1);
+        if (!isNaN(secs)) {
+          times.push(`${Math.round(secs / 60)} min`);
+        } else {
+          times.push(val1);
+        }
+      }
+    } else if (item.ArrivalTime1 && String(item.ArrivalTime1).trim() !== "") {
+      times.push(String(item.ArrivalTime1).trim());
     }
     
-    if (item.Time2Est && item.Time2Est.trim() !== "") {
-      times.push(item.Time2Est.trim());
-    } else if (item.Estimate2 !== null && item.Estimate2 !== undefined && String(item.Estimate2).trim() !== "") {
-      times.push(`${String(item.Estimate2).trim()} min`);
-    } else if (item.ArrivalTime2 && item.ArrivalTime2.trim() !== "") {
-      times.push(item.ArrivalTime2.trim());
+    // Process Second Arrival Estimate
+    if (item.Estimate2 !== null && item.Estimate2 !== undefined && String(item.Estimate2).trim() !== "") {
+      const est2 = String(item.Estimate2).trim();
+      times.push(est2.toLowerCase().includes("min") ? est2 : `${est2} min`);
+    } else if (item.Time2Est !== null && item.Time2Est !== undefined && String(item.Time2Est).trim() !== "") {
+      const val2 = String(item.Time2Est).trim();
+      if (val2.toLowerCase().includes("min")) {
+        times.push(val2);
+      } else {
+        const secs = Number(val2);
+        if (!isNaN(secs)) {
+          times.push(`${Math.round(secs / 60)} min`);
+        } else {
+          times.push(val2);
+        }
+      }
+    } else if (item.ArrivalTime2 && String(item.ArrivalTime2).trim() !== "") {
+      times.push(String(item.ArrivalTime2).trim());
     }
     
     if (times.length > 0) {
