@@ -202,7 +202,7 @@ function renderContent() {
 
     widgets.push({ "type": "Text", "text": "Free automated transit in Downtown, Brickell, and Omni." });
 
-    widgets.push({ "type": "Text", "text": "Loops" });
+    widgets.push({ "type": "Text", "text": "Loops", "classes": ["section_title"] });
     for (var i = 0; i < loops.length; i = i + 1) {
         var loopValue = loops[i];
         var loopId = valueToText(loopValue);
@@ -233,7 +233,7 @@ function renderContent() {
     }
 
     if (selectedArrivals != undefined && selectedArrivals != null) {
-        widgets.push({ "type": "Text", "text": "Arrivals: " + selectedStationTitle });
+        widgets.push({ "type": "Text", "text": "Arrivals: " + selectedStationTitle, "classes": ["section_title"] });
 
         var groups = selectedArrivals.arrivals;
         if (groups == undefined || groups == null || groups.length == 0) {
@@ -260,7 +260,7 @@ function renderContent() {
         }
     }
 
-    widgets.push({ "type": "Text", "text": "Stations" });
+    widgets.push({ "type": "Text", "text": "Stations", "classes": ["section_title"] });
     for (var j = 0; j < stations.length; j = j + 1) {
         var station = stations[j];
         var stationId = readField(station, ["id", "stationId"]);

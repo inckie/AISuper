@@ -1,14 +1,31 @@
 {
   "layout": {
     "type": "Column",
+    "classes": [
+      "screen"
+    ],
     "fillMaxSize": true,
     "children": [
       {
         "type": "Row",
         "fillMaxWidth": true,
         "children": [
-          { "type": "Button", "text": "<< Back", "action": "openMain" },
-          { "type": "Text", "text": "Metromover Settings", "classes": ["section_title"], "weight": 1 }
+          {
+            "type": "Button",
+            "text": "<< Back",
+            "classes": [
+              "menu_button"
+            ],
+            "action": "openMain"
+          },
+          {
+            "type": "Text",
+            "text": "Metromover Settings",
+            "classes": [
+              "section_title"
+            ],
+            "weight": 1
+          }
         ]
       },
       {
