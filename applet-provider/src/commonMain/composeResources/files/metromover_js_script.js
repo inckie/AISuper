@@ -134,9 +134,7 @@ async function findNearestStation() {
         }
 
         nearestStationText = "Nearest: " + nearestTitle + " (" + nearestId + ")" + distanceText;
-        renderContent();
-        setValue("metromover_status", "Nearest station resolved");
-        setValue("metromover_spinner_visible", false);
+        await loadArrivals(nearestId, nearestTitle);
     } catch (e) {
         consoleError("findNearestStation failed", e);
         setValue("metromover_status", "Failed to find nearest station: " + stringifySafe(e));
