@@ -12,7 +12,7 @@ declare function consoleLog(args: any[]): void;
 declare function persistentStorageGet(scope: string, key: string): Promise<string | null>;
 declare function registerExports(moduleName: string, functions: string[]): void;
 
-type UnknownRecord = Record<string, unknown>;
+type MetromoverUnknownRecord = Record<string, unknown>;
 
 type Station = {
   id: string;
@@ -85,7 +85,7 @@ async function getApiKey(): Promise<string> {
   }
 }
 
-async function fetchJson(url: string): Promise<string> {
+async function fetchMetromoverJson(url: string): Promise<string> {
   const apiKey = await getApiKey();
   const headers = {
     "accept": "*/*",
@@ -105,7 +105,7 @@ async function list_stations(): Promise<Station[]> {
   const cached = validCache(stationsCache);
   if (cached) return cached;
 
-  const jsonStr = await fetchJson(STATIONS_URL);
+  const jsonStr = await fetchMetromoverJson(STATIONS_URL);
   const stations = parseStationsJson(jsonStr);
   stationsCache = setCache(stations);
   return stations;
@@ -115,7 +115,7 @@ async function list_loops(): Promise<string[]> {
   const cached = validCache(loopsCache);
   if (cached) return cached;
 
-  const jsonStr = await fetchJson(SHAPE_URL);
+  const jsonStr = await fetchMetromoverJson(SHAPE_URL);
   const loops = parseShapeLoopsJson(jsonStr);
   loopsCache = setCache(loops);
   return loops;
@@ -127,7 +127,7 @@ async function get_trains(train_id?: string | null): Promise<Train[]> {
     trainId = null;
   }
 
-  const jsonStr = await fetchJson(VEHICLES_URL);
+  const jsonStr = await fetchMetromoverJson(VEHICLES_URL);
   let trains = parseTrainsJson(jsonStr);
   
   if (trainId) {
@@ -155,7 +155,7 @@ async function get_station_arrivals(station_id: string): Promise<{
   }
 
   const url = `${TRACKER_URL}?stationID=${encodeURIComponent(normalized)}&track=YES`;
-  const jsonStr = await fetchJson(url);
+  const jsonStr = await fetchMetromoverJson(url);
   return {
     stationId: normalized,
     stationTitle: station.title,
@@ -261,7 +261,7 @@ async function getLoopShape(loopId: string): Promise<LoopShapePoint[]> {
   if (cached) return cached;
 
   const url = `${API_ROOT}/shape?routeId=${encodeURIComponent(loopId)}&mapMode=light`;
-  const jsonStr = await fetchJson(url);
+  const jsonStr = await fetchMetromoverJson(url);
   const points = parseLoopShapeJson(jsonStr, loopId);
   loopShapeCache.set(loopId, setCache(points));
   return points;
@@ -313,15 +313,18 @@ function parseStationsJson(jsonStr: string): Station[] {
 
 type ShapeJson = {
   RouteID?: string;
+  Id?: string;
   Points?: any[];
+  Shapes?: any[];
 };
 
 function parseShapeLoopsJson(jsonStr: string): string[] {
   const data = JSON.parse(jsonStr) as ShapeJson[];
   const loops: string[] = [];
   for (const item of data) {
-    if (item.RouteID && !loops.includes(item.RouteID)) {
-      loops.push(item.RouteID);
+    const routeId = item.Id || item.RouteID;
+    if (routeId && !loops.includes(routeId)) {
+      loops.push(routeId);
     }
   }
   return loops;
@@ -334,16 +337,19 @@ type ShapePointJson = {
 
 type LoopShapeJson = {
   RouteID?: string;
+  Id?: string;
   Points?: ShapePointJson[];
+  Shapes?: ShapePointJson[];
 };
 
 function parseLoopShapeJson(jsonStr: string, loopId: string): LoopShapePoint[] {
   const data = JSON.parse(jsonStr) as LoopShapeJson[];
   const points: LoopShapePoint[] = [];
   
-  const route = data.find((item) => normalizeId(item.RouteID || "") === normalizeId(loopId));
-  if (route && route.Points) {
-    route.Points.forEach((pt, index) => {
+  const route = data.find((item) => normalizeId(item.Id || item.RouteID || "") === normalizeId(loopId));
+  if (route) {
+    const pointsList = route.Shapes || route.Points || [];
+    pointsList.forEach((pt, index) => {
       if (pt.Latitude !== undefined && pt.Longitude !== undefined) {
         points.push({
           loopId: loopId,

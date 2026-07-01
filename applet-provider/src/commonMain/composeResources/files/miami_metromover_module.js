@@ -30,7 +30,7 @@ async function getApiKey() {
     return "P98EG7NGA9A02NAE00Y";
   }
 }
-async function fetchJson(url) {
+async function fetchMetromoverJson(url) {
   const apiKey = await getApiKey();
   const headers = {
     "accept": "*/*",
@@ -48,7 +48,7 @@ async function fetchJson(url) {
 async function list_stations() {
   const cached = validCache(stationsCache);
   if (cached) return cached;
-  const jsonStr = await fetchJson(STATIONS_URL);
+  const jsonStr = await fetchMetromoverJson(STATIONS_URL);
   const stations = parseStationsJson(jsonStr);
   stationsCache = setCache(stations);
   return stations;
@@ -56,7 +56,7 @@ async function list_stations() {
 async function list_loops() {
   const cached = validCache(loopsCache);
   if (cached) return cached;
-  const jsonStr = await fetchJson(SHAPE_URL);
+  const jsonStr = await fetchMetromoverJson(SHAPE_URL);
   const loops = parseShapeLoopsJson(jsonStr);
   loopsCache = setCache(loops);
   return loops;
@@ -66,7 +66,7 @@ async function get_trains(train_id) {
   if (trainId === "null") {
     trainId = null;
   }
-  const jsonStr = await fetchJson(VEHICLES_URL);
+  const jsonStr = await fetchMetromoverJson(VEHICLES_URL);
   let trains = parseTrainsJson(jsonStr);
   if (trainId) {
     const idNum = parseIntSafe(trainId);
@@ -85,7 +85,7 @@ async function get_station_arrivals(station_id) {
     throw new Error(`Unknown station_id '${station_id}'.`);
   }
   const url = `${TRACKER_URL}?stationID=${encodeURIComponent(normalized)}&track=YES`;
-  const jsonStr = await fetchJson(url);
+  const jsonStr = await fetchMetromoverJson(url);
   return {
     stationId: normalized,
     stationTitle: station.title,
@@ -166,7 +166,7 @@ async function getLoopShape(loopId) {
   const cached = validCache((_a = loopShapeCache.get(loopId)) != null ? _a : null);
   if (cached) return cached;
   const url = `${API_ROOT}/shape?routeId=${encodeURIComponent(loopId)}&mapMode=light`;
-  const jsonStr = await fetchJson(url);
+  const jsonStr = await fetchMetromoverJson(url);
   const points = parseLoopShapeJson(jsonStr, loopId);
   loopShapeCache.set(loopId, setCache(points));
   return points;
@@ -203,8 +203,9 @@ function parseShapeLoopsJson(jsonStr) {
   const data = JSON.parse(jsonStr);
   const loops = [];
   for (const item of data) {
-    if (item.RouteID && !loops.includes(item.RouteID)) {
-      loops.push(item.RouteID);
+    const routeId = item.Id || item.RouteID;
+    if (routeId && !loops.includes(routeId)) {
+      loops.push(routeId);
     }
   }
   return loops;
@@ -212,9 +213,10 @@ function parseShapeLoopsJson(jsonStr) {
 function parseLoopShapeJson(jsonStr, loopId) {
   const data = JSON.parse(jsonStr);
   const points = [];
-  const route = data.find((item) => normalizeId(item.RouteID || "") === normalizeId(loopId));
-  if (route && route.Points) {
-    route.Points.forEach((pt, index) => {
+  const route = data.find((item) => normalizeId(item.Id || item.RouteID || "") === normalizeId(loopId));
+  if (route) {
+    const pointsList = route.Shapes || route.Points || [];
+    pointsList.forEach((pt, index) => {
       if (pt.Latitude !== void 0 && pt.Longitude !== void 0) {
         points.push({
           loopId,

@@ -6,7 +6,7 @@ declare function httpGet(url: string): Promise<string>;
 declare function consoleLog(args: any[]): void;
 declare function consoleError(args: any[]): void;
 
-type UnknownRecord = Record<string, unknown>;
+type WeatherUnknownRecord = Record<string, unknown>;
 
 type CurrentWeatherData = {
   temperature_2m: number;
@@ -129,14 +129,14 @@ async function get_current_weather(
   });
 
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
 
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
 
-  const result = response as UnknownRecord;
-  const current = result.current as UnknownRecord | undefined;
+  const result = response as WeatherUnknownRecord;
+  const current = result.current as WeatherUnknownRecord | undefined;
 
   if (!current || typeof current !== "object") {
     throw new Error("API response did not contain a current weather block");
@@ -181,14 +181,14 @@ async function get_hourly_forecast(
   });
 
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
 
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
 
-  const result = response as UnknownRecord;
-  const hourly = result.hourly as UnknownRecord | undefined;
+  const result = response as WeatherUnknownRecord;
+  const hourly = result.hourly as WeatherUnknownRecord | undefined;
 
   if (!hourly || typeof hourly !== "object") {
     throw new Error("API response did not contain an hourly forecast block");
@@ -211,7 +211,7 @@ async function get_hourly_forecast(
       const values = hourly[field];
       if (Array.isArray(values) && i < values.length) {
         const value = values[i];
-        row[field as keyof HourlyWeatherRow] = typeof value === "number" ? value : undefined;
+        (row as any)[field] = typeof value === "number" ? value : undefined;
       }
     }
 
@@ -253,14 +253,14 @@ async function get_daily_forecast(
   });
 
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
 
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
 
-  const result = response as UnknownRecord;
-  const daily = result.daily as UnknownRecord | undefined;
+  const result = response as WeatherUnknownRecord;
+  const daily = result.daily as WeatherUnknownRecord | undefined;
 
   if (!daily || typeof daily !== "object") {
     throw new Error("API response did not contain a daily forecast block");
@@ -326,7 +326,7 @@ function validateCoordinates(latitude: number, longitude: number): void {
 /**
  * Fetch and parse JSON from URL.
  */
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchWeatherJson(url: string): Promise<unknown> {
   try {
     const body = await httpGet(url);
     if (!body || !body.trim()) {
@@ -373,7 +373,7 @@ function errorToString(error: unknown): string {
     return error;
   }
   if (typeof error === "object" && error !== null) {
-    const maybe = error as UnknownRecord;
+    const maybe = error as WeatherUnknownRecord;
     if (typeof maybe.message === "string") {
       return maybe.message;
     }

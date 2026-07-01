@@ -42,7 +42,7 @@ async function get_current_weather(latitude, longitude, timezone = "auto") {
     timezone
   });
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
@@ -71,7 +71,7 @@ async function get_hourly_forecast(latitude, longitude, hours = 24, timezone = "
     timezone
   });
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
@@ -118,7 +118,7 @@ async function get_daily_forecast(latitude, longitude, timezone = "auto") {
     timezone
   });
   const url = `${API_BASE_URL}?${params}`;
-  const response = await fetchJson(url);
+  const response = await fetchWeatherJson(url);
   if (!response || typeof response !== "object") {
     throw new Error("Invalid API response format");
   }
@@ -171,7 +171,7 @@ function validateCoordinates(latitude, longitude) {
     throw new Error(`Invalid longitude: ${longitude} (must be between -180 and 180)`);
   }
 }
-async function fetchJson(url) {
+async function fetchWeatherJson(url) {
   try {
     const body = await httpGet(url);
     if (!body || !body.trim()) {
