@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:46.207559+00:00'
 id: dynamic-interfaces-skill
-modified: '2026-06-20T04:57:46.385738+00:00'
+modified: '2026-07-02T00:57:04.950884+00:00'
 tags:
 - skills
 - ui
@@ -22,7 +22,26 @@ This skill documents how to build interactive, responsive, and growable user int
 
 ## 1. UI Layout Widgets Reference
 
-AISuper layouts are defined in JSON. Every widget inherits from `WidgetBase` and supports standard attributes:
+AISuper layouts are defined in JSON. **CRITICAL:** Every layout JSON file MUST have a root object containing a single `"layout"` key. The value of this key is the root widget (typically a `Column` or `Row`). If you omit the `"layout"` root key, the applet will fail to parse the layout.
+
+### Example Complete Layout File
+```json
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Text",
+        "text": "Hello World",
+        "classes": ["header_text"]
+      }
+    ]
+  }
+}
+```
+
+Every widget inside the layout inherits from `WidgetBase` and supports standard attributes:
 
 ### Common Widget Properties (`WidgetBase`)
 * `type`: (String, Required) One of the widget types below.
@@ -145,14 +164,16 @@ When designing a toggle or selector (e.g. Unit Switcher, Dark Mode, Toggle Prefe
 #### Layout Dropdown definition:
 ```json
 {
-  "type": "Dropdown",
-  "id": "unit_selection",
-  "hint": "Units",
-  "onChangeAction": "onUnitsChanged",
-  "options": [
-    { "value": "metric", "label": "Metric" },
-    { "value": "imperial", "label": "Imperial" }
-  ]
+  "layout": {
+    "type": "Dropdown",
+    "id": "unit_selection",
+    "hint": "Units",
+    "onChangeAction": "onUnitsChanged",
+    "options": [
+      { "value": "metric", "label": "Metric" },
+      { "value": "imperial", "label": "Imperial" }
+    ]
+  }
 }
 ```
 
@@ -205,9 +226,11 @@ Use a `Column` or `Row` with a background and padding to group elements together
 **Layout:**
 ```json
 {
-  "type": "Column",
-  "classes": ["card"],
-  "children": [ ... ]
+  "layout": {
+    "type": "Column",
+    "classes": ["card"],
+    "children": [ ... ]
+  }
 }
 ```
 
@@ -287,14 +310,16 @@ Stylesheets define default styles per widget type and named custom classes:
 Apply stylesheet rules to layout widgets by adding class names to the `classes` array:
 ```json
 {
-  "type": "Column",
-  "classes": ["screen"],
-  "children": [
-    {
-      "type": "Text",
-      "text": "Hello World",
-      "classes": ["header_text"]
-    }
-  ]
+  "layout": {
+    "type": "Column",
+    "classes": ["screen"],
+    "children": [
+      {
+        "type": "Text",
+        "text": "Hello World",
+        "classes": ["header_text"]
+      }
+    ]
+  }
 }
 ```
