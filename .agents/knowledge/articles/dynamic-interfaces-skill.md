@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:46.207559+00:00'
 id: dynamic-interfaces-skill
-modified: '2026-07-02T00:57:04.950884+00:00'
+modified: '2026-07-02T01:12:17.288387+00:00'
 tags:
 - skills
 - ui
@@ -55,17 +55,7 @@ Every widget inside the layout inherits from `WidgetBase` and supports standard 
 
 ### Supported Widgets
 
-| Widget | Properties | Description |
-|---|---|---|
-| **`Column`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children vertically. Set `isScrollable: true` to enable vertical scrolling. Supports `alignment` in styles (start, center, end) to align children horizontally. |
-| **`Row`** | `children` (Array), `isScrollable` (Boolean), `dynamicChildrenId` (String) | Arranges children horizontally. Set `isScrollable: true` to enable horizontal scrolling. Supports dynamic children list population via `dynamicChildrenId`. Supports `alignment` in styles (top, center, bottom) to align children vertically. |
-| **`Text`** | `text` (String), `align` (String - "center"/"left"/"right") | Renders a text label. Supports `fontWeight` (normal, bold) and `textAlign` via styles. |
-| **`TextField`** | `hint` (String), `singleLine` (Boolean), `password` (Boolean), `imeAction` (String), `onImeAction` (String), `nextFocusId` (String) | Text input field. Updates the state key corresponding to its `id` automatically as the user types. |
-| **`Button`** | `text` (String), `icon` (String), `action` (String), `actionArgs` (Array) | Action trigger button. Supports `icon` (URL or Data URI). Styles can control `iconPosition` ("start"/"end") and `iconOnly` (Boolean). |
-| **`Dropdown`** | `hint` (String), `options` (Array of value/label), `optionsValueId` (String), `onChangeAction` (String) | Dropdown selection field. Triggers the specified JS callback when selection changes. |
-| **`Switch`** | `text` (String), `checked` (Boolean), `onChangeAction` (String), `actionArgs` (Array) | Binary toggle switch. Triggers `onChangeAction` passing `actionArgs + [newValue]` when toggled. |
-| **`Spinner`** | `visibilityId` (String) | Circular loading progress indicator. Visually toggled by binding to a boolean state key. |
-| **`Progress`** | `progress` (Float), `progressId` (String), `indeterminate` (Boolean) | Linear progress bar. Can bind to a float state key (`0.0` to `1.0`). |
+For a complete list of all supported widgets, their properties, and JSON code samples, please refer to the [[widgets-reference|Widgets Reference]] article.
 
 -----
 

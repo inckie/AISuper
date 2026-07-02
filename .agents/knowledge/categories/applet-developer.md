@@ -3,7 +3,7 @@ categories:
 - skills
 created: '2026-06-20T04:56:56.680754+00:00'
 id: applet-developer
-modified: '2026-06-20T04:56:56.680787+00:00'
+modified: '2026-07-02T01:14:47.158915+00:00'
 tags:
 - skills
 - applet-developer
@@ -38,7 +38,10 @@ The core entry point defining the purpose and mindset of an applet developer.
 A step-by-step workflow for gathering requirements and building a project through user interaction.
 
 ### [[dynamic-interfaces-skill|Dynamic Interfaces Skill]]
-Technical reference for the JSON-based widget system and reactive data binding patterns.
+Technical reference for architectural layout patterns, reactive data binding patterns, styling, and dealing with dynamic children.
+
+### [[widgets-reference|Widgets Reference]]
+A comprehensive dictionary of all supported visual UI widgets (like `Column`, `Row`, `Text`, `Button`), detailing their JSON properties and code samples.
 
 ### [[ai-harness-skill|AI Harness Skill]]
 Documentation for the real-time development environment and MCP-based control bridge.
