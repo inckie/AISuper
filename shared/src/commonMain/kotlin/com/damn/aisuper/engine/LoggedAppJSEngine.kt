@@ -17,6 +17,13 @@ class LoggedAppJSEngine(
         Logger.i("JS", "Engine", tag) { "loadScript ok" }
     }
 
+    override suspend fun evaluate(script: String): JsonElement {
+        Logger.i("JS", "Engine", tag) { "evaluate script=${script.take(200)}..." }
+        val result = delegate.evaluate(script)
+        Logger.i("JS", "Engine", tag) { "evaluate result=${safe(result)}" }
+        return result
+    }
+
     override suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
         Logger.i("JS", "Engine", tag) { "call -> $functionName args=${safeArgs(args)}" }
         val result = delegate.callFunction(functionName, args)

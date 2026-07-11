@@ -77,6 +77,22 @@ class Applet(
             JsonNull
         }
 
+        // Register console object shim using rest parameters (supported by QuickJS/Keight)
+        // We define it as a global object on globalThis to ensure it's available everywhere.
+        // Simplified version: just bind to native functions if they exist.
+        engine.evaluate("""
+            (function() {
+                var g = (typeof globalThis !== 'undefined' ? globalThis : typeof self !== 'undefined' ? self : typeof window !== 'undefined' ? window : {});
+                g.console = {
+                    log: function() { if (typeof consoleLog === 'function') consoleLog.apply(null, arguments); },
+                    error: function() { if (typeof consoleError === 'function') consoleError.apply(null, arguments); },
+                    warn: function() { if (typeof consoleLog === 'function') consoleLog.apply(null, arguments); },
+                    info: function() { if (typeof consoleLog === 'function') consoleLog.apply(null, arguments); },
+                    debug: function() { if (typeof consoleLog === 'function') consoleLog.apply(null, arguments); }
+                };
+            })();
+        """.trimIndent())
+
         engine.registerFunction("jsonParse") { args ->
             val jsonString = args.firstOrNull()?.let {
                 try { it.jsonPrimitive.contentOrNull } catch (_: Exception) { null }

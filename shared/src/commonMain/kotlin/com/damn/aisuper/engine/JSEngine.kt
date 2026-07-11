@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonElement
 
 interface AppJSEngine {
     suspend fun loadScript(script: String)
+    suspend fun evaluate(script: String): JsonElement
     suspend fun callFunction(functionName: String, args: List<JsonElement> = emptyList()): JsonElement
     suspend fun registerFunction(name: String, callback: (List<JsonElement>) -> JsonElement)
     suspend fun registerSuspendFunction(name: String, callback: suspend (List<JsonElement>) -> JsonElement)

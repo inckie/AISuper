@@ -40,6 +40,17 @@ class KeightJSEngine : AppJSEngine {
         }
     }
 
+    override suspend fun evaluate(script: String): JsonElement {
+        return try {
+            val result = engine.evaluate(script)
+            @Suppress("UNCHECKED_CAST")
+            jsAnyToJsonElement(result as io.github.alexzhirkevich.keight.js.JsAny?, runtime)
+        } catch (e: Exception) {
+            logEngineError("evaluate-raw", "", emptyList(), script, e)
+            JsonPrimitive("Error: ${e.message}")
+        }
+    }
+
     override suspend fun callFunction(
         functionName: String,
         args: List<JsonElement>

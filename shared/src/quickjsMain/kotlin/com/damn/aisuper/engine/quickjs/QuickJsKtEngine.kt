@@ -40,6 +40,16 @@ class QuickJsKtEngine : AppJSEngine {
         }
     }
 
+    override suspend fun evaluate(script: String): JsonElement {
+        return try {
+            val result = quickJs.evaluate<Any?>(script)
+            anyToJsonElement(result)
+        } catch (e: Exception) {
+            logEngineError("evaluate-raw", "", emptyList(), script, e)
+            JsonPrimitive("Error: ${e.message}")
+        }
+    }
+
     override suspend fun callFunction(functionName: String, args: List<JsonElement>): JsonElement {
         var callString = ""
         try {
