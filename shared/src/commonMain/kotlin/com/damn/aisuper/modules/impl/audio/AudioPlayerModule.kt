@@ -1,5 +1,8 @@
 package com.damn.aisuper.modules.impl.audio
 
+import io.github.kdroidfilter.composemediaplayer.audio.AudioPlayer as LibAudioPlayer
+import io.github.kdroidfilter.composemediaplayer.audio.AudioPlayerState as LibAudioPlayerState
+import io.github.kdroidfilter.composemediaplayer.audio.ErrorListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,40 +37,63 @@ interface AudioPlayer {
 }
 
 /**
- * Lightweight fallback player used on platforms where we do not wire real media playback yet.
+ * Audio player implementation using ComposeMediaPlayer.
  */
-class NoopAudioPlayer(
+class ComposeAudioPlayer(
     override val name: String
 ) : AudioPlayer {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow(AudioPlayerState())
     override val state: StateFlow<AudioPlayerState> = _state.asStateFlow()
 
+    private val player = LibAudioPlayer()
     private var tickerJob: Job? = null
+
+    init {
+        player.setOnErrorListener(object : ErrorListener {
+            override fun onError(message: String?) {
+                _state.update { it.copy(phase = "error", error = message ?: "Unknown error") }
+            }
+        })
+    }
 
     override fun load(url: String) {
         stopTicker()
-        _state.value = AudioPlayerState(
-            sourceUrl = url,
-            phase = "ready",
-            positionMs = 0L,
-            durationMs = null,
-            error = null
-        )
+        // ComposeMediaPlayer.play(url) both loads and starts playing if not careful.
+        // But we want to follow our interface which has separate load and play.
+        // Actually LibAudioPlayer.play(url) is the way to start it.
+        // We'll store the URL and "ready" it.
+        _state.update {
+            it.copy(
+                sourceUrl = url,
+                phase = "ready",
+                positionMs = 0L,
+                durationMs = null,
+                error = null
+            )
+        }
     }
 
     override fun play() {
-        if (_state.value.sourceUrl.isNullOrBlank()) return
-        _state.update { it.copy(phase = "playing", error = null) }
-        startTicker()
+        val url = _state.value.sourceUrl ?: return
+        try {
+            // Note: play(url) starts playback immediately.
+            player.play(url)
+            _state.update { it.copy(phase = "playing", error = null) }
+            startTicker()
+        } catch (e: Exception) {
+            _state.update { it.copy(phase = "error", error = e.message) }
+        }
     }
 
     override fun pause() {
+        player.pause()
         stopTicker()
-        _state.update { it.copy(phase = "paused") }
+        updateStateFromPlayer("paused")
     }
 
     override fun stop() {
+        player.stop()
         stopTicker()
         _state.update {
             it.copy(
@@ -78,11 +104,13 @@ class NoopAudioPlayer(
     }
 
     override fun seek(positionMs: Long) {
-        _state.update { it.copy(positionMs = positionMs.coerceAtLeast(0L)) }
+        player.seekTo(positionMs)
+        _state.update { it.copy(positionMs = positionMs) }
     }
 
     override fun release() {
         stopTicker()
+        player.release()
         scope.cancel()
     }
 
@@ -91,13 +119,7 @@ class NoopAudioPlayer(
         tickerJob = scope.launch {
             while (isActive) {
                 delay(500)
-                _state.update { current ->
-                    if (current.phase == "playing") {
-                        current.copy(positionMs = current.positionMs + 500L)
-                    } else {
-                        current
-                    }
-                }
+                updateStateFromPlayer()
             }
         }
     }
@@ -105,6 +127,28 @@ class NoopAudioPlayer(
     private fun stopTicker() {
         tickerJob?.cancel()
         tickerJob = null
+    }
+
+    private fun updateStateFromPlayer(forcedPhase: String? = null) {
+        val currentPos = player.currentPosition() ?: 0L
+        val duration = player.currentDuration()
+        val libState = player.currentPlayerState()
+
+        _state.update { current ->
+            current.copy(
+                positionMs = currentPos,
+                durationMs = duration,
+                phase = forcedPhase ?: mapLibState(libState)
+            )
+        }
+    }
+
+    private fun mapLibState(libState: LibAudioPlayerState?): String = when (libState) {
+        LibAudioPlayerState.PLAYING -> "playing"
+        LibAudioPlayerState.PAUSED -> "paused"
+        LibAudioPlayerState.BUFFERING -> "loading"
+        LibAudioPlayerState.IDLE -> "idle"
+        null -> "idle"
     }
 }
 
@@ -121,5 +165,3 @@ class AudioPlayerModule(
         players.values.forEach { it.release() }
     }
 }
-
-
