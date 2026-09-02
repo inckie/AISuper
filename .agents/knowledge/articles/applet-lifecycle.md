@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T05:03:50.596219+00:00'
 id: applet-lifecycle
-modified: '2026-06-20T05:03:50.596247+00:00'
+modified: '2026-09-02T00:01:34.237566+00:00'
 tags:
 - lifecycle
 - loading
@@ -43,3 +43,6 @@ Path to the ZIP or directory is passed as a command-line argument to the executa
 
 ## Runtime Execution
 Once loaded, the `Applet` core manages the lifecycle, switching between **Features** and maintaining **State Storage** (Transient or Persistent) across sessions.
+
+---
+**Implementation Details:** [[src:internals/applet-core]]

@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-07-02T01:11:48.623005+00:00'
 id: widgets-reference
-modified: '2026-07-02T01:11:48.623022+00:00'
+modified: '2026-09-02T00:22:37.168482+00:00'
 tags:
 - widgets
 - ui

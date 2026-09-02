@@ -49,6 +49,15 @@ data class McpError(
     val data: JsonElement? = null
 )
 
+/**
+ * MCP Server Implementation for AISuper.
+ *
+ * @wk-id mcp-server
+ * @wk-tags kotlin, mcp, server
+ * @wk-categories system-overview
+ *
+ * Exposes the AISuper runtime to an AI agent via the MCP protocol.
+ */
 class McpServer(
     private val applet: Applet,
     private val port: Int = 8081,

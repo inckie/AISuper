@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T05:03:47.078480+00:00'
 id: ui-layout-system
-modified: '2026-06-20T05:03:47.078500+00:00'
+modified: '2026-09-02T00:01:36.330169+00:00'
 tags:
 - ui
 - layout
@@ -35,3 +35,6 @@ The UI is rendered using a "thin" layer that maps the widget tree to platform-sp
 
 ## Design Patterns
 For more details on building interfaces, see the [[dynamic-interfaces-skill|Dynamic Interfaces Skill]].
+
+---
+**Implementation Details:** [[src:internals/layout-models]]

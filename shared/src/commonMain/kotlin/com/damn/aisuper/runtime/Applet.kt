@@ -18,6 +18,16 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+/**
+ * Core runtime Applet definition.
+ * 
+ * @wk-id applet-core
+ * @wk-tags kotlin, runtime, lifecycle
+ * @wk-categories system-overview
+ *
+ * Manages the lifecycle and feature modules for a dynamically loaded Applet.
+ * See [[applet-lifecycle]] for loading mechanisms.
+ */
 class Applet(
     private val engineFactory: () -> AppJSEngine,
     private val resourceLoader: AppletResourceLoader

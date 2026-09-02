@@ -18,6 +18,15 @@ data class McpParameter(
     val required: Boolean = true
 )
 
+/**
+ * MCP Tools definitions for the AI Harness.
+ *
+ * @wk-id mcp-tools
+ * @wk-tags kotlin, mcp, tools
+ * @wk-categories system-overview
+ *
+ * Provides a suite of tools for agents to interact with the applet lifecycle and file system.
+ */
 interface McpTool {
     val name: String
     val description: String

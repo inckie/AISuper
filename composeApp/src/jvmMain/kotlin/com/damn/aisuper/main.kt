@@ -19,6 +19,15 @@ import com.damn.aisuper.util.Logger
 import java.awt.Rectangle
 import java.io.File
 
+/**
+ * Main application entry point.
+ *
+ * @wk-id main-entry
+ * @wk-tags kotlin, desktop, entry-point
+ * @wk-categories system-overview
+ *
+ * Bootstraps the AISuper environment, parses CLI arguments for applet loading, and starts the MCP server.
+ */
 fun main(args: Array<String>) = application {
     val mcpPort = args.indexOf("--mcp-server").let { if (it != -1) args.getOrNull(it + 1)?.toIntOrNull() ?: 8081 else null }
 

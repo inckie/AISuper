@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:28.009872+00:00'
 id: applet-developer-skill
-modified: '2026-06-20T05:04:26.704519+00:00'
+modified: '2026-09-02T00:16:01.873319+00:00'
 tags:
 - skills
 - development
@@ -23,7 +23,26 @@ The **AISuper App** is a flexible runtime engine (similar to a game engine) that
 
 Instead of building large monolithic applications for every need (like a standalone Audio Player, Weather App, or Spending Analyzer), developers (or AI) can rapidly prototype and deploy these as lightweight applets. The engine provides the UI widgets, layout rendering, navigation, and core native modules (like HTTP, GPS, Audio). The applet simply provides a set of JSON layouts and JS/TS scripts to tie these building blocks together securely.
 
-## 2. Key References & Type Definitions
+## 2. Bootstrapping New Applets
+
+When kick-starting a new applet, you will encounter two primary development scenarios.
+
+### Case 1: Full File System Access
+If you are developing locally with full workspace access:
+1. Copy the template from `template/applet` or examine existing samples in `.agents/sample-applets`.
+2. Launch the AISuper JVM target via the [[src:internals/main-entry]] and pass your new applet directory as a command line argument, along with the `--mcp-server` flag:
+   ```powershell
+   .\com.damn.aisuper.exe "C:\path\to\new-applet" --mcp-server 8081
+   ```
+3. The platform will boot, mount your folder as the applet root, and spin up the [[src:internals/mcp-server]].
+
+### Case 2: MCP-Only Interface (Remote/Agentic AI)
+If you are an AI agent running in a remote or restricted environment where the user has *already* copied the template and started the MCP server for you:
+1. **Do not** attempt to use native OS file tools to edit files directly.
+2. The AISuper MCP server exposes safe, isolated file manipulation tools (`file_list`, `file_read`, `file_write`, `file_delete`) scoped strictly to the applet root folder (see [[src:internals/mcp-tools]]).
+3. You can use these tools to build the applet and issue the `applet_reload` command to see your changes instantly.
+
+## 3. Key References & Type Definitions
 
 As an applet developer, you should rely entirely on these defined interfaces rather than inventing properties:
 
@@ -31,9 +50,9 @@ As an applet developer, you should rely entirely on these defined interfaces rat
 - **Widget Types**: Use `template/applet/types/layout-types.ts` as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
 - **Runtime Native APIs**: See `template/typescript/types/runtime-globals.d.ts` for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
 - **JS Module Creation**: See [[js-modules-creation-skill|JS Modules Creation Skill]] for critical guidelines on engine quirks (e.g., avoiding `switch` statements) and writing safe TS/JS modules.
-- **Interactive Execution**: See [[ai-harness-skill|AI Harness Skill]] for using the MCP to interactively test, debug, and reload applets. Use `logs_tail` for quick status updates after reloads and `logs_since` to monitor logs in real-time.
+- **Interactive Execution**: See [[ai-harness-skill|AI Harness Skill]] for using the MCP to interactively test, debug, and reload applets.
 
-## 3. Working with TypeScript Modules (`jsModule`)
+## 4. Working with TypeScript Modules (`jsModule`)
 
 While simple scripts can be written in vanilla JavaScript (e.g. `files/main_script.js`), more complex business logic should be broken out into typed TypeScript modules. 
 
@@ -44,20 +63,10 @@ It typically contains:
 - `index.ts` - Contains your typed logic. You MUST export the module functions to the engine using `registerExports("moduleName", ["functionName1"])`.
 
 ### Polyfills for Testing
-The `template/typescript` project includes polyfills that mock the native runtime APIs (like `persistentStorageGet`). This allows you to write standard Jest/Mocha unit tests for complex TypeScript logic without needing to boot up the entire AISuper native engine.
+The `template/typescript` project includes polyfills that mock the native runtime APIs. This allows you to write standard Jest/Mocha unit tests for complex logic without needing to boot up the entire AISuper native engine.
 
-## 4. Reference Applets
+## 5. Reference Applets
 
 Whenever you are unsure of how a feature is wired up, refer to the fully working Widgets Demo Applet.
 
 The Widgets applet contains exhaustive examples of data binding (`progressId`, `dynamicChildrenId`), onChange actions, nested layouts, and multi-layout switching.
-
-## 5. Development Approach
-
-**Note on File System Access**: The AI Harness MCP server exposes its own file creation/deletion/read/write endpoints. Full workspace file system access is completely optional if you are connected to the MCP server.
-
-When writing an applet, follow this separation of concerns:
-1. **`applet.json`**: Define the entry points, feature lists, styles, and required modules.
-2. **Layouts (`.json`)**: Design visually using only the allowed primitives.
-3. **Scripts (`.js`)**: Handle UI state, navigation, and action glue code.
-4. **Modules (`.ts`)**: Encapsulate heavy business logic, network requests, or domain-specific computations.

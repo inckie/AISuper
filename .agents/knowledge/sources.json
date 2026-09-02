@@ -1,0 +1,52 @@
+{
+  "sources": {
+    "internals": {
+      "type": "source-code",
+      "default_path": "../..",
+      "description": "Internal implementation details of AISuper Platform",
+      "respect_gitignore": true,
+      "languages": {
+        "kotlin": {
+          "include": [
+            "androidApp/**/*.kt",
+            "applet-provider/**/*.kt",
+            "composeApp/**/*.kt",
+            "iosApp/**/*.kt",
+            "kotlin-js-store/**/*.kt",
+            "lanternaApp/**/*.kt",
+            "server/**/*.kt",
+            "shared/**/*.kt"
+          ],
+          "exclude": []
+        },
+        "typescript": {
+          "include": [
+            "client-react/**/*.ts",
+            "client-react/**/*.tsx",
+            "modules-ts/**/*.ts"
+          ],
+          "exclude": []
+        }
+      }
+    },
+    "externals": {
+      "type": "source-code",
+      "default_path": "../..",
+      "description": "External interfaces and templates for Applet developers",
+      "respect_gitignore": true,
+      "languages": {
+        "typescript": {
+          "include": [
+            "template/**/*.ts",
+            "template/**/*.tsx",
+            "template/**/*.js",
+            ".agents/sample-applets/**/*.ts",
+            ".agents/sample-applets/**/*.tsx",
+            ".agents/sample-applets/**/*.js"
+          ],
+          "exclude": []
+        }
+      }
+    }
+  }
+}

@@ -6,6 +6,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 
+/**
+ * Data-driven UI layout models.
+ * 
+ * @wk-id layout-models
+ * @wk-tags kotlin, layout, ui
+ * @wk-categories system-overview
+ *
+ * Defines the spatial arrangement of Widgets (Column, Row) used by the [[ui-layout-system]].
+ */
 @Serializable
 data class LayoutRoot(
     val layout: Widget
