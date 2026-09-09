@@ -40,6 +40,20 @@
           { "type": "Switch", "id": "demo_switch", "text": "Toggle Feature", "onChangeAction": "onSwitchToggle", "actionArgs": ["demo_switch"] },
           { "type": "Text", "id": "switch_status", "text": "Switch State: false" },
 
+          { "type": "Text", "text": "Horizontal Slider (min: 0, max: 100, step: 5)", "classes": ["section_title"] },
+          {
+            "type": "Slider",
+            "id": "demo_slider",
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "value": 25,
+            "fillMaxWidth": true,
+            "onChangeAction": "onSliderChange",
+            "actionArgs": ["demo_slider"]
+          },
+          { "type": "Text", "id": "slider_status", "text": "Slider Value: 25" },
+
           { "type": "Text", "text": "Text Input (Value Binding)", "classes": ["section_title"] },
           { "type": "TextField", "id": "demo_textfield", "hint": "Type something...", "singleLine": true },
           { "type": "Text", "id": "textfield_status", "text": "Typing: " },

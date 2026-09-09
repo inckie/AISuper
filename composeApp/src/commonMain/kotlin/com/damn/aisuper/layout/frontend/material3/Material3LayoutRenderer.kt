@@ -21,6 +21,8 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -48,6 +50,7 @@ import com.damn.aisuper.layout.DropdownWidget
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.ProgressWidget
 import com.damn.aisuper.layout.RowWidget
+import com.damn.aisuper.layout.SliderWidget
 import com.damn.aisuper.layout.SpinnerWidget
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.SwitchWidget
@@ -61,6 +64,7 @@ import com.damn.aisuper.layout.floatOrNull
 import com.damn.aisuper.layout.layoutModifier
 import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.layout.resolveDropdownOptions
+import kotlin.math.roundToInt
 import com.damn.aisuper.layout.resolveDynamicWidgets
 import com.damn.aisuper.layout.resolveStyleRule
 import com.damn.aisuper.layout.stringOrNull
@@ -469,6 +473,54 @@ fun RenderWidget(
                 val clamped = resolvedProgress.coerceIn(0f, 1f)
                 LinearProgressIndicator(progress = { clamped }, modifier = indicatorModifier)
             }
+        }
+
+        is SliderWidget -> {
+            val widgetId = widget.id
+            val rawValue = if (widgetId != null) values[widgetId]?.floatOrNull() ?: widget.value ?: widget.min else widget.value ?: widget.min
+            val min = widget.min
+            val max = if (widget.max > min) widget.max else min + 1f
+            val current = rawValue.coerceIn(min, max)
+
+            val step = widget.step
+            val steps = if (step != null && step > 0f) {
+                val s = ((max - min) / step).roundToInt() - 1
+                if (s > 0) s else 0
+            } else {
+                0
+            }
+
+            val containerColor = parseColorOrNull(style.containerColor ?: style.backgroundColor)
+            val sliderColors = if (containerColor != null) {
+                SliderDefaults.colors(
+                    thumbColor = containerColor,
+                    activeTrackColor = containerColor
+                )
+            } else {
+                SliderDefaults.colors()
+            }
+
+            Slider(
+                value = current,
+                onValueChange = { newValue ->
+                    val stepped = if (step != null && step > 0f) {
+                        (min + ((newValue - min) / step).roundToInt() * step).coerceIn(min, max)
+                    } else {
+                        newValue
+                    }
+                    if (widgetId != null) {
+                        onValueChange(widgetId, JsonPrimitive(stepped))
+                    }
+                    val action = widget.onChangeAction
+                    if (!action.isNullOrBlank()) {
+                        onAction(action, widget.actionArgs + JsonPrimitive(stepped))
+                    }
+                },
+                valueRange = min..max,
+                steps = steps,
+                colors = sliderColors,
+                modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+            )
         }
     }
 }

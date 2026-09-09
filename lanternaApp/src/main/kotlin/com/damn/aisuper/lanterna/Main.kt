@@ -372,6 +372,49 @@ private fun renderWidget(
             panel
         }
 
+        is SliderWidget -> {
+            val panel = Panel(LinearLayout(Direction.HORIZONTAL))
+            val min = widget.min
+            val max = if (widget.max > min) widget.max else min + 1f
+            val step = widget.step ?: 1f
+            val currentVal = widget.id?.let { values[it]?.floatOrNull() } ?: widget.value ?: min
+            val clamped = currentVal.coerceIn(min, max)
+
+            val label = Label(if (clamped % 1f == 0f) clamped.toInt().toString() else "%.2f".format(clamped))
+            val pBar = ProgressBar(0, 100).apply {
+                val frac = if (max > min) (clamped - min) / (max - min) else 0f
+                value = (frac * 100).toInt()
+            }
+
+            panel.addComponent(Button(" - ") {
+                val newVal = (clamped - step).coerceIn(min, max)
+                widget.id?.let { id ->
+                    lastTypedValues[id] = newVal.toString()
+                    applet.updateValue(id, JsonPrimitive(newVal))
+                }
+                widget.onChangeAction?.takeIf { it.isNotBlank() }?.let { action ->
+                    CoroutineScope(Dispatchers.Default).launch {
+                        applet.handleAction(action, widget.actionArgs + JsonPrimitive(newVal))
+                    }
+                }
+            })
+            panel.addComponent(pBar)
+            panel.addComponent(Button(" + ") {
+                val newVal = (clamped + step).coerceIn(min, max)
+                widget.id?.let { id ->
+                    lastTypedValues[id] = newVal.toString()
+                    applet.updateValue(id, JsonPrimitive(newVal))
+                }
+                widget.onChangeAction?.takeIf { it.isNotBlank() }?.let { action ->
+                    CoroutineScope(Dispatchers.Default).launch {
+                        applet.handleAction(action, widget.actionArgs + JsonPrimitive(newVal))
+                    }
+                }
+            })
+            panel.addComponent(label)
+            panel
+        }
+
         else -> Label("<Unsupported Widget: ${widget::class.simpleName}>")
     }
 

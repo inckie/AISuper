@@ -146,6 +146,7 @@ fun Widget.typeKey(): String = when (this) {
     is SwitchWidget -> "Switch"
     is SpinnerWidget -> "Spinner"
     is ProgressWidget -> "Progress"
+    is SliderWidget -> "Slider"
 }
 
 fun resolveStyleRule(widget: Widget, styleSheet: StyleSheet?): StyleRule {
@@ -159,7 +160,7 @@ fun resolveStyleRule(widget: Widget, styleSheet: StyleSheet?): StyleRule {
 }
 
 fun applyTokenFallbacks(widget: Widget, rule: StyleRule, tokens: StyleTokens): StyleRule {
-    val needsActionColors = widget is ButtonWidget || widget is DropdownWidget || widget is SwitchWidget
+    val needsActionColors = widget is ButtonWidget || widget is DropdownWidget || widget is SwitchWidget || widget is SliderWidget
     if (!needsActionColors) return rule
 
     if (!rule.containerColor.isNullOrBlank() && !rule.textColor.isNullOrBlank()) return rule

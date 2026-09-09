@@ -69,7 +69,7 @@ function mergedWith(base: StyleRule, other?: StyleRule | null): StyleRule {
 }
 
 function applyTokenFallbacks(widget: Widget, rule: StyleRule, sheet: StyleSheet): StyleRule {
-  const needsActionColors = widget.type === 'Button' || widget.type === 'Dropdown' || widget.type === 'Switch';
+  const needsActionColors = widget.type === 'Button' || widget.type === 'Dropdown' || widget.type === 'Switch' || widget.type === 'Slider';
   if (!needsActionColors) return rule;
   if (rule.containerColor && rule.textColor) return rule;
 

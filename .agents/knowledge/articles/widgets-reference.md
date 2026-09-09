@@ -245,3 +245,29 @@ Linear progress bar.
   "fillMaxWidth": true
 }
 ```
+
+### Slider
+Horizontal slider control with support for range limits and discrete steps. Automatically synchronizes with state via `id` and emits events on adjustment.
+
+**Properties:**
+* `min` (Float, Optional): Minimum value for the slider (defaults to `0.0`).
+* `max` (Float, Optional): Maximum value for the slider (defaults to `100.0`).
+* `step` (Float, Optional): Step increment value. If specified and greater than 0, the slider snaps to discrete steps between `min` and `max`.
+* `value` (Float, Optional): Initial fallback value when not bound in state.
+* `onChangeAction` (String, Optional): JS action callback triggered when the user adjusts the slider.
+* `actionArgs` (Array, Optional): Arguments passed to the callback (along with the new numeric value).
+
+**Example:**
+```json
+{
+  "type": "Slider",
+  "id": "volume_level",
+  "min": 0,
+  "max": 100,
+  "step": 5,
+  "value": 50,
+  "fillMaxWidth": true,
+  "onChangeAction": "onVolumeChanged",
+  "actionArgs": ["volume_level"]
+}
+```

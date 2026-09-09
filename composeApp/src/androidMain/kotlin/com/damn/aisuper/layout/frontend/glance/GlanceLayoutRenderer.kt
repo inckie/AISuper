@@ -32,6 +32,7 @@ import com.damn.aisuper.layout.DropdownWidget
 import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.ProgressWidget
 import com.damn.aisuper.layout.RowWidget
+import com.damn.aisuper.layout.SliderWidget
 import com.damn.aisuper.layout.SpinnerWidget
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.SwitchWidget
@@ -218,6 +219,20 @@ fun RenderWidget(
                     modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())
                 )
             }
+        }
+
+        is SliderWidget -> {
+            val rawValue = widget.id?.let { values[it]?.floatOrNull() } ?: widget.value ?: widget.min
+            val min = widget.min
+            val max = if (widget.max > min) widget.max else min + 1f
+            val current = rawValue.coerceIn(min, max)
+            val textColor = parseColorOrNull(style.textColor) ?: Color(0x80FFFFFF.toInt())
+            val formatted = if (current % 1f == 0f) current.toInt().toString() else "%.1f".format(current)
+            Text(
+                "―●― [$formatted]",
+                style = TextStyle(color = ColorProvider(textColor), fontSize = 10.sp),
+                modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())
+            )
         }
     }
 }

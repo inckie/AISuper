@@ -146,10 +146,10 @@ For example, a chat feature or remote management tool might be broken down into:
 
 -----
 
-## 3. Dropdowns and Switches (Action Notification)
+## 3. Dropdowns, Switches, and Sliders (Action Notification)
 
-When designing a toggle or selector (e.g. Unit Switcher, Dark Mode, Toggle Preferences):
-* **Switch and Dropdown widgets** natively support `onChangeAction`. Changing the state of a Switch or selecting an option in a Dropdown immediately triggers the JS action, allowing you to re-evaluate and redraw the UI without needing explicit subscriptions. Note that a Switch can optionally provide `actionArgs`, which will be passed to the callback along with the new boolean value.
+When designing an interactive selector or control (e.g. Unit Switcher, Dark Mode, Volume/Brightness Sliders):
+* **Switch, Dropdown, and Slider widgets** natively support `onChangeAction`. Changing the state of a Switch, selecting an option in a Dropdown, or adjusting a Slider immediately triggers the JS action, allowing you to re-evaluate and redraw the UI without needing explicit subscriptions. Note that a Switch or Slider passes its updated value to the callback along with any defined `actionArgs`.
 
 #### Layout Dropdown definition:
 ```json

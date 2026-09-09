@@ -366,6 +366,62 @@ export function WidgetRenderer({
       return <progress style={{ ...baseStyle, width: '100%' }} value={clamped} max={1} />;
     }
 
+    case 'Slider': {
+      const widgetId = widget.id ?? undefined;
+      const min = widget.min ?? 0;
+      const max = widget.max != null && widget.max > min ? widget.max : 100;
+      const step = widget.step ?? 1;
+      const rawValue = widgetId ? floatOrNull(values[widgetId]) ?? widget.value ?? min : widget.value ?? min;
+      const currentValue = Math.min(Math.max(rawValue, min), max);
+      const accentColor = style.containerColor || style.backgroundColor;
+
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            width: widget.fillMaxWidth ? '100%' : undefined,
+            flex: widget.weight != null ? `${widget.weight} 1 0` : baseStyle.flex
+          }}
+        >
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={currentValue}
+            style={{
+              flex: 1,
+              accentColor: accentColor ?? undefined,
+              cursor: 'pointer'
+            }}
+            onChange={(event) => {
+              const numVal = parseFloat(event.target.value);
+              if (widgetId) {
+                onValueChange(widgetId, String(numVal));
+              }
+              if (widget.onChangeAction) {
+                onAction(widget.onChangeAction, widget.actionArgs ? [...widget.actionArgs, numVal] : [numVal]);
+              }
+            }}
+          />
+          <span
+            style={{
+              minWidth: 36,
+              textAlign: 'right',
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: '0.875rem',
+              color: style.textColor ?? undefined
+            }}
+          >
+            {currentValue}
+          </span>
+        </div>
+      );
+    }
+
     default:
       return parentDirection === 'row' ? <span /> : null;
   }

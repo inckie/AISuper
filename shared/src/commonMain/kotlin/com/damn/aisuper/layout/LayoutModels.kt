@@ -197,3 +197,20 @@ data class ProgressWidget(
     val indeterminate: Boolean = false
 ) : Widget()
 
+@Serializable
+@SerialName("Slider")
+data class SliderWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
+    val value: Float? = null,
+    val min: Float = 0f,
+    val max: Float = 100f,
+    val step: Float? = null,
+    val onChangeAction: String? = null,
+    val actionArgs: List<JsonElement> = emptyList()
+) : Widget()
+

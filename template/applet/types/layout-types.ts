@@ -129,6 +129,16 @@ export interface ProgressWidget extends WidgetBase {
   indeterminate?: boolean;
 }
 
+export interface SliderWidget extends WidgetBase {
+  type: 'Slider';
+  value?: number | null;
+  min?: number;
+  max?: number;
+  step?: number | null;
+  onChangeAction?: string | null;
+  actionArgs?: JsonValue[];
+}
+
 export type Widget =
   | ColumnWidget
   | RowWidget
@@ -140,7 +150,8 @@ export type Widget =
   | DropdownWidget
   | SwitchWidget
   | SpinnerWidget
-  | ProgressWidget;
+  | ProgressWidget
+  | SliderWidget;
 
 export interface LayoutRoot {
   layout: Widget;

@@ -5,6 +5,8 @@ function initialize() {
     setValue("spinner_visible", false);
     setValue("demo_progress", currentProgress);
     setValue("demo_switch", false);
+    setValue("demo_slider", 25);
+    setValue("slider_status", "Slider Value: 25");
     
     // Demonstrate subscription
     subscribeValue("demo_textfield", "onTextFieldChange");
@@ -19,6 +21,11 @@ function onDropdownChange() {
 function onSwitchToggle(switchId, newValue) {
     // We could read from getValue("demo_switch") but newValue is passed natively!
     setValue("switch_status", "Switch State: " + newValue + " (id=" + switchId + ")");
+}
+
+// Slider callback gets actionArgs + [newValue]
+function onSliderChange(sliderId, newValue) {
+    setValue("slider_status", "Slider Value: " + newValue + " (id=" + sliderId + ")");
 }
 
 function onTextFieldChange(key, newValue) {
