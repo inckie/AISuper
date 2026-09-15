@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:28.009872+00:00'
 id: applet-developer-skill
-modified: '2026-09-02T00:16:01.873319+00:00'
+modified: '2026-09-15T12:08:37.893862+00:00'
 tags:
 - skills
 - development
@@ -16,6 +16,10 @@ type: leaf
 # Applet Developer Skill (AISuper)
 
 Welcome to the AISuper Applet Developer guidelines! This document serves as the primary entry point for AIs writing applets, features, and modules without needing to touch or understand the underlying Kotlin native code.
+
+> [!IMPORTANT]
+> **Mandatory Rule: Follow Ponytail**
+> All code, layouts, and scripts written for AISuper must adhere to [[ponytail-skill|Ponytail AI Development Skill]]. Always stop at the first rung of the ladder: question if code needs to exist (YAGNI), reuse existing engine widgets, rely on vanilla JS without npm dependencies, and ship the shortest working diff with a runnable check.
 
 ## 1. Overall Idea and Purpose
 
@@ -46,6 +50,7 @@ If you are an AI agent running in a remote or restricted environment where the u
 
 As an applet developer, you should rely entirely on these defined interfaces rather than inventing properties:
 
+- **Coding Discipline**: See [[ponytail-skill|Ponytail AI Development Skill]] for the mandatory minimalist ladder (YAGNI, minimal diffs, native engine widgets first).
 - **UI & Layouts**: See [[dynamic-interfaces-skill|Dynamic Interfaces Skill]] for how to construct valid JSON widget trees.
 - **Widget Types**: Use `template/applet/types/layout-types.ts` as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
 - **Runtime Native APIs**: See `template/typescript/types/runtime-globals.d.ts` for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
@@ -63,7 +68,7 @@ It typically contains:
 - `index.ts` - Contains your typed logic. You MUST export the module functions to the engine using `registerExports("moduleName", ["functionName1"])`.
 
 ### Polyfills for Testing
-The `template/typescript` project includes polyfills that mock the native runtime APIs. This allows you to write standard Jest/Mocha unit tests for complex logic without needing to boot up the entire AISuper native engine.
+The `template/typescript` project includes polyfills that mock the native runtime APIs. This allows you to write standard Jest/Mocha unit tests for complex logic without needing to boot up the entire AISuper native engine. In accordance with [[ponytail-skill]], keep tests minimal: one runnable check for non-trivial logic.
 
 ## 5. Reference Applets
 

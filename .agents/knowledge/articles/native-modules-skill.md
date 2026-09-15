@@ -3,7 +3,7 @@ categories:
 - skills
 created: '2026-06-20T04:51:14.261146+00:00'
 id: native-modules-skill
-modified: '2026-06-20T04:51:14.261168+00:00'
+modified: '2026-09-15T12:09:29.607574+00:00'
 tags:
 - skills
 - native-modules
@@ -94,6 +94,7 @@ npm run sync-template
 
 ## 3. Best Practices
 
+- **Ponytail Discipline**: Adhere strictly to [[ponytail-skill|Ponytail AI Development Skill]]. Do NOT create abstract module hierarchies or speculative factory layers. Implement `FeatureModule` directly, keep bridge signatures minimal, and rely on standard Kotlin constructs and Coroutines.
 - **Argument Parsing**: Use helper extensions like `jsonPrimitive.contentOrNull` to safely extract values from `JsonElement`.
 - **State Updates**: Use `context.updateValue(id, value)` to push updates to the UI state.
 - **Naming Conventions**: Prefix module-specific functions (e.g., `audioPlay`, `geoGetCurrent`) to avoid global namespace collisions.

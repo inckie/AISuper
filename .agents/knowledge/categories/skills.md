@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T04:51:20.602117+00:00'
 id: skills
-modified: '2026-06-20T05:04:18.179491+00:00'
+modified: '2026-09-15T12:08:10.233466+00:00'
 tags:
 - skills
 - ai-agent
@@ -15,12 +15,18 @@ type: category
 # AI Developer Skills
 
 <!-- human:start -->
-This category contains specialized guidelines, references, and recipes designed for AI agents building and debugging AISuper applets. These articles provide the necessary context to develop features, layouts, and modules without directly modifying the native Kotlin codebase.
+This category contains specialized guidelines, references, and recipes designed for AI agents developing and debugging AISuper systems. These articles provide the necessary context to develop features, layouts, and modules across both the native Kotlin codebase and sandboxed applets.
 <!-- human:end -->
+
+> [!IMPORTANT]
+> **Mandatory Implementation Rule**: All AI agents modifying AISuper code (core native Kotlin engine or Keight TS/JSON applets) MUST adhere to [[ponytail-skill|Ponytail AI Development Skill]]. Default intensity is **full**: ladder enforced, stdlib/native widgets first, shortest working diff, YAGNI.
 
 ## Articles in This Category
 
 <!-- ai:start -->
+### [[ponytail-skill|Ponytail AI Development Skill]]
+**MANDATORY CODING DISCIPLINE.** Enforces the ladder of simplicity (YAGNI, stdlib/native first, shortest diff) for both core Kotlin runtime and TS/JSON applets.
+
 ### [[applet-developer|Applet Developer Workflow]]
 Specialized path for external AI agents focusing on interactive requirement gathering, UI prototyping, and sandboxed implementation.
 

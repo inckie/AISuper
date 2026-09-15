@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:58.173333+00:00'
 id: js-modules-creation-skill
-modified: '2026-06-20T04:57:58.283150+00:00'
+modified: '2026-09-15T12:09:05.407181+00:00'
 tags:
 - skills
 - js-modules
@@ -17,6 +17,9 @@ type: leaf
 # JS Modules Creation Skill (AISuper)
 
 This note captures the repeatable workflow for adding or debugging JS modules in AISuper.
+
+> [!TIP]
+> **Minimalist Module Philosophy**: Adhere strictly to [[ponytail-skill|Ponytail AI Development Skill]]. Do NOT install third-party npm packages when a small pure JS helper will do. Write the minimal TS logic needed, and leave behind ONE runnable check.
 
 ## 1) Module contract
 
@@ -195,6 +198,7 @@ The parser automatically decodes XML entities, extracts attributes into an `@att
 
 ## 8) Test strategy
 
+Following [[ponytail-skill]], non-trivial module logic must leave ONE runnable check behind:
 - Parser/unit checks (Node):
   - `modules-ts/tests/*.test.mjs`
 - Keight behavior (JVM common tests):
