@@ -46,6 +46,7 @@ import com.damn.aisuper.layout.TextFieldWidget
 import com.damn.aisuper.layout.TextWidget
 import com.damn.aisuper.layout.Widget
 import com.damn.aisuper.layout.applyStyleRule
+import com.damn.aisuper.layout.normalizeImageDataUri
 import com.damn.aisuper.layout.booleanOrNull
 import com.damn.aisuper.layout.childModifier
 import com.damn.aisuper.layout.floatOrNull
@@ -239,7 +240,7 @@ fun RenderWidget(
             ) {
                 if (showIcon && !iconOnRight) {
                     AsyncImage(
-                        model = widget.icon,
+                        model = normalizeImageDataUri(widget.icon),
                         contentDescription = null,
                         modifier = Modifier.width(18.dp).height(18.dp)
                     )
@@ -253,7 +254,7 @@ fun RenderWidget(
                 if (showIcon && iconOnRight) {
                     if (showText) Spacer(modifier = Modifier.width(6.dp))
                     AsyncImage(
-                        model = widget.icon,
+                        model = normalizeImageDataUri(widget.icon),
                         contentDescription = null,
                         modifier = Modifier.width(18.dp).height(18.dp)
                     )
@@ -268,12 +269,13 @@ fun RenderWidget(
             } else {
                 widget.data?.takeIf { it.isNotBlank() } ?: widget.url
             }
+            val imgHeight = widget.height?.dp ?: 200.dp
             val imgModifier = if (widget.fillMaxWidth) {
-                modifier.then(widget.layoutModifier()).fillMaxWidth().height(200.dp)
+                modifier.then(widget.layoutModifier()).fillMaxWidth().height(imgHeight)
             } else {
-                modifier.then(widget.layoutModifier()).width(64.dp).height(64.dp)
+                modifier.then(widget.layoutModifier()).width(64.dp).height(imgHeight)
             }
-            AsyncImage(model = imageModel, contentDescription = widget.description, modifier = imgModifier.applyStyleRule(style))
+            AsyncImage(model = normalizeImageDataUri(imageModel), contentDescription = widget.description, modifier = imgModifier.applyStyleRule(style))
         }
 
         is AudioPlayerWidget -> {

@@ -120,7 +120,8 @@ data class ImageWidget(
     override val visibilityId: String? = null,
     val url: String = "",
     val data: String? = null,
-    val description: String = ""
+    val description: String = "",
+    val height: Int? = null
 ) : Widget()
 
 @Serializable

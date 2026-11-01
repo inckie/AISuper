@@ -76,3 +76,39 @@ fun RowScope.childModifier(widget: Widget, style: StyleRule? = null): Modifier {
     }
     return m
 }
+@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+fun normalizeImageDataUri(uri: String?): String? {
+    if (uri == null) return null
+    if (uri.startsWith("data:image/svg+xml") && !uri.contains(";base64,")) {
+        val commaIndex = uri.indexOf(',')
+        if (commaIndex != -1) {
+            val rawData = uri.substring(commaIndex + 1)
+            val decoded = decodePercentEncoding(rawData)
+            val base64 = kotlin.io.encoding.Base64.encode(decoded.encodeToByteArray())
+            return "data:image/svg+xml;base64,$base64"
+        }
+    }
+    return uri
+}
+
+private fun decodePercentEncoding(input: String): String {
+    if (!input.contains('%')) return input
+    val sb = StringBuilder(input.length)
+    var i = 0
+    while (i < input.length) {
+        val c = input[i]
+        if (c == '%' && i + 2 < input.length) {
+            val hex = input.substring(i + 1, i + 3)
+            val code = hex.toIntOrNull(16)
+            if (code != null) {
+                sb.append(code.toChar())
+                i += 3
+                continue
+            }
+        }
+        sb.append(c)
+        i++
+    }
+    return sb.toString()
+}
+
