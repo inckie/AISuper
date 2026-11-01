@@ -349,6 +349,40 @@ function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+function toBase64(input) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let output = "";
+  const bytes = [];
+  for (let i = 0; i < input.length; i++) {
+    const c = input.charCodeAt(i);
+    if (c < 128) {
+      bytes.push(c);
+    } else if (c < 2048) {
+      bytes.push((c >> 6) | 192);
+      bytes.push((c & 63) | 128);
+    } else {
+      bytes.push((c >> 12) | 224);
+      bytes.push(((c >> 6) & 63) | 128);
+      bytes.push((c & 63) | 128);
+    }
+  }
+
+  let i = 0;
+  while (i < bytes.length) {
+    const b1 = bytes[i++];
+    const b2 = i < bytes.length ? bytes[i++] : NaN;
+    const b3 = i < bytes.length ? bytes[i++] : NaN;
+
+    const enc1 = b1 >> 2;
+    const enc2 = ((b1 & 3) << 4) | (isNaN(b2) ? 0 : b2 >> 4);
+    const enc3 = isNaN(b2) ? 64 : ((b2 & 15) << 2) | (isNaN(b3) ? 0 : b3 >> 6);
+    const enc4 = isNaN(b3) ? 64 : b3 & 63;
+
+    output += chars.charAt(enc1) + chars.charAt(enc2) + chars.charAt(enc3) + chars.charAt(enc4);
+  }
+  return output;
+}
+
 function shapeToSvg(points, loopId, width, height, padding, strokeColor) {
   const coords = points
     .filter((point) => Number.isFinite(point.longitude) && Number.isFinite(point.latitude))
@@ -366,27 +400,37 @@ function shapeToSvg(points, loopId, width, height, padding, strokeColor) {
   const minLat = Math.min(...latitudes);
   const maxLat = Math.max(...latitudes);
 
-  const lonSpan = Math.max(maxLon - minLon, 1e-9);
+  const avgLatRad = ((minLat + maxLat) / 2) * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+
+  const lonSpan = Math.max((maxLon - minLon) * cosLat, 1e-9);
   const latSpan = Math.max(maxLat - minLat, 1e-9);
 
-  const drawableWidth = Math.max(width - 2 * padding, 1);
-  const drawableHeight = Math.max(height - 2 * padding, 1);
-  const scale = Math.min(drawableWidth / lonSpan, drawableHeight / latSpan);
+  const pad = Math.max(padding, 16);
+  const drawableW = Math.max(width - 2 * pad, 1);
+  const drawableH = Math.max(height - 2 * pad, 1);
+  const scale = Math.min(drawableW / lonSpan, drawableH / latSpan);
 
-  const xOffset = (width - lonSpan * scale) / 2;
-  const yOffset = (height - latSpan * scale) / 2;
+  const viewWidth = Math.round(lonSpan * scale + 2 * pad);
+  const viewHeight = Math.round(latSpan * scale + 2 * pad);
 
   const polyline = coords
     .map((item) => {
-      const x = xOffset + (item.lon - minLon) * scale;
-      const y = yOffset + (maxLat - item.lat) * scale;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
+      const x = pad + (item.lon - minLon) * cosLat * scale;
+      const y = pad + (maxLat - item.lat) * scale;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
 
-  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#339900");
+  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#009933");
+  const strokeWidth = 14;
+  const casingWidth = 22;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="${color}" stroke-width="3" points="${polyline}"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${viewWidth}" height="${viewHeight}" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="MetroMover loop ${loopId}"><polyline fill="none" stroke="white" stroke-width="${casingWidth}" stroke-linecap="round" stroke-linejoin="round" points="${polyline}"/><polyline fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" points="${polyline}"/></svg>`;
+
+  const svgDataUri = `data:image/svg+xml;base64,${toBase64(svg)}`;
+
+  return { svg, svgDataUri };
 }
 
 // Tests
@@ -445,12 +489,17 @@ test("Geo - haversineKm distance calculation", () => {
 
 test("SVG Generation - shapeToSvg", () => {
   const result = parseLoopShapeJson(MOCK_SHAPE_JSON, "OMN");
-  const svg = shapeToSvg(result.points, "OMN", 400, 400, 10, result.color);
+  const { svg, svgDataUri } = shapeToSvg(result.points, "OMN", 400, 400, 10, result.color);
   assert(svg.includes("<svg"), "SVG should contain <svg> tag");
   assert(svg.includes("polyline"), "SVG should contain polyline");
   assert(svg.includes("stroke=\"#0066FF\""), "SVG should use loop color");
+  assert(svg.includes("stroke-width=\"14\""), "SVG should use bold stroke width");
+  assert(svg.includes("stroke=\"white\" stroke-width=\"22\""), "SVG should include white casing");
   assert(svg.includes("MetroMover loop OMN"), "SVG should have proper label");
   assert(svg.length > 100, "Generated SVG should have reasonable length");
+  assert(svgDataUri.startsWith("data:image/svg+xml;base64,"), "Should return valid base64 data URI");
+  const decoded = Buffer.from(svgDataUri.replace("data:image/svg+xml;base64,", ""), "base64").toString("utf8");
+  assert.strictEqual(decoded, svg, "Base64 should decode to exact SVG string");
 });
 
 test("Number Parsing - parseFloatSafe", () => {
@@ -464,4 +513,136 @@ test("Number Parsing - parseIntSafe", () => {
   assert.strictEqual(parseIntSafe("101"), 101, "Should parse int");
   assert.strictEqual(parseIntSafe(""), 0, "Should return 0 for empty string");
   assert.strictEqual(parseIntSafe(null), 0, "Should return 0 for null");
+});
+
+
+function escapeXml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function synthesizeNetworkSvg(allShapes, stations, activeLoops, highlightStationId, width = 720, height = 720, padding = 24) {
+  const defaultColors = {
+    "OMN": "#0066FF",
+    "BKL": "#FF6600",
+    "INN": "#009933",
+    "FUL": "#9900FF",
+    "OTR": "#2A3A8D"
+  };
+
+  const routeMap = new Map();
+  for (const route of allShapes) {
+    const id = (route.Id || route.RouteID || "").trim().toUpperCase();
+    if (!id) continue;
+    const rawColor = route.Color || defaultColors[id] || "#0066FF";
+    const color = rawColor.startsWith("#") ? rawColor : "#" + rawColor;
+    const shapesList = route.Shapes || route.Points || [];
+    const points = shapesList
+      .filter((pt) => Number.isFinite(pt.Latitude) && Number.isFinite(pt.Longitude))
+      .map((pt) => ({ lat: Number(pt.Latitude), lon: Number(pt.Longitude) }));
+    if (points.length > 0) {
+      routeMap.set(id, { id, color, points });
+    }
+  }
+
+  let allLons = [];
+  let allLats = [];
+  for (const r of routeMap.values()) {
+    allLons.push(...r.points.map((p) => p.lon));
+    allLats.push(...r.points.map((p) => p.lat));
+  }
+
+  const minLon = Math.min(...allLons);
+  const maxLon = Math.max(...allLons);
+  const minLat = Math.min(...allLats);
+  const maxLat = Math.max(...allLats);
+
+  const avgLatRad = ((minLat + maxLat) / 2) * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+
+  const lonSpan = Math.max((maxLon - minLon) * cosLat, 1e-9);
+  const latSpan = Math.max(maxLat - minLat, 1e-9);
+
+  const padY = Math.max(padding, 20);
+  const padX = Math.max(padding, 40);
+  const drawableW = Math.max(width - 2 * padX, 1);
+  const drawableH = Math.max(height - 2 * padY, 1);
+  const scale = Math.min(drawableW / lonSpan, drawableH / latSpan);
+
+  const viewWidth = Math.round(lonSpan * scale + 2 * padX);
+  const viewHeight = Math.round(latSpan * scale + 2 * padY);
+
+  const project = (lat, lon) => {
+    const x = padX + (lon - minLon) * cosLat * scale;
+    const y = padY + (maxLat - lat) * scale;
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  };
+
+  const activeSet = new Set((activeLoops || ["OMN", "BKL", "INN"]).map((s) => (s || "").trim().toUpperCase()));
+
+  const svgParts = [];
+  svgParts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${viewWidth}" height="${viewHeight}" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Miami Metromover Network Map">`);
+
+  for (const route of routeMap.values()) {
+    const pointsStr = route.points.map((p) => project(p.lat, p.lon).join(",")).join(" ");
+    svgParts.push(`<polyline fill="none" stroke="#CBD5E1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" points="${pointsStr}"/>`);
+  }
+
+  for (const route of routeMap.values()) {
+    if (!activeSet.has(route.id)) continue;
+    const pointsStr = route.points.map((p) => project(p.lat, p.lon).join(",")).join(" ");
+    svgParts.push(`<polyline fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" points="${pointsStr}"/>`);
+    svgParts.push(`<polyline fill="none" stroke="${route.color}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" points="${pointsStr}"/>`);
+  }
+
+  const normHighlightId = (highlightStationId || "").trim().toUpperCase();
+  let highlightedStationItem = null;
+
+  for (const station of stations) {
+    const lat = Number(station.latitude);
+    const lon = Number(station.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const [sx, sy] = project(lat, lon);
+    if (normHighlightId && (station.id || "").trim().toUpperCase() === normHighlightId) {
+      highlightedStationItem = { title: station.title, x: sx, y: sy };
+    } else {
+      svgParts.push(`<circle cx="${sx}" cy="${sy}" r="4" fill="white" stroke="#334155" stroke-width="2"/>`);
+    }
+  }
+
+  if (highlightedStationItem) {
+    const { title, x, y } = highlightedStationItem;
+    svgParts.push(`<circle cx="${x}" cy="${y}" r="8" fill="#FF6600" stroke="white" stroke-width="2.5"/>`);
+    const textWidth = Math.min(title.length * 7 + 12, 140);
+    const labelX = x + 12 + textWidth > viewWidth ? x - textWidth - 12 : x + 12;
+    svgParts.push(`<rect x="${labelX}" y="${y - 10}" width="${textWidth}" height="20" rx="4" fill="#0F172A" opacity="0.85"/>`);
+    svgParts.push(`<text x="${labelX + 6}" y="${y + 4}" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="bold" fill="white">${escapeXml(title)}</text>`);
+  }
+
+  svgParts.push("</svg>");
+  const svg = svgParts.join("");
+  const svgDataUri = `data:image/svg+xml;base64,${toBase64(svg)}`;
+
+  return { activeLoops, svg, svgDataUri, viewBox: `0 0 ${viewWidth} ${viewHeight}` };
+}
+
+
+test("SVG Generation - synthesizeNetworkSvg with multiple loops and trails", () => {
+  const allShapes = JSON.parse(MOCK_SHAPE_JSON);
+  const stations = parseStationsJson(MOCK_STATIONS_JSON);
+  const result = synthesizeNetworkSvg(allShapes, stations, ["OMN", "BKL"], "DT", 720, 720, 24);
+
+  assert(result.svg.includes("<svg"), "SVG should have <svg> root element");
+  assert(result.svg.includes("Miami Metromover Network Map"), "SVG should have network map label");
+  assert(result.svg.includes("#CBD5E1"), "SVG should include base guideway trail");
+  assert(result.svg.includes("#0066FF"), "SVG should include active Omni loop (#0066FF)");
+  assert(result.svg.includes("#FF6600"), "SVG should include active Brickell loop (#FF6600)");
+  assert(result.svg.includes("Downtown"), "SVG should include highlighted station title Downtown");
+  assert(result.svgDataUri.startsWith("data:image/svg+xml;base64,"), "Should produce valid base64 data URI");
+  const decoded = Buffer.from(result.svgDataUri.replace("data:image/svg+xml;base64,", ""), "base64").toString("utf8");
+  assert.strictEqual(decoded, result.svg, "Base64 should decode cleanly");
 });

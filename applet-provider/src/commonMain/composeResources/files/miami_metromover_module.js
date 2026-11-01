@@ -140,11 +140,23 @@ async function list_stations() {
   stationsCache = setCache(stations);
   return stations;
 }
+let allShapesCache = null;
+let allShapesExpiresAt = 0;
+async function getAllShapes() {
+  if (allShapesCache && nowMs() < allShapesExpiresAt) {
+    return allShapesCache;
+  }
+  const jsonStr = await fetchMetromoverJson(SHAPE_URL);
+  const data = JSON.parse(jsonStr);
+  allShapesCache = data;
+  allShapesExpiresAt = nowMs() + CACHE_TTL_MS;
+  return data;
+}
 async function list_loops() {
   const cached = validCache(loopsCache);
   if (cached) return cached;
-  const jsonStr = await fetchMetromoverJson(SHAPE_URL);
-  const loops = parseShapeLoopsJson(jsonStr);
+  const data = await getAllShapes();
+  const loops = parseShapeLoopsJson(JSON.stringify(data));
   loopsCache = setCache(loops);
   return loops;
 }
@@ -183,7 +195,7 @@ async function get_station_arrivals(station_id) {
     messageServiceUpdate: parsed.messageServiceUpdate
   };
 }
-async function get_loop_svg(loop_id, width = 800, height = 800, padding = 12) {
+async function get_loop_svg(loop_id, width = 800, height = 800, padding = 16) {
   const normalized = normalizeId(loop_id);
   if (!normalized) {
     throw new Error("loop_id is required.");
@@ -202,11 +214,131 @@ async function get_loop_svg(loop_id, width = 800, height = 800, padding = 12) {
   if (shapeData.points.length < 2) {
     throw new Error(`Loop '${normalized}' shape has too few points.`);
   }
-  const svg = shapeToSvg(shapeData.points, normalized, width, height, padding, shapeData.color);
+  const { svg, svgDataUri } = shapeToSvg(shapeData.points, normalized, width, height, padding, shapeData.color);
   return {
     loopId: normalized,
     pointCount: shapeData.points.length,
-    svg
+    svg,
+    svgDataUri
+  };
+}
+function escapeXml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+async function get_network_svg(active_loops, highlight_station_id, width = 720, height = 720, padding = 24, include_trains = true) {
+  var _a;
+  const allShapes = await getAllShapes();
+  const stations = await list_stations();
+  const defaultColors = {
+    "OMN": "#0066FF",
+    "BKL": "#FF6600",
+    "INN": "#009933",
+    "FUL": "#9900FF",
+    "OTR": "#2A3A8D"
+  };
+  const routeMap = /* @__PURE__ */ new Map();
+  for (const route of allShapes) {
+    const id = normalizeId(route.Id || route.RouteID || "");
+    if (!id) continue;
+    const rawColor = route.Color || defaultColors[id] || "#0066FF";
+    const color = rawColor.startsWith("#") ? rawColor : `#${rawColor}`;
+    const shapesList = route.Shapes || route.Points || [];
+    const points = shapesList.filter((pt) => Number.isFinite(pt.Latitude) && Number.isFinite(pt.Longitude)).map((pt) => ({ lat: Number(pt.Latitude), lon: Number(pt.Longitude) }));
+    if (points.length > 0) {
+      routeMap.set(id, { id, color, points });
+    }
+  }
+  let allLons = [];
+  let allLats = [];
+  for (const r of routeMap.values()) {
+    allLons.push(...r.points.map((p) => p.lon));
+    allLats.push(...r.points.map((p) => p.lat));
+  }
+  if (allLons.length === 0) {
+    throw new Error("No shape coordinates available to synthesize network map.");
+  }
+  const minLon = Math.min(...allLons);
+  const maxLon = Math.max(...allLons);
+  const minLat = Math.min(...allLats);
+  const maxLat = Math.max(...allLats);
+  const avgLatRad = (minLat + maxLat) / 2 * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+  const lonSpan = Math.max((maxLon - minLon) * cosLat, 1e-9);
+  const latSpan = Math.max(maxLat - minLat, 1e-9);
+  const padY = Math.max(padding, 20);
+  const padX = Math.max(padding, 40);
+  const drawableW = Math.max(width - 2 * padX, 1);
+  const drawableH = Math.max(height - 2 * padY, 1);
+  const scale = Math.min(drawableW / lonSpan, drawableH / latSpan);
+  const viewWidth = Math.round(lonSpan * scale + 2 * padX);
+  const viewHeight = Math.round(latSpan * scale + 2 * padY);
+  const project = (lat, lon) => {
+    const x = padX + (lon - minLon) * cosLat * scale;
+    const y = padY + (maxLat - lat) * scale;
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  };
+  const activeList = active_loops && active_loops.length > 0 ? active_loops.map(normalizeId) : ["OMN", "BKL", "INN"];
+  const activeSet = new Set(activeList);
+  const svgParts = [];
+  svgParts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${viewWidth}" height="${viewHeight}" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Miami Metromover Network Map">`);
+  for (const route of routeMap.values()) {
+    const pointsStr = route.points.map((p) => project(p.lat, p.lon).join(",")).join(" ");
+    svgParts.push(`<polyline fill="none" stroke="#CBD5E1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" points="${pointsStr}"/>`);
+  }
+  for (const route of routeMap.values()) {
+    if (!activeSet.has(route.id)) continue;
+    const pointsStr = route.points.map((p) => project(p.lat, p.lon).join(",")).join(" ");
+    svgParts.push(`<polyline fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" points="${pointsStr}"/>`);
+    svgParts.push(`<polyline fill="none" stroke="${route.color}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" points="${pointsStr}"/>`);
+  }
+  const normHighlightId = highlight_station_id ? normalizeId(highlight_station_id) : "";
+  let highlightedStationItem = null;
+  for (const station of stations) {
+    const lat = Number(station.latitude);
+    const lon = Number(station.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const [sx, sy] = project(lat, lon);
+    if (normHighlightId && normalizeId(station.id) === normHighlightId) {
+      highlightedStationItem = { title: station.title, x: sx, y: sy };
+    } else {
+      svgParts.push(`<circle cx="${sx}" cy="${sy}" r="4" fill="white" stroke="#334155" stroke-width="2"/>`);
+    }
+  }
+  let liveTrainsCount = 0;
+  if (include_trains) {
+    try {
+      const trains = await get_trains();
+      for (const train of trains) {
+        if (!Number.isFinite(train.latitude) || !Number.isFinite(train.longitude)) continue;
+        const loopId = normalizeId(train.loopId || "");
+        if (loopId && !activeSet.has(loopId) && activeSet.size > 0) continue;
+        const [tx, ty] = project(train.latitude, train.longitude);
+        const trainColor = loopId && ((_a = routeMap.get(loopId)) == null ? void 0 : _a.color) || "#1E293B";
+        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="7" fill="${trainColor}" stroke="white" stroke-width="2"/>`);
+        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="2.5" fill="white"/>`);
+        liveTrainsCount++;
+      }
+    } catch (_) {
+    }
+  }
+  if (highlightedStationItem) {
+    const { title, x, y } = highlightedStationItem;
+    svgParts.push(`<circle cx="${x}" cy="${y}" r="8" fill="#FF6600" stroke="white" stroke-width="2.5"/>`);
+    const textWidth = Math.min(title.length * 7 + 12, 140);
+    const labelX = x + 12 + textWidth > viewWidth ? x - textWidth - 12 : x + 12;
+    svgParts.push(`<rect x="${labelX}" y="${y - 10}" width="${textWidth}" height="20" rx="4" fill="#0F172A" opacity="0.85"/>`);
+    svgParts.push(`<text x="${labelX + 6}" y="${y + 4}" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="bold" fill="white">${escapeXml(title)}</text>`);
+  }
+  svgParts.push("</svg>");
+  const svg = svgParts.join("");
+  const svgDataUri = `data:image/svg+xml;base64,${toBase64(svg)}`;
+  return {
+    activeLoops: activeList,
+    svg,
+    svgDataUri,
+    viewBox: `0 0 ${viewWidth} ${viewHeight}`,
+    stationCount: stations.length,
+    trainCount: liveTrainsCount
   };
 }
 async function find_nearest_station(latitude, longitude, max_distance_km) {
@@ -254,12 +386,12 @@ async function find_nearest_station(latitude, longitude, max_distance_km) {
 }
 async function getLoopShape(loopId) {
   var _a;
-  const cached = validCache((_a = loopShapeCache.get(loopId)) != null ? _a : null);
+  const normId = normalizeId(loopId);
+  const cached = validCache((_a = loopShapeCache.get(normId)) != null ? _a : null);
   if (cached) return cached;
-  const url = `${API_ROOT}/shape?routeId=${encodeURIComponent(loopId)}&mapMode=light`;
-  const jsonStr = await fetchMetromoverJson(url);
-  const shapeResult = parseLoopShapeJson(jsonStr, loopId);
-  loopShapeCache.set(loopId, setCache(shapeResult));
+  const data = await getAllShapes();
+  const shapeResult = parseLoopShapeJson(JSON.stringify(data), normId);
+  loopShapeCache.set(normId, setCache(shapeResult));
   return shapeResult;
 }
 function parseStationsJson(jsonStr) {
@@ -458,6 +590,36 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadiusKm * c;
 }
+function toBase64(input) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let output = "";
+  const bytes = [];
+  for (let i2 = 0; i2 < input.length; i2++) {
+    const c = input.charCodeAt(i2);
+    if (c < 128) {
+      bytes.push(c);
+    } else if (c < 2048) {
+      bytes.push(c >> 6 | 192);
+      bytes.push(c & 63 | 128);
+    } else {
+      bytes.push(c >> 12 | 224);
+      bytes.push(c >> 6 & 63 | 128);
+      bytes.push(c & 63 | 128);
+    }
+  }
+  let i = 0;
+  while (i < bytes.length) {
+    const b1 = bytes[i++];
+    const b2 = i < bytes.length ? bytes[i++] : NaN;
+    const b3 = i < bytes.length ? bytes[i++] : NaN;
+    const enc1 = b1 >> 2;
+    const enc2 = (b1 & 3) << 4 | (isNaN(b2) ? 0 : b2 >> 4);
+    const enc3 = isNaN(b2) ? 64 : (b2 & 15) << 2 | (isNaN(b3) ? 0 : b3 >> 6);
+    const enc4 = isNaN(b3) ? 64 : b3 & 63;
+    output += chars.charAt(enc1) + chars.charAt(enc2) + chars.charAt(enc3) + chars.charAt(enc4);
+  }
+  return output;
+}
 function shapeToSvg(points, loopId, width, height, padding, strokeColor) {
   const coords = points.filter((point) => {
     const lon = Number(point.longitude);
@@ -473,20 +635,27 @@ function shapeToSvg(points, loopId, width, height, padding, strokeColor) {
   const maxLon = Math.max(...longitudes);
   const minLat = Math.min(...latitudes);
   const maxLat = Math.max(...latitudes);
-  const lonSpan = Math.max(maxLon - minLon, 1e-9);
+  const avgLatRad = (minLat + maxLat) / 2 * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+  const lonSpan = Math.max((maxLon - minLon) * cosLat, 1e-9);
   const latSpan = Math.max(maxLat - minLat, 1e-9);
-  const drawableWidth = Math.max(width - 2 * padding, 1);
-  const drawableHeight = Math.max(height - 2 * padding, 1);
-  const scale = Math.min(drawableWidth / lonSpan, drawableHeight / latSpan);
-  const xOffset = (width - lonSpan * scale) / 2;
-  const yOffset = (height - latSpan * scale) / 2;
+  const pad = Math.max(padding, 16);
+  const drawableW = Math.max(width - 2 * pad, 1);
+  const drawableH = Math.max(height - 2 * pad, 1);
+  const scale = Math.min(drawableW / lonSpan, drawableH / latSpan);
+  const viewWidth = Math.round(lonSpan * scale + 2 * pad);
+  const viewHeight = Math.round(latSpan * scale + 2 * pad);
   const polyline = coords.map((item) => {
-    const x = xOffset + (item.lon - minLon) * scale;
-    const y = yOffset + (maxLat - item.lat) * scale;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
+    const x = pad + (item.lon - minLon) * cosLat * scale;
+    const y = pad + (maxLat - item.lat) * scale;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
-  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#339900");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="${color}" stroke-width="3" points="${polyline}"/></svg>`;
+  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#009933");
+  const strokeWidth = 14;
+  const casingWidth = 22;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${viewWidth}" height="${viewHeight}" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="MetroMover loop ${loopId}"><polyline fill="none" stroke="white" stroke-width="${casingWidth}" stroke-linecap="round" stroke-linejoin="round" points="${polyline}"/><polyline fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" points="${polyline}"/></svg>`;
+  const svgDataUri = `data:image/svg+xml;base64,${toBase64(svg)}`;
+  return { svg, svgDataUri };
 }
 function normalizeId(value) {
   return (value || "").trim().toUpperCase();
@@ -521,5 +690,6 @@ registerExports("miamiMetromover", [
   "get_trains",
   "get_station_arrivals",
   "get_loop_svg",
+  "get_network_svg",
   "find_nearest_station"
 ]);

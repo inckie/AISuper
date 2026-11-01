@@ -1,7 +1,15 @@
-var loops = [];
+var loops = ["OMN", "BKL", "INN", "FUL", "OTR"];
+var activeLoops = {
+    "OMN": true,
+    "BKL": true,
+    "INN": true,
+    "FUL": false,
+    "OTR": false
+};
 var stations = [];
 var selectedArrivals = null;
 var selectedStationTitle = "";
+var selectedStationId = "";
 var loopInfoText = "";
 var nearestStationText = "";
 var loopSvgDataUri = "";
@@ -80,6 +88,7 @@ async function refreshOverview() {
         nearestStationText = "";
         loopSvgDataUri = "";
 
+        await updateNetworkMap();
         renderContent();
         setValue("metromover_status", "Loaded " + stations.length + " stations");
         setValue("metromover_spinner_visible", false);
@@ -134,6 +143,7 @@ async function findNearestStation() {
         }
 
         nearestStationText = "Nearest: " + nearestTitle + " (" + nearestId + ")" + distanceText;
+        selectedStationId = nearestId;
         await loadArrivals(nearestId, nearestTitle);
     } catch (e) {
         consoleError("findNearestStation failed", e);
@@ -150,7 +160,11 @@ async function loadLoopSvg(loopId) {
         var result = await miamiMetromover_get_loop_svg(loopId, 720, 720, 16);
 
         var svg = "";
+        var svgUri = "";
         if (result != undefined && result != null) {
+            if (result.svgDataUri != undefined && result.svgDataUri != null && result.svgDataUri != "") {
+                svgUri = result.svgDataUri;
+            }
             if (result.svg != undefined && result.svg != null) {
                 svg = result.svg;
             } else if (typeof result == "string") {
@@ -158,9 +172,14 @@ async function loadLoopSvg(loopId) {
             }
         }
 
-        if (svg != "") {
-            loopInfoText = "Loop " + loopId + " map received (SVG " + svg.length + " chars)";
-            loopSvgDataUri = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+        if (svgUri == "" && svg != "") {
+            svgUri = "data:image/svg+xml;base64," + base64Encode(svg);
+        }
+
+        if (svgUri != "") {
+            var charCount = svg != "" ? svg.length : svgUri.length;
+            loopInfoText = "Loop " + loopId + " map received (SVG " + charCount + " chars)";
+            loopSvgDataUri = svgUri;
         } else {
             loopInfoText = "Loop " + loopId + " map not available";
             loopSvgDataUri = "";
@@ -185,6 +204,8 @@ async function loadArrivals(stationId, stationTitle) {
 
         selectedArrivals = result;
         selectedStationTitle = stationTitle;
+        selectedStationId = stationId;
+        await updateNetworkMap();
         renderContent();
         setValue("metromover_status", "Arrivals updated for " + stationTitle);
         setValue("metromover_spinner_visible", false);
@@ -195,34 +216,144 @@ async function loadArrivals(stationId, stationTitle) {
     }
 }
 
+
+async function updateNetworkMap() {
+    var activeList = [];
+    for (var id in activeLoops) {
+        if (activeLoops[id]) {
+            activeList.push(id);
+        }
+    }
+
+    try {
+        var result = await miamiMetromover_get_network_svg(activeList, selectedStationId, 720, 720, 24, true);
+        if (result != undefined && result != null) {
+            if (result.svgDataUri != undefined && result.svgDataUri != null && result.svgDataUri != "") {
+                loopSvgDataUri = result.svgDataUri;
+            } else if (result.svg != undefined && result.svg != null) {
+                loopSvgDataUri = "data:image/svg+xml;base64," + base64Encode(result.svg);
+            }
+
+            var activeNames = activeList.map(function(id) {
+                if (id == "OMN") return "Omni";
+                if (id == "BKL") return "Brickell";
+                if (id == "INN") return "Inner";
+                if (id == "FUL") return "Full";
+                if (id == "OTR") return "Outer";
+                return id;
+            });
+
+            var trainInfo = (result.trainCount !== undefined && result.trainCount !== null)
+                ? " - " + result.trainCount + " trains active"
+                : "";
+            loopInfoText = "Active loops: " + (activeNames.length > 0 ? activeNames.join(", ") : "None") + trainInfo;
+        }
+    } catch (e) {
+        consoleError("updateNetworkMap failed", e);
+    }
+}
+
+async function toggleLoop(loopId) {
+    var normId = (loopId || "").trim().toUpperCase();
+    if (activeLoops[normId] === undefined) {
+        activeLoops[normId] = false;
+    }
+    activeLoops[normId] = !activeLoops[normId];
+    await updateNetworkMap();
+    renderContent();
+}
+
+async function toggleAllLoops() {
+    var anyActive = false;
+    for (var k in activeLoops) {
+        if (activeLoops[k]) {
+            anyActive = true;
+            break;
+        }
+    }
+    var newState = !anyActive;
+    for (var j in activeLoops) {
+        activeLoops[j] = newState;
+    }
+    await updateNetworkMap();
+    renderContent();
+}
+
 function renderContent() {
     var widgets = [];
 
     widgets.push({ "type": "Text", "text": "Free automated transit in Downtown, Brickell, and Omni." });
 
-    widgets.push({ "type": "Text", "text": "Loops", "classes": ["section_title"] });
-    for (var i = 0; i < loops.length; i = i + 1) {
-        var loopValue = loops[i];
-        var loopId = valueToText(loopValue);
-        widgets.push({
-            "type": "Button",
-            "text": "Loop " + loopId,
-            "action": "loadLoopSvg",
-            "actionArgs": [loopId],
-            "fillMaxWidth": true
-        });
-    }
+    widgets.push({ "type": "Text", "text": "Loops & Trails", "classes": ["section_title"] });
 
-    if (loopInfoText != "") {
-        widgets.push({ "type": "Text", "text": loopInfoText });
-    }
+    widgets.push({
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+            {
+                "type": "Button",
+                "text": (activeLoops["OMN"] ? "✓ " : "") + "Omni (OMN)",
+                "classes": activeLoops["OMN"] ? [] : ["ghost_button"],
+                "action": "toggleLoop",
+                "actionArgs": ["OMN"],
+                "weight": 1
+            },
+            {
+                "type": "Button",
+                "text": (activeLoops["BKL"] ? "✓ " : "") + "Brickell (BKL)",
+                "classes": activeLoops["BKL"] ? [] : ["ghost_button"],
+                "action": "toggleLoop",
+                "actionArgs": ["BKL"],
+                "weight": 1
+            },
+            {
+                "type": "Button",
+                "text": (activeLoops["INN"] ? "✓ " : "") + "Inner (INN)",
+                "classes": activeLoops["INN"] ? [] : ["ghost_button"],
+                "action": "toggleLoop",
+                "actionArgs": ["INN"],
+                "weight": 1
+            }
+        ]
+    });
+
+    widgets.push({
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+            {
+                "type": "Button",
+                "text": (activeLoops["FUL"] ? "✓ " : "") + "Full (FUL)",
+                "classes": activeLoops["FUL"] ? [] : ["ghost_button"],
+                "action": "toggleLoop",
+                "actionArgs": ["FUL"],
+                "weight": 1
+            },
+            {
+                "type": "Button",
+                "text": (activeLoops["OTR"] ? "✓ " : "") + "Outer (OTR)",
+                "classes": activeLoops["OTR"] ? [] : ["ghost_button"],
+                "action": "toggleLoop",
+                "actionArgs": ["OTR"],
+                "weight": 1
+            },
+            {
+                "type": "Button",
+                "text": "All",
+                "classes": ["ghost_button"],
+                "action": "toggleAllLoops",
+                "weight": 1
+            }
+        ]
+    });
 
     if (loopSvgDataUri != "") {
         widgets.push({
             "type": "Image",
             "data": loopSvgDataUri,
-            "description": "Metromover loop map",
-            "fillMaxWidth": true
+            "description": "Metromover network map with loops and trails",
+            "fillMaxWidth": true,
+            "height": 280
         });
     }
 
@@ -255,6 +386,13 @@ function renderContent() {
                     "text": loopName + ": " + timesText
                 });
             }
+        }
+
+        if (selectedArrivals.messageAlert != undefined && selectedArrivals.messageAlert != null && selectedArrivals.messageAlert != "") {
+            widgets.push({ "type": "Text", "text": "Alert: " + selectedArrivals.messageAlert });
+        }
+        if (selectedArrivals.messageServiceUpdate != undefined && selectedArrivals.messageServiceUpdate != null && selectedArrivals.messageServiceUpdate != "") {
+            widgets.push({ "type": "Text", "text": "Service update: " + selectedArrivals.messageServiceUpdate });
         }
     }
 
@@ -350,3 +488,25 @@ function stringifySafe(value) {
     }
 }
 
+
+function base64Encode(input) {
+    if (typeof btoa === "function") {
+        try {
+            return btoa(unescape(encodeURIComponent(input)));
+        } catch (e) {}
+    }
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    var str = unescape(encodeURIComponent(input));
+    var output = "";
+    for (var i = 0; i < str.length; i += 3) {
+        var chr1 = str.charCodeAt(i);
+        var chr2 = str.charCodeAt(i + 1);
+        var chr3 = str.charCodeAt(i + 2);
+        var enc1 = chr1 >> 2;
+        var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+        var enc3 = isNaN(chr2) ? 64 : (((chr2 & 15) << 2) | (chr3 >> 6));
+        var enc4 = isNaN(chr2) || isNaN(chr3) ? 64 : (chr3 & 63);
+        output += chars.charAt(enc1) + chars.charAt(enc2) + chars.charAt(enc3) + chars.charAt(enc4);
+    }
+    return output;
+}
