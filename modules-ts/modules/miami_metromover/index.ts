@@ -1,13 +1,20 @@
-const API_ROOT = "https://www.miamidade.gov/apps/dtpw/transitapps/api/mover";
+const BASE_ORIGIN = "https://www.miamidade.gov";
+const API_ROOT = `${BASE_ORIGIN}/apps/dtpw/transitapps/api/mover`;
+const TRACKING_URL = `${BASE_ORIGIN}/apps/dtpw/transitapps/DynamicImageTracking/index?value=www.miamidade.gov`;
+const REFERER_URL = `${BASE_ORIGIN}/global/transportation/tracker/metromover-tracker.page?stationid=SCB`;
 const STATIONS_URL = `${API_ROOT}/stations`;
-const SHAPE_URL = `${API_ROOT}/shape?routeId=&mapMode=light`;
+// Note: routeId=OMN returns all 5 shapes (OTR, FUL, OMN, BKL, INN) instead of only OTR/FUL
+const SHAPE_URL = `${API_ROOT}/shape?routeId=OMN&mapMode=light`;
 const VEHICLES_URL = `${API_ROOT}/vehicles?routeId=&mapMode=light&track=YES&curLatitude=0&curLongitude=0`;
 const TRACKER_URL = `${API_ROOT}/tracker`;
+const DEFAULT_API_KEY = "P98EG7NGA9A02NAE00Y";
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const SESSION_TTL_MS = 20 * 60 * 1000;
 
-// Host functions - declared here and implemented in Kotlin
+// Host functions - declared here and implemented in Kotlin / JS runtime
 declare function httpGet(url: string, headers?: Record<string, string>): Promise<string>;
+declare function httpRequestRaw(method: string, url: string, body?: string, headers?: Record<string, string>): Promise<string>;
 declare function consoleLog(args: any[]): void;
 declare function persistentStorageGet(scope: string, key: string): Promise<string | null>;
 declare function registerExports(moduleName: string, functions: string[]): void;
@@ -24,9 +31,12 @@ type Station = {
   state?: string;
   zip?: string;
   stationIdShow?: string;
+  connecting?: string;
   connectingOther?: string;
   placesOfInterest?: string;
   other?: string;
+  directionsLink?: string;
+  streetViewLink?: string;
 };
 
 type LoopShapePoint = {
@@ -36,10 +46,26 @@ type LoopShapePoint = {
   longitude: number;
 };
 
+type LoopShapeResult = {
+  points: LoopShapePoint[];
+  color?: string;
+};
+
 type ArrivalGroup = {
   loopId: string;
   loopName: string;
   arrivals: string[];
+  direction?: string;
+  color?: string;
+};
+
+type StationArrivals = {
+  stationId: string;
+  stationTitle: string;
+  arrivals: ArrivalGroup[];
+  messageAlert?: string;
+  messageFacilities?: string;
+  messageServiceUpdate?: string;
 };
 
 type Train = {
@@ -49,6 +75,8 @@ type Train = {
   loopId?: string;
   loopName?: string;
   direction?: string;
+  cars?: string;
+  updated?: string;
 };
 
 type CacheEntry<T> = {
@@ -58,7 +86,10 @@ type CacheEntry<T> = {
 
 let stationsCache: CacheEntry<Station[]> | null = null;
 let loopsCache: CacheEntry<string[]> | null = null;
-const loopShapeCache = new Map<string, CacheEntry<LoopShapePoint[]>>();
+const loopShapeCache = new Map<string, CacheEntry<LoopShapeResult>>();
+
+let sessionCookie: string | null = null;
+let sessionExpiresAt = 0;
 
 function nowMs(): number {
   return Date.now();
@@ -79,19 +110,111 @@ function setCache<T>(value: T): CacheEntry<T> {
 async function getApiKey(): Promise<string> {
   try {
     const key = await persistentStorageGet("feature", "metromover_api_key");
-    return key || "P98EG7NGA9A02NAE00Y";
+    return key || DEFAULT_API_KEY;
   } catch (e) {
-    return "P98EG7NGA9A02NAE00Y";
+    return DEFAULT_API_KEY;
   }
+}
+
+async function ensureSession(force = false): Promise<string | null> {
+  if (sessionCookie && !force && nowMs() < sessionExpiresAt) {
+    return sessionCookie;
+  }
+
+  const headers: Record<string, string> = {
+    "accept": "*/*",
+    "referer": REFERER_URL,
+    "origin": BASE_ORIGIN,
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+  };
+
+  try {
+    if (typeof httpRequestRaw === "function") {
+      const resStr = await httpRequestRaw("GET", TRACKING_URL, "", headers);
+      if (resStr && resStr.trim()) {
+        const parsed = JSON.parse(resStr) as { headers?: Record<string, string> };
+        const rawHeaders = parsed.headers || {};
+        const setCookie = rawHeaders["set-cookie"] || rawHeaders["Set-Cookie"];
+        if (setCookie) {
+          const cookieParts: string[] = [];
+          const lines = String(setCookie).split(/[\r\n]+/);
+          for (const line of lines) {
+            const part = line.split(";")[0].trim();
+            if (part && (part.startsWith(".AspNetCore.Session=") || part.startsWith("NSC_"))) {
+              cookieParts.push(part);
+            }
+          }
+          if (cookieParts.length > 0) {
+            sessionCookie = cookieParts.join("; ");
+            sessionExpiresAt = nowMs() + SESSION_TTL_MS;
+            return sessionCookie;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // Also call httpGet to let Ktor's client (with HttpCookies installed) initialize session
+  try {
+    await httpGet(TRACKING_URL, headers);
+    sessionExpiresAt = nowMs() + SESSION_TTL_MS;
+  } catch (e) {
+    // ignore
+  }
+
+  return sessionCookie;
 }
 
 async function fetchMetromoverJson(url: string): Promise<string> {
   const apiKey = await getApiKey();
-  const headers = {
-    "accept": "*/*",
-    "x-api-key": apiKey
+  let cookie = await ensureSession(false);
+
+  const buildHeaders = (c: string | null): Record<string, string> => {
+    const h: Record<string, string> = {
+      "accept": "*/*",
+      "x-api-key": apiKey,
+      "referer": REFERER_URL,
+      "origin": BASE_ORIGIN,
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+    };
+    if (c) {
+      h["cookie"] = c;
+    }
+    return h;
   };
-  const body = await httpGet(url, headers);
+
+  if (typeof httpRequestRaw === "function") {
+    try {
+      let resStr = await httpRequestRaw("GET", url, "", buildHeaders(cookie));
+      if (resStr && resStr.trim()) {
+        let parsed = JSON.parse(resStr) as { status?: number; body?: string; error?: string };
+        if (parsed.status === 401) {
+          cookie = await ensureSession(true);
+          resStr = await httpRequestRaw("GET", url, "", buildHeaders(cookie));
+          parsed = JSON.parse(resStr);
+        }
+        if (parsed.status !== undefined && parsed.status >= 200 && parsed.status < 300) {
+          return parsed.body || "";
+        }
+        if (parsed.status) {
+          throw new Error(`HTTP ${parsed.status}: ${parsed.body || parsed.error || ""}`);
+        }
+      }
+    } catch (e) {
+      if (String(e).includes("HTTP ")) {
+        throw e;
+      }
+    }
+  }
+
+  let body = await httpGet(url, buildHeaders(cookie));
+  if (body && (body.includes("401") || body.startsWith("Error: HTTP 401"))) {
+    cookie = await ensureSession(true);
+    body = await httpGet(url, buildHeaders(cookie));
+  }
+
   if (!body || !body.trim()) {
     throw new Error("Empty response");
   }
@@ -138,11 +261,7 @@ async function get_trains(train_id?: string | null): Promise<Train[]> {
   return trains;
 }
 
-async function get_station_arrivals(station_id: string): Promise<{
-  stationId: string;
-  stationTitle: string;
-  arrivals: ArrivalGroup[];
-}> {
+async function get_station_arrivals(station_id: string): Promise<StationArrivals> {
   const normalized = normalizeId(station_id);
   if (!normalized) {
     throw new Error("station_id is required.");
@@ -156,10 +275,14 @@ async function get_station_arrivals(station_id: string): Promise<{
 
   const url = `${TRACKER_URL}?stationID=${encodeURIComponent(normalized)}&track=YES`;
   const jsonStr = await fetchMetromoverJson(url);
+  const parsed = parseArrivalsJson(jsonStr);
   return {
     stationId: normalized,
     stationTitle: station.title,
-    arrivals: parseArrivalsJson(jsonStr)
+    arrivals: parsed.arrivals,
+    messageAlert: parsed.messageAlert,
+    messageFacilities: parsed.messageFacilities,
+    messageServiceUpdate: parsed.messageServiceUpdate
   };
 }
 
@@ -184,15 +307,15 @@ async function get_loop_svg(loop_id: string, width = 800, height = 800, padding 
     throw new Error(`Unknown loop_id '${loop_id}'.`);
   }
 
-  const shapePoints = await getLoopShape(normalized);
-  if (shapePoints.length < 2) {
+  const shapeData = await getLoopShape(normalized);
+  if (shapeData.points.length < 2) {
     throw new Error(`Loop '${normalized}' shape has too few points.`);
   }
 
-  const svg = shapeToSvg(shapePoints, normalized, width, height, padding);
+  const svg = shapeToSvg(shapeData.points, normalized, width, height, padding, shapeData.color);
   return {
     loopId: normalized,
-    pointCount: shapePoints.length,
+    pointCount: shapeData.points.length,
     svg
   };
 }
@@ -256,15 +379,15 @@ async function find_nearest_station(
   };
 }
 
-async function getLoopShape(loopId: string): Promise<LoopShapePoint[]> {
+async function getLoopShape(loopId: string): Promise<LoopShapeResult> {
   const cached = validCache(loopShapeCache.get(loopId) ?? null);
   if (cached) return cached;
 
   const url = `${API_ROOT}/shape?routeId=${encodeURIComponent(loopId)}&mapMode=light`;
   const jsonStr = await fetchMetromoverJson(url);
-  const points = parseLoopShapeJson(jsonStr, loopId);
-  loopShapeCache.set(loopId, setCache(points));
-  return points;
+  const shapeResult = parseLoopShapeJson(jsonStr, loopId);
+  loopShapeCache.set(loopId, setCache(shapeResult));
+  return shapeResult;
 }
 
 type StationJson = {
@@ -277,9 +400,12 @@ type StationJson = {
   State?: string;
   Zip?: string;
   StationIDshow?: string;
+  Connecting?: string;
   ConnectingOther?: string;
   PlacesOfInterest?: string;
   Other?: string;
+  DirectionsLink?: string;
+  StreetViewLink?: string;
 };
 
 function parseStationsJson(jsonStr: string): Station[] {
@@ -303,9 +429,12 @@ function parseStationsJson(jsonStr: string): Station[] {
       state: item.State || undefined,
       zip: item.Zip || undefined,
       stationIdShow: item.StationIDshow || undefined,
+      connecting: item.Connecting || undefined,
       connectingOther: item.ConnectingOther || undefined,
       placesOfInterest: item.PlacesOfInterest || undefined,
-      other: item.Other || undefined
+      other: item.Other || undefined,
+      directionsLink: item.DirectionsLink || undefined,
+      streetViewLink: item.StreetViewLink || undefined
     });
   }
   return stations;
@@ -316,17 +445,30 @@ type ShapeJson = {
   Id?: string;
   Points?: any[];
   Shapes?: any[];
+  Color?: string;
 };
 
 function parseShapeLoopsJson(jsonStr: string): string[] {
   const data = JSON.parse(jsonStr) as ShapeJson[];
   const loops: string[] = [];
+  const priority = ["OMN", "BKL", "INN"];
+
   for (const item of data) {
     const routeId = item.Id || item.RouteID;
     if (routeId && !loops.includes(routeId)) {
       loops.push(routeId);
     }
   }
+
+  loops.sort((a, b) => {
+    const ia = priority.indexOf(a);
+    const ib = priority.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
   return loops;
 }
 
@@ -340,14 +482,17 @@ type LoopShapeJson = {
   Id?: string;
   Points?: ShapePointJson[];
   Shapes?: ShapePointJson[];
+  Color?: string;
 };
 
-function parseLoopShapeJson(jsonStr: string, loopId: string): LoopShapePoint[] {
+function parseLoopShapeJson(jsonStr: string, loopId: string): LoopShapeResult {
   const data = JSON.parse(jsonStr) as LoopShapeJson[];
   const points: LoopShapePoint[] = [];
+  let color: string | undefined;
   
   const route = data.find((item) => normalizeId(item.Id || item.RouteID || "") === normalizeId(loopId));
   if (route) {
+    color = route.Color;
     const pointsList = route.Shapes || route.Points || [];
     pointsList.forEach((pt, index) => {
       if (pt.Latitude !== undefined && pt.Longitude !== undefined) {
@@ -360,7 +505,7 @@ function parseLoopShapeJson(jsonStr: string, loopId: string): LoopShapePoint[] {
       }
     });
   }
-  return points;
+  return { points, color };
 }
 
 type VehicleJson = {
@@ -370,6 +515,9 @@ type VehicleJson = {
   ShapeID?: string;
   OutOfService?: string;
   vehicleNumber?: string;
+  RouteImage?: string;
+  Info?: string;
+  CarsUpdated?: string;
 };
 
 function parseTrainsJson(jsonStr: string): Train[] {
@@ -389,12 +537,26 @@ function parseTrainsJson(jsonStr: string): Train[] {
     if (!idVal || item.Latitude === undefined || item.Longitude === undefined) {
       continue;
     }
+
+    let direction: string | undefined;
+    if (item.RouteImage) {
+      const match = item.RouteImage.match(/solid-(SB|NB|EB|WB)/i);
+      if (match) direction = match[1].toUpperCase();
+    }
+    if (!direction && item.Info) {
+      const match = item.Info.match(/\((SB|NB|EB|WB)\)/i);
+      if (match) direction = match[1].toUpperCase();
+    }
+
     trains.push({
       id: idVal,
       latitude: item.Latitude,
       longitude: item.Longitude,
       loopId: item.ShapeID || undefined,
-      loopName: item.ShapeID ? (loopNames[item.ShapeID] || item.ShapeID) : undefined
+      loopName: item.ShapeID ? (loopNames[item.ShapeID] || item.ShapeID) : undefined,
+      direction,
+      cars: item.vehicleNumber || undefined,
+      updated: item.CarsUpdated || undefined
     });
   }
   return trains;
@@ -403,6 +565,8 @@ function parseTrainsJson(jsonStr: string): Train[] {
 type TrackerJson = {
   LoopID?: string;
   LoopName?: string;
+  Color?: string;
+  Direction?: string;
   Time1Est?: number | string | null;
   Estimate1?: number | string | null;
   ArrivalTime1?: string | null;
@@ -410,23 +574,43 @@ type TrackerJson = {
   Estimate2?: number | string | null;
   ArrivalTime2?: string | null;
   MessageAlert?: string | null;
+  MessageFacilities?: string | null;
+  MessageServiceUpdate?: string | null;
 };
 
-function parseArrivalsJson(jsonStr: string): ArrivalGroup[] {
+function parseArrivalsJson(jsonStr: string): {
+  arrivals: ArrivalGroup[];
+  messageAlert?: string;
+  messageFacilities?: string;
+  messageServiceUpdate?: string;
+} {
   const data = JSON.parse(jsonStr) as TrackerJson[];
   const arrivals: ArrivalGroup[] = [];
+  let messageAlert: string | undefined;
+  let messageFacilities: string | undefined;
+  let messageServiceUpdate: string | undefined;
+
+  if (Array.isArray(data) && data.length > 0) {
+    if (data[0].MessageAlert) messageAlert = data[0].MessageAlert;
+    if (data[0].MessageFacilities) messageFacilities = data[0].MessageFacilities;
+    if (data[0].MessageServiceUpdate) messageServiceUpdate = data[0].MessageServiceUpdate;
+  }
   
   for (const item of data) {
     const loopId = item.LoopID;
-    const loopName = item.LoopName;
-    if (!loopId || !loopName || loopName === "***") {
+    const baseLoopName = item.LoopName;
+    if (!loopId || !baseLoopName || baseLoopName === "***") {
       continue;
     }
+
+    const direction = item.Direction ? item.Direction.trim() : undefined;
+    const color = item.Color ? item.Color.trim() : undefined;
+    const loopName = direction ? `${baseLoopName} (${direction})` : baseLoopName;
     
     const times: string[] = [];
     
     // Process First Arrival Estimate
-    if (item.Estimate1 !== null && item.Estimate1 !== undefined && String(item.Estimate1).trim() !== "") {
+    if (item.Estimate1 !== null && item.Estimate1 !== undefined && String(item.Estimate1).trim() !== "" && String(item.Estimate1).trim() !== "-") {
       const est1 = String(item.Estimate1).trim();
       times.push(est1.toLowerCase().includes("min") ? est1 : `${est1} min`);
     } else if (item.Time1Est !== null && item.Time1Est !== undefined && String(item.Time1Est).trim() !== "") {
@@ -446,7 +630,7 @@ function parseArrivalsJson(jsonStr: string): ArrivalGroup[] {
     }
     
     // Process Second Arrival Estimate
-    if (item.Estimate2 !== null && item.Estimate2 !== undefined && String(item.Estimate2).trim() !== "") {
+    if (item.Estimate2 !== null && item.Estimate2 !== undefined && String(item.Estimate2).trim() !== "" && String(item.Estimate2).trim() !== "-") {
       const est2 = String(item.Estimate2).trim();
       times.push(est2.toLowerCase().includes("min") ? est2 : `${est2} min`);
     } else if (item.Time2Est !== null && item.Time2Est !== undefined && String(item.Time2Est).trim() !== "") {
@@ -469,11 +653,19 @@ function parseArrivalsJson(jsonStr: string): ArrivalGroup[] {
       arrivals.push({
         loopId,
         loopName,
-        arrivals: times
+        arrivals: times,
+        direction,
+        color
       });
     }
   }
-  return arrivals;
+
+  return {
+    arrivals,
+    messageAlert,
+    messageFacilities,
+    messageServiceUpdate
+  };
 }
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -498,7 +690,8 @@ function shapeToSvg(
   loopId: string,
   width: number,
   height: number,
-  padding: number
+  padding: number,
+  strokeColor?: string
 ): string {
   const coords = points
     .filter((point) => {
@@ -538,7 +731,9 @@ function shapeToSvg(
     })
     .join(" ");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="#006600" stroke-width="2" points="${polyline}"/></svg>`;
+  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#339900");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="${color}" stroke-width="3" points="${polyline}"/></svg>`;
 }
 
 function normalizeId(value: string): string {

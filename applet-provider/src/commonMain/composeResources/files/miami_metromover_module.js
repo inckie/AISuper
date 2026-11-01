@@ -1,14 +1,21 @@
 // Generated from modules-ts (miamiMetromover). Do not edit manually.
 "use strict";
-const API_ROOT = "https://www.miamidade.gov/apps/dtpw/transitapps/api/mover";
+const BASE_ORIGIN = "https://www.miamidade.gov";
+const API_ROOT = `${BASE_ORIGIN}/apps/dtpw/transitapps/api/mover`;
+const TRACKING_URL = `${BASE_ORIGIN}/apps/dtpw/transitapps/DynamicImageTracking/index?value=www.miamidade.gov`;
+const REFERER_URL = `${BASE_ORIGIN}/global/transportation/tracker/metromover-tracker.page?stationid=SCB`;
 const STATIONS_URL = `${API_ROOT}/stations`;
-const SHAPE_URL = `${API_ROOT}/shape?routeId=&mapMode=light`;
+const SHAPE_URL = `${API_ROOT}/shape?routeId=OMN&mapMode=light`;
 const VEHICLES_URL = `${API_ROOT}/vehicles?routeId=&mapMode=light&track=YES&curLatitude=0&curLongitude=0`;
 const TRACKER_URL = `${API_ROOT}/tracker`;
+const DEFAULT_API_KEY = "P98EG7NGA9A02NAE00Y";
 const CACHE_TTL_MS = 60 * 60 * 1e3;
+const SESSION_TTL_MS = 20 * 60 * 1e3;
 let stationsCache = null;
 let loopsCache = null;
 const loopShapeCache = /* @__PURE__ */ new Map();
+let sessionCookie = null;
+let sessionExpiresAt = 0;
 function nowMs() {
   return Date.now();
 }
@@ -25,18 +32,98 @@ function setCache(value) {
 async function getApiKey() {
   try {
     const key = await persistentStorageGet("feature", "metromover_api_key");
-    return key || "P98EG7NGA9A02NAE00Y";
+    return key || DEFAULT_API_KEY;
   } catch (e) {
-    return "P98EG7NGA9A02NAE00Y";
+    return DEFAULT_API_KEY;
   }
+}
+async function ensureSession(force = false) {
+  if (sessionCookie && !force && nowMs() < sessionExpiresAt) {
+    return sessionCookie;
+  }
+  const headers = {
+    "accept": "*/*",
+    "referer": REFERER_URL,
+    "origin": BASE_ORIGIN,
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+  };
+  try {
+    if (typeof httpRequestRaw === "function") {
+      const resStr = await httpRequestRaw("GET", TRACKING_URL, "", headers);
+      if (resStr && resStr.trim()) {
+        const parsed = JSON.parse(resStr);
+        const rawHeaders = parsed.headers || {};
+        const setCookie = rawHeaders["set-cookie"] || rawHeaders["Set-Cookie"];
+        if (setCookie) {
+          const cookieParts = [];
+          const lines = String(setCookie).split(/[\r\n]+/);
+          for (const line of lines) {
+            const part = line.split(";")[0].trim();
+            if (part && (part.startsWith(".AspNetCore.Session=") || part.startsWith("NSC_"))) {
+              cookieParts.push(part);
+            }
+          }
+          if (cookieParts.length > 0) {
+            sessionCookie = cookieParts.join("; ");
+            sessionExpiresAt = nowMs() + SESSION_TTL_MS;
+            return sessionCookie;
+          }
+        }
+      }
+    }
+  } catch (e) {
+  }
+  try {
+    await httpGet(TRACKING_URL, headers);
+    sessionExpiresAt = nowMs() + SESSION_TTL_MS;
+  } catch (e) {
+  }
+  return sessionCookie;
 }
 async function fetchMetromoverJson(url) {
   const apiKey = await getApiKey();
-  const headers = {
-    "accept": "*/*",
-    "x-api-key": apiKey
+  let cookie = await ensureSession(false);
+  const buildHeaders = (c) => {
+    const h = {
+      "accept": "*/*",
+      "x-api-key": apiKey,
+      "referer": REFERER_URL,
+      "origin": BASE_ORIGIN,
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+    };
+    if (c) {
+      h["cookie"] = c;
+    }
+    return h;
   };
-  const body = await httpGet(url, headers);
+  if (typeof httpRequestRaw === "function") {
+    try {
+      let resStr = await httpRequestRaw("GET", url, "", buildHeaders(cookie));
+      if (resStr && resStr.trim()) {
+        let parsed = JSON.parse(resStr);
+        if (parsed.status === 401) {
+          cookie = await ensureSession(true);
+          resStr = await httpRequestRaw("GET", url, "", buildHeaders(cookie));
+          parsed = JSON.parse(resStr);
+        }
+        if (parsed.status !== void 0 && parsed.status >= 200 && parsed.status < 300) {
+          return parsed.body || "";
+        }
+        if (parsed.status) {
+          throw new Error(`HTTP ${parsed.status}: ${parsed.body || parsed.error || ""}`);
+        }
+      }
+    } catch (e) {
+      if (String(e).includes("HTTP ")) {
+        throw e;
+      }
+    }
+  }
+  let body = await httpGet(url, buildHeaders(cookie));
+  if (body && (body.includes("401") || body.startsWith("Error: HTTP 401"))) {
+    cookie = await ensureSession(true);
+    body = await httpGet(url, buildHeaders(cookie));
+  }
   if (!body || !body.trim()) {
     throw new Error("Empty response");
   }
@@ -86,10 +173,14 @@ async function get_station_arrivals(station_id) {
   }
   const url = `${TRACKER_URL}?stationID=${encodeURIComponent(normalized)}&track=YES`;
   const jsonStr = await fetchMetromoverJson(url);
+  const parsed = parseArrivalsJson(jsonStr);
   return {
     stationId: normalized,
     stationTitle: station.title,
-    arrivals: parseArrivalsJson(jsonStr)
+    arrivals: parsed.arrivals,
+    messageAlert: parsed.messageAlert,
+    messageFacilities: parsed.messageFacilities,
+    messageServiceUpdate: parsed.messageServiceUpdate
   };
 }
 async function get_loop_svg(loop_id, width = 800, height = 800, padding = 12) {
@@ -107,14 +198,14 @@ async function get_loop_svg(loop_id, width = 800, height = 800, padding = 12) {
   if (!loops.includes(normalized)) {
     throw new Error(`Unknown loop_id '${loop_id}'.`);
   }
-  const shapePoints = await getLoopShape(normalized);
-  if (shapePoints.length < 2) {
+  const shapeData = await getLoopShape(normalized);
+  if (shapeData.points.length < 2) {
     throw new Error(`Loop '${normalized}' shape has too few points.`);
   }
-  const svg = shapeToSvg(shapePoints, normalized, width, height, padding);
+  const svg = shapeToSvg(shapeData.points, normalized, width, height, padding, shapeData.color);
   return {
     loopId: normalized,
-    pointCount: shapePoints.length,
+    pointCount: shapeData.points.length,
     svg
   };
 }
@@ -167,9 +258,9 @@ async function getLoopShape(loopId) {
   if (cached) return cached;
   const url = `${API_ROOT}/shape?routeId=${encodeURIComponent(loopId)}&mapMode=light`;
   const jsonStr = await fetchMetromoverJson(url);
-  const points = parseLoopShapeJson(jsonStr, loopId);
-  loopShapeCache.set(loopId, setCache(points));
-  return points;
+  const shapeResult = parseLoopShapeJson(jsonStr, loopId);
+  loopShapeCache.set(loopId, setCache(shapeResult));
+  return shapeResult;
 }
 function parseStationsJson(jsonStr) {
   const data = JSON.parse(jsonStr);
@@ -192,9 +283,12 @@ function parseStationsJson(jsonStr) {
       state: item.State || void 0,
       zip: item.Zip || void 0,
       stationIdShow: item.StationIDshow || void 0,
+      connecting: item.Connecting || void 0,
       connectingOther: item.ConnectingOther || void 0,
       placesOfInterest: item.PlacesOfInterest || void 0,
-      other: item.Other || void 0
+      other: item.Other || void 0,
+      directionsLink: item.DirectionsLink || void 0,
+      streetViewLink: item.StreetViewLink || void 0
     });
   }
   return stations;
@@ -202,19 +296,30 @@ function parseStationsJson(jsonStr) {
 function parseShapeLoopsJson(jsonStr) {
   const data = JSON.parse(jsonStr);
   const loops = [];
+  const priority = ["OMN", "BKL", "INN"];
   for (const item of data) {
     const routeId = item.Id || item.RouteID;
     if (routeId && !loops.includes(routeId)) {
       loops.push(routeId);
     }
   }
+  loops.sort((a, b) => {
+    const ia = priority.indexOf(a);
+    const ib = priority.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
   return loops;
 }
 function parseLoopShapeJson(jsonStr, loopId) {
   const data = JSON.parse(jsonStr);
   const points = [];
+  let color;
   const route = data.find((item) => normalizeId(item.Id || item.RouteID || "") === normalizeId(loopId));
   if (route) {
+    color = route.Color;
     const pointsList = route.Shapes || route.Points || [];
     pointsList.forEach((pt, index) => {
       if (pt.Latitude !== void 0 && pt.Longitude !== void 0) {
@@ -227,7 +332,7 @@ function parseLoopShapeJson(jsonStr, loopId) {
       }
     });
   }
-  return points;
+  return { points, color };
 }
 function parseTrainsJson(jsonStr) {
   const data = JSON.parse(jsonStr);
@@ -245,12 +350,24 @@ function parseTrainsJson(jsonStr) {
     if (!idVal || item.Latitude === void 0 || item.Longitude === void 0) {
       continue;
     }
+    let direction;
+    if (item.RouteImage) {
+      const match = item.RouteImage.match(/solid-(SB|NB|EB|WB)/i);
+      if (match) direction = match[1].toUpperCase();
+    }
+    if (!direction && item.Info) {
+      const match = item.Info.match(/\((SB|NB|EB|WB)\)/i);
+      if (match) direction = match[1].toUpperCase();
+    }
     trains.push({
       id: idVal,
       latitude: item.Latitude,
       longitude: item.Longitude,
       loopId: item.ShapeID || void 0,
-      loopName: item.ShapeID ? loopNames[item.ShapeID] || item.ShapeID : void 0
+      loopName: item.ShapeID ? loopNames[item.ShapeID] || item.ShapeID : void 0,
+      direction,
+      cars: item.vehicleNumber || void 0,
+      updated: item.CarsUpdated || void 0
     });
   }
   return trains;
@@ -258,14 +375,25 @@ function parseTrainsJson(jsonStr) {
 function parseArrivalsJson(jsonStr) {
   const data = JSON.parse(jsonStr);
   const arrivals = [];
+  let messageAlert;
+  let messageFacilities;
+  let messageServiceUpdate;
+  if (Array.isArray(data) && data.length > 0) {
+    if (data[0].MessageAlert) messageAlert = data[0].MessageAlert;
+    if (data[0].MessageFacilities) messageFacilities = data[0].MessageFacilities;
+    if (data[0].MessageServiceUpdate) messageServiceUpdate = data[0].MessageServiceUpdate;
+  }
   for (const item of data) {
     const loopId = item.LoopID;
-    const loopName = item.LoopName;
-    if (!loopId || !loopName || loopName === "***") {
+    const baseLoopName = item.LoopName;
+    if (!loopId || !baseLoopName || baseLoopName === "***") {
       continue;
     }
+    const direction = item.Direction ? item.Direction.trim() : void 0;
+    const color = item.Color ? item.Color.trim() : void 0;
+    const loopName = direction ? `${baseLoopName} (${direction})` : baseLoopName;
     const times = [];
-    if (item.Estimate1 !== null && item.Estimate1 !== void 0 && String(item.Estimate1).trim() !== "") {
+    if (item.Estimate1 !== null && item.Estimate1 !== void 0 && String(item.Estimate1).trim() !== "" && String(item.Estimate1).trim() !== "-") {
       const est1 = String(item.Estimate1).trim();
       times.push(est1.toLowerCase().includes("min") ? est1 : `${est1} min`);
     } else if (item.Time1Est !== null && item.Time1Est !== void 0 && String(item.Time1Est).trim() !== "") {
@@ -283,7 +411,7 @@ function parseArrivalsJson(jsonStr) {
     } else if (item.ArrivalTime1 && String(item.ArrivalTime1).trim() !== "") {
       times.push(String(item.ArrivalTime1).trim());
     }
-    if (item.Estimate2 !== null && item.Estimate2 !== void 0 && String(item.Estimate2).trim() !== "") {
+    if (item.Estimate2 !== null && item.Estimate2 !== void 0 && String(item.Estimate2).trim() !== "" && String(item.Estimate2).trim() !== "-") {
       const est2 = String(item.Estimate2).trim();
       times.push(est2.toLowerCase().includes("min") ? est2 : `${est2} min`);
     } else if (item.Time2Est !== null && item.Time2Est !== void 0 && String(item.Time2Est).trim() !== "") {
@@ -305,11 +433,18 @@ function parseArrivalsJson(jsonStr) {
       arrivals.push({
         loopId,
         loopName,
-        arrivals: times
+        arrivals: times,
+        direction,
+        color
       });
     }
   }
-  return arrivals;
+  return {
+    arrivals,
+    messageAlert,
+    messageFacilities,
+    messageServiceUpdate
+  };
 }
 function haversineKm(lat1, lon1, lat2, lon2) {
   const earthRadiusKm = 6371;
@@ -323,7 +458,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadiusKm * c;
 }
-function shapeToSvg(points, loopId, width, height, padding) {
+function shapeToSvg(points, loopId, width, height, padding, strokeColor) {
   const coords = points.filter((point) => {
     const lon = Number(point.longitude);
     const lat = Number(point.latitude);
@@ -350,7 +485,8 @@ function shapeToSvg(points, loopId, width, height, padding) {
     const y = yOffset + (maxLat - item.lat) * scale;
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(" ");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="#006600" stroke-width="2" points="${polyline}"/></svg>`;
+  const color = strokeColor || (loopId === "OMN" ? "#0066FF" : loopId === "BKL" ? "#FF6600" : "#339900");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="MetroMover loop ${loopId}"><rect width="100%" height="100%" fill="white"/><polyline fill="none" stroke="${color}" stroke-width="3" points="${polyline}"/></svg>`;
 }
 function normalizeId(value) {
   return (value || "").trim().toUpperCase();

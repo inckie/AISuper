@@ -1,6 +1,7 @@
 package com.damn.aisuper.modules.impl.http
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 object HttpComponent {
     private val client = HttpClient {
         expectSuccess = false // Do not throw on non-2xx responses
+        install(HttpCookies)
     }
 
     suspend fun get(url: String, headers: Map<String, String> = emptyMap()): String {
@@ -74,7 +76,12 @@ object HttpComponent {
             
             val responseHeaders = buildJsonObject {
                 response.headers.entries().forEach { (key, values) ->
-                    put(key, JsonPrimitive(values.firstOrNull() ?: ""))
+                    val lowerKey = key.lowercase()
+                    if (lowerKey == "set-cookie") {
+                        put(lowerKey, JsonPrimitive(values.joinToString("\n")))
+                    } else {
+                        put(lowerKey, JsonPrimitive(values.firstOrNull() ?: ""))
+                    }
                 }
             }
             
@@ -93,4 +100,3 @@ object HttpComponent {
         }
     }
 }
-
