@@ -260,6 +260,10 @@ private fun collectImageUrls(widget: Widget): List<String> = when (widget) {
         widget.children.flatMap { collectImageUrls(it) }
     is com.damn.aisuper.layout.RowWidget ->
         widget.children.flatMap { collectImageUrls(it) }
+    is com.damn.aisuper.layout.TableWidget ->
+        widget.effectiveRows.flatMap { collectImageUrls(it) }
+    is com.damn.aisuper.layout.TableRowWidget ->
+        widget.children.flatMap { collectImageUrls(it) }
     else -> emptyList()
 }
 

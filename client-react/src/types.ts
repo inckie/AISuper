@@ -129,6 +129,27 @@ export interface ProgressWidget extends WidgetBase {
   indeterminate?: boolean;
 }
 
+export interface TableColumn {
+  weight?: number | null;
+  width?: number | null;
+}
+
+export interface TableWidget extends WidgetBase {
+  type: 'Table';
+  children?: Widget[];
+  rows?: Widget[];
+  dynamicChildrenId?: string | null;
+  dynamicRowsId?: string | null;
+  isScrollable?: boolean;
+  scrollDirection?: 'horizontal' | 'vertical' | 'both' | string | null;
+  columns?: TableColumn[];
+}
+
+export interface TableRowWidget extends WidgetBase {
+  type: 'TableRow';
+  children?: Widget[];
+}
+
 export interface SliderWidget extends WidgetBase {
   type: 'Slider';
   value?: number | null;
@@ -151,7 +172,9 @@ export type Widget =
   | SwitchWidget
   | SpinnerWidget
   | ProgressWidget
-  | SliderWidget;
+  | SliderWidget
+  | TableWidget
+  | TableRowWidget;
 
 export interface LayoutRoot {
   layout: Widget;

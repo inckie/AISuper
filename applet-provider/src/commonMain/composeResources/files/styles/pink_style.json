@@ -37,6 +37,12 @@
     "align-center": { "alignment": "center" },
     "text-right": { "textAlign": "right" },
     "text-center": { "textAlign": "center" },
-    "small_text": { "fontSize": 12 }
+    "small_text": { "fontSize": 12 },
+    "hourly_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "hourly_cell_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_row": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_row_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_cell_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 }
   }
 }

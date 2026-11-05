@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:46.207559+00:00'
 id: dynamic-interfaces-skill
-modified: '2026-07-02T01:12:17.288387+00:00'
+modified: '2026-11-05T01:07:28.601393+00:00'
 tags:
 - skills
 - ui
@@ -224,11 +224,12 @@ Use a `Column` or `Row` with a background and padding to group elements together
 }
 ```
 
-### D. Table-like (Weighted) Layouts
-To create clean dashboards (like a weather forecast), use a combination of `weight`, `fillMaxWidth`, and `textAlign`.
-*   Assign `weight` to columns that should occupy proportional space (e.g., a "Day" column with `weight: 2` and a "Temp" column with `weight: 1`).
-*   Ensure the parent container has `fillMaxWidth: true`.
-*   Use `text-right` for numerical data to ensure proper vertical alignment across rows.
+### D. Table Layouts
+To create clean dashboards and structured tabular data (like weather forecasts, data grids, or multi-attribute lists), use the `Table` and `TableRow` widgets:
+*   Use `columns` to specify column `weight` (proportional width) or fixed `width` (in dp) across all rows.
+*   `Table` widgets can have `isScrollable: true`. By default, scrollable tables scroll horizontally (`scrollDirection: "horizontal"`), making them safe to nest inside scrollable containers without vertical scroll conflicts.
+*   Rows are represented by `TableRow` widgets (or `Row` widgets), whose children form the individual cells.
+*   Text alignments (e.g., `text-right` for numbers or `text-center` for icons) align cleanly within each column's calculated width.
 
 -----
 

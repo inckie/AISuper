@@ -23,6 +23,12 @@
     "theme_dropdown": { "containerColor": "#FFFFFF", "textColor": "#0F172A", "cornerRadius": 12 },
     "icon_only": { "iconOnly": true, "padding": 4 },
     "icon_right": { "iconPosition": "end" },
-    "ghost_button": { "containerColor": "transparent", "textColor": "#2563EB" }
+    "ghost_button": { "containerColor": "transparent", "textColor": "#2563EB" },
+    "hourly_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "hourly_cell_alt": { "backgroundColor": "#EDF2F7", "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_row": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_row_alt": { "backgroundColor": "#EDF2F7", "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
+    "daily_cell_alt": { "backgroundColor": "#EDF2F7", "paddingHorizontal": 6, "paddingVertical": 4 }
   }
 }

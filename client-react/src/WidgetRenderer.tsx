@@ -146,6 +146,109 @@ export function WidgetRenderer({
       );
     }
 
+    case 'Table': {
+      const rows = (widget.rows && widget.rows.length > 0 ? widget.rows : widget.children) ?? [];
+      const dynamic = widget.dynamicRowsId || widget.dynamicChildrenId
+        ? resolveDynamicWidgets(values[widget.dynamicRowsId ?? widget.dynamicChildrenId!])
+        : [];
+      const allRows = [...rows, ...dynamic].filter(row => {
+        return row.visibilityId ? booleanOrNull(values[row.visibilityId]) ?? true : true;
+      });
+
+      const columns = widget.columns ?? [];
+      const isScrollable = widget.isScrollable ?? false;
+
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            overflowX: isScrollable ? 'auto' : undefined,
+            overflowY: widget.scrollDirection === 'vertical' ? 'auto' : undefined,
+            width: widget.fillMaxWidth ? '100%' : undefined
+          }}
+        >
+          <table style={{ width: widget.fillMaxWidth ? '100%' : 'auto', borderCollapse: 'collapse' }}>
+            <tbody>
+              {allRows.map((row, rIdx) => {
+                const cells = ('children' in row && Array.isArray((row as any).children))
+                  ? (row as any).children
+                  : [row];
+                const visibleCells = cells.filter((c: Widget) => {
+                  return c.visibilityId ? booleanOrNull(values[c.visibilityId]) ?? true : true;
+                });
+                const rowStyle = resolveStyleRule(row, styleSheet);
+                const rowBg = parseColorOrNull(rowStyle.backgroundColor);
+                const rowPadH = rowStyle.paddingHorizontal ?? rowStyle.padding;
+                const rowPadV = rowStyle.paddingVertical ?? rowStyle.padding;
+                const tdPadding = (rowPadV != null || rowPadH != null) ? `${rowPadV ?? 0}px ${rowPadH ?? 0}px` : 0;
+
+                return (
+                  <tr key={rIdx} style={{ backgroundColor: rowBg }}>
+                    {visibleCells.map((cell: Widget, cIdx: number) => {
+                      const colDef = columns[cIdx];
+                      const colWidth = colDef?.width ? ${colDef.width}px : undefined;
+                      return (
+                        <td
+                          key={cIdx}
+                          style={{
+                            width: colWidth,
+                            textAlign: (cell as any).align ?? undefined,
+                            verticalAlign: 'middle',
+                            padding: tdPadding
+                          }}
+                        >
+                          <WidgetRenderer
+                            widget={cell}
+                            values={values}
+                            styleSheet={styleSheet}
+                            onValueChange={onValueChange}
+                            onAction={onAction}
+                            onModuleCommand={onModuleCommand}
+                            parentDirection="row"
+                            focusRegistry={focusMap}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    case 'TableRow': {
+      const children = widget.children ?? [];
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          {children.map((child, index) => (
+            <Fragment key={${child.id ?? child.type}-}>
+              <WidgetRenderer
+                widget={child}
+                values={values}
+                styleSheet={styleSheet}
+                onValueChange={onValueChange}
+                onAction={onAction}
+                onModuleCommand={onModuleCommand}
+                parentDirection="row"
+                focusRegistry={focusMap}
+              />
+            </Fragment>
+          ))}
+        </div>
+      );
+    }
+
     case 'Text': {
       const widgetId = widget.id ?? undefined;
       const displayText = widgetId ? stringOrNull(values[widgetId]) ?? widget.text ?? '' : widget.text ?? '';

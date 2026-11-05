@@ -82,80 +82,69 @@
         "classes": ["section_title"]
       },
       {
-        "type": "Row",
+        "type": "Table",
         "isScrollable": true,
-        "fillMaxWidth": true,
+        "columns": [
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 }
+        ],
         "children": [
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h0_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h0_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h0_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h0_rain", "text": "--", "classes": ["small_text", "text-center"] }
+              { "type": "Text", "id": "h0_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           },
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h1_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h1_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h1_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h1_rain", "text": "--", "classes": ["small_text", "text-center"] }
+              { "type": "Text", "id": "h0_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           },
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h2_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h2_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h2_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h2_rain", "text": "--", "classes": ["small_text", "text-center"] }
+              { "type": "Text", "id": "h0_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           },
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h3_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h3_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h3_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h3_rain", "text": "--", "classes": ["small_text", "text-center"] }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h4_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h4_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h4_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h4_rain", "text": "--", "classes": ["small_text", "text-center"] }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h5_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h5_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h5_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h5_rain", "text": "--", "classes": ["small_text", "text-center"] }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h6_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h6_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h6_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h6_rain", "text": "--", "classes": ["small_text", "text-center"] }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h7_time", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h7_emoji", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h7_temp", "text": "--", "classes": ["text-center"] },
-              { "type": "Text", "id": "h7_rain", "text": "--", "classes": ["small_text", "text-center"] }
+              { "type": "Text", "id": "h0_rain", "text": "--", "classes": ["hourly_cell", "small_text", "text-center"] },
+              { "type": "Text", "id": "h1_rain", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "small_text", "text-center"] },
+              { "type": "Text", "id": "h2_rain", "text": "--", "classes": ["hourly_cell", "small_text", "text-center"] },
+              { "type": "Text", "id": "h3_rain", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "small_text", "text-center"] },
+              { "type": "Text", "id": "h4_rain", "text": "--", "classes": ["hourly_cell", "small_text", "text-center"] },
+              { "type": "Text", "id": "h5_rain", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "small_text", "text-center"] },
+              { "type": "Text", "id": "h6_rain", "text": "--", "classes": ["hourly_cell", "small_text", "text-center"] },
+              { "type": "Text", "id": "h7_rain", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "small_text", "text-center"] }
             ]
           }
         ]
@@ -166,57 +155,63 @@
         "classes": ["section_title"]
       },
       {
-        "type": "Column",
+        "type": "Table",
         "fillMaxWidth": true,
+        "columns": [
+          { "weight": 5 },
+          { "weight": 2 },
+          { "weight": 5 },
+          { "weight": 3 }
+        ],
         "children": [
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d0_day", "text": "--", "weight": 5 },
-              { "type": "Text", "id": "d0_emoji", "text": "--" },
-              { "type": "Text", "id": "d0_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
-              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
+              { "type": "Text", "id": "d0_day", "text": "--" },
+              { "type": "Text", "id": "d0_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d0_rain", "text": "--", "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d0_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row", "daily_row_alt"],
             "children": [
-              { "type": "Text", "id": "d1_day", "text": "--", "weight": 5 },
-              { "type": "Text", "id": "d1_emoji", "text": "--" },
-              { "type": "Text", "id": "d1_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
-              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
+              { "type": "Text", "id": "d1_day", "text": "--" },
+              { "type": "Text", "id": "d1_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d1_rain", "text": "--", "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d1_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d2_day", "text": "--", "weight": 5 },
-              { "type": "Text", "id": "d2_emoji", "text": "--" },
-              { "type": "Text", "id": "d2_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
-              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
+              { "type": "Text", "id": "d2_day", "text": "--" },
+              { "type": "Text", "id": "d2_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d2_rain", "text": "--", "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d2_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row", "daily_row_alt"],
             "children": [
-              { "type": "Text", "id": "d3_day", "text": "--", "weight": 5 },
-              { "type": "Text", "id": "d3_emoji", "text": "--" },
-              { "type": "Text", "id": "d3_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
-              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
+              { "type": "Text", "id": "d3_day", "text": "--" },
+              { "type": "Text", "id": "d3_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d3_rain", "text": "--", "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d3_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d4_day", "text": "--", "weight": 5 },
-              { "type": "Text", "id": "d4_emoji", "text": "--" },
-              { "type": "Text", "id": "d4_rain", "text": "--", "weight": 5, "classes": ["text-right", "small_text"] },
-              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 3, "classes": ["text-right"] }
+              { "type": "Text", "id": "d4_day", "text": "--" },
+              { "type": "Text", "id": "d4_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d4_rain", "text": "--", "classes": ["text-right", "small_text"] },
+              { "type": "Text", "id": "d4_temp", "text": "--", "classes": ["text-right"] }
             ]
           }
         ]

@@ -260,6 +260,53 @@ private fun renderWidget(
             panel
         }
 
+        is TableWidget -> {
+            val allRows: List<Widget> = buildList {
+                addAll(widget.effectiveRows)
+                val dynamicId = widget.effectiveDynamicId
+                if (dynamicId != null) {
+                    addAll(resolveDynamicWidgets(values[dynamicId]))
+                }
+            }.filter { row ->
+                row.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
+            }
+
+            val grid = allRows.map { row ->
+                when (row) {
+                    is TableRowWidget -> row.children
+                    is RowWidget -> row.children
+                    else -> listOf(row)
+                }.filter { cell ->
+                    cell.visibilityId?.let { values[it]?.booleanOrNull() } ?: true
+                }
+            }
+
+            val numCols = maxOf(grid.maxOfOrNull { it.size } ?: 1, widget.columns.size.coerceAtLeast(1))
+            val panel = Panel(GridLayout(numCols))
+            grid.forEach { rowCells ->
+                for (c in 0 until numCols) {
+                    val cell = rowCells.getOrNull(c)
+                    if (cell != null) {
+                        panel.addComponent(renderWidget(cell, applet, values, styleSheet, lastTypedValues))
+                    } else {
+                        panel.addComponent(Label(""))
+                    }
+                }
+            }
+            if (widget.isScrollable) {
+                panel.withBorder(Borders.singleLine())
+            }
+            panel
+        }
+
+        is TableRowWidget -> {
+            val panel = Panel(LinearLayout(Direction.HORIZONTAL))
+            widget.children.forEach {
+                panel.addComponent(renderWidget(it, applet, values, styleSheet, lastTypedValues))
+            }
+            panel
+        }
+
         is TextWidget -> Label(resolveText(widget.text, values))
 
         is ButtonWidget -> Button(widget.text) {

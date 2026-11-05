@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-07-02T01:11:48.623005+00:00'
 id: widgets-reference
-modified: '2026-09-02T00:22:37.168482+00:00'
+modified: '2026-11-05T01:06:17.127285+00:00'
 tags:
 - widgets
 - ui
@@ -269,5 +269,58 @@ Horizontal slider control with support for range limits and discrete steps. Auto
   "fillMaxWidth": true,
   "onChangeAction": "onVolumeChanged",
   "actionArgs": ["volume_level"]
+}
+```
+
+
+### Table
+Two-dimensional grid table container with support for aligned columns, fixed or weighted column widths, and scrolling (both standalone or placed inside scrollable containers).
+
+**Properties:**
+* `children` or `rows` (Array of TableRow/Row Widgets): Nested row widgets.
+* `columns` (Array of Objects, Optional): Column configurations. Each item can specify:
+  * `weight` (Float, Optional): Proportional width weight for the column.
+  * `width` (Int, Optional): Fixed column width in dp.
+* `isScrollable` (Boolean, Optional): Enables scrolling. When true, defaults to horizontal scrolling (`"scrollDirection": "horizontal"`), allowing it to be safely placed inside vertically scrollable containers without conflicts.
+* `scrollDirection` (String, Optional): `"horizontal"` (default if scrollable), `"vertical"`, or `"both"`.
+* `dynamicChildrenId` or `dynamicRowsId` (String, Optional): State key to dynamically populate rows.
+
+**Example:**
+```json
+{
+  "type": "Table",
+  "fillMaxWidth": true,
+  "columns": [
+    { "weight": 5 },
+    { "weight": 2 },
+    { "weight": 3 }
+  ],
+  "children": [
+    {
+      "type": "TableRow",
+      "children": [
+        { "type": "Text", "text": "Monday" },
+        { "type": "Text", "text": "☀️", "classes": ["text-center"] },
+        { "type": "Text", "text": "24°C", "classes": ["text-right"] }
+      ]
+    }
+  ]
+}
+```
+
+### TableRow
+Represents a row inside a `Table`.
+
+**Properties:**
+* `children` (Array of Widgets): Cell widgets arranged in columns.
+
+**Example:**
+```json
+{
+  "type": "TableRow",
+  "children": [
+    { "type": "Text", "text": "Col 1" },
+    { "type": "Text", "text": "Col 2" }
+  ]
 }
 ```

@@ -33,6 +33,8 @@ import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.ProgressWidget
 import com.damn.aisuper.layout.RowWidget
 import com.damn.aisuper.layout.SliderWidget
+import com.damn.aisuper.layout.TableWidget
+import com.damn.aisuper.layout.TableRowWidget
 import com.damn.aisuper.layout.SpinnerWidget
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.SwitchWidget
@@ -114,6 +116,31 @@ fun RenderWidget(
                     dynamicWidgets.forEach { child ->
                         RenderWidget(child, values, styleSheet)
                     }
+                }
+            }
+        }
+
+        is TableWidget -> {
+            val allRows: List<Widget> = buildList {
+                addAll(widget.effectiveRows)
+                if (widget.effectiveDynamicId != null) {
+                    addAll(resolveDynamicWidgets(values[widget.effectiveDynamicId]))
+                }
+            }
+            val colMod = modifier
+                .then(widget.glanceLayoutModifier())
+                .then(style.toGlanceModifier())
+            Column(modifier = colMod) {
+                allRows.forEach { row ->
+                    RenderWidget(row, values, styleSheet)
+                }
+            }
+        }
+
+        is TableRowWidget -> {
+            Row(modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())) {
+                widget.children.forEach { child ->
+                    RenderWidget(child, values, styleSheet)
                 }
             }
         }

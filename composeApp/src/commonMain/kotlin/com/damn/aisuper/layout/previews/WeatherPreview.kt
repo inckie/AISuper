@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Multiplatform preview for the Weather Dashboard layout.
- * Demonstrates a complex layout with hourly and daily forecasts.
+ * Demonstrates a complex layout with hourly and daily forecast tables.
  */
 @Composable
 @Preview(showBackground = true)
@@ -70,72 +70,56 @@ fun RenderWidgetPreviewWeather() {
         "classes": ["section_title"]
       },
       {
-        "type": "Row",
+        "type": "Table",
         "isScrollable": true,
-        "fillMaxWidth": true,
+        "columns": [
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 },
+          { "width": 80 }
+        ],
         "children": [
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h0_time", "text": "--" },
-              { "type": "Text", "id": "h0_emoji", "text": "--" },
-              { "type": "Text", "id": "h0_temp", "text": "--" }
+              { "type": "Text", "id": "h0_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_time", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_time", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           },
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h1_time", "text": "--" },
-              { "type": "Text", "id": "h1_emoji", "text": "--" },
-              { "type": "Text", "id": "h1_temp", "text": "--" }
+              { "type": "Text", "id": "h0_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_emoji", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_emoji", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           },
           {
-            "type": "Column",
+            "type": "TableRow",
             "children": [
-              { "type": "Text", "id": "h2_time", "text": "--" },
-              { "type": "Text", "id": "h2_emoji", "text": "--" },
-              { "type": "Text", "id": "h2_temp", "text": "--" }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h3_time", "text": "--" },
-              { "type": "Text", "id": "h3_emoji", "text": "--" },
-              { "type": "Text", "id": "h3_temp", "text": "--" }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h4_time", "text": "--" },
-              { "type": "Text", "id": "h4_emoji", "text": "--" },
-              { "type": "Text", "id": "h4_temp", "text": "--" }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h5_time", "text": "--" },
-              { "type": "Text", "id": "h5_emoji", "text": "--" },
-              { "type": "Text", "id": "h5_temp", "text": "--" }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h6_time", "text": "--" },
-              { "type": "Text", "id": "h6_emoji", "text": "--" },
-              { "type": "Text", "id": "h6_temp", "text": "--" }
-            ]
-          },
-          {
-            "type": "Column",
-            "children": [
-              { "type": "Text", "id": "h7_time", "text": "--" },
-              { "type": "Text", "id": "h7_emoji", "text": "--" },
-              { "type": "Text", "id": "h7_temp", "text": "--" }
+              { "type": "Text", "id": "h0_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h1_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h2_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h3_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h4_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h5_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] },
+              { "type": "Text", "id": "h6_temp", "text": "--", "classes": ["hourly_cell", "text-center"] },
+              { "type": "Text", "id": "h7_temp", "text": "--", "classes": ["hourly_cell", "hourly_cell_alt", "text-center"] }
             ]
           }
         ]
@@ -146,52 +130,57 @@ fun RenderWidgetPreviewWeather() {
         "classes": ["section_title"]
       },
       {
-        "type": "Column",
+        "type": "Table",
         "fillMaxWidth": true,
+        "columns": [
+          { "weight": 5 },
+          { "weight": 2 },
+          { "weight": 3 }
+        ],
         "children": [
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d0_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d0_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d0_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d0_day", "text": "--" },
+              { "type": "Text", "id": "d0_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d0_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row", "daily_row_alt"],
             "children": [
-              { "type": "Text", "id": "d1_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d1_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d1_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d1_day", "text": "--" },
+              { "type": "Text", "id": "d1_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d1_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d2_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d2_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d2_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d2_day", "text": "--" },
+              { "type": "Text", "id": "d2_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d2_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row", "daily_row_alt"],
             "children": [
-              { "type": "Text", "id": "d3_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d3_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d3_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d3_day", "text": "--" },
+              { "type": "Text", "id": "d3_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d3_temp", "text": "--", "classes": ["text-right"] }
             ]
           },
           {
-            "type": "Row",
-            "fillMaxWidth": true,
+            "type": "TableRow",
+            "classes": ["daily_row"],
             "children": [
-              { "type": "Text", "id": "d4_day", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d4_emoji", "text": "--", "weight": 1 },
-              { "type": "Text", "id": "d4_temp", "text": "--", "weight": 2 }
+              { "type": "Text", "id": "d4_day", "text": "--" },
+              { "type": "Text", "id": "d4_emoji", "text": "--", "classes": ["text-center"] },
+              { "type": "Text", "id": "d4_temp", "text": "--", "classes": ["text-right"] }
             ]
           }
         ]

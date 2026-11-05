@@ -147,6 +147,8 @@ fun Widget.typeKey(): String = when (this) {
     is SpinnerWidget -> "Spinner"
     is ProgressWidget -> "Progress"
     is SliderWidget -> "Slider"
+    is TableWidget -> "Table"
+    is TableRowWidget -> "TableRow"
 }
 
 fun resolveStyleRule(widget: Widget, styleSheet: StyleSheet?): StyleRule {

@@ -51,6 +51,9 @@ import com.damn.aisuper.layout.ImageWidget
 import com.damn.aisuper.layout.ProgressWidget
 import com.damn.aisuper.layout.RowWidget
 import com.damn.aisuper.layout.SliderWidget
+import com.damn.aisuper.layout.TableWidget
+import com.damn.aisuper.layout.TableRowWidget
+import com.damn.aisuper.layout.TableLayout
 import com.damn.aisuper.layout.SpinnerWidget
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.SwitchWidget
@@ -133,6 +136,27 @@ fun RenderWidget(
                         val childStyle = resolveStyleRule(child, styleSheet)
                         RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                     }
+                }
+            }
+        }
+
+        is TableWidget -> {
+            TableLayout(
+                widget = widget,
+                values = values,
+                styleSheet = styleSheet,
+                modifier = modifier
+            ) { cell, cellModifier ->
+                RenderWidget(cell, values, styleSheet, onValueChange, onAction, onModuleCommand, cellModifier)
+            }
+        }
+
+        is TableRowWidget -> {
+            val rowModifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
+            Row(modifier = rowModifier) {
+                widget.children.forEach { child ->
+                    val childStyle = resolveStyleRule(child, styleSheet)
+                    RenderWidget(child, values, styleSheet, onValueChange, onAction, onModuleCommand, childModifier(child, childStyle))
                 }
             }
         }

@@ -215,3 +215,45 @@ data class SliderWidget(
     val actionArgs: List<JsonElement> = emptyList()
 ) : Widget()
 
+
+
+@Serializable
+data class TableColumn(
+    val weight: Float? = null,
+    val width: Int? = null
+)
+
+@Serializable
+@SerialName("Table")
+data class TableWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
+    val children: List<Widget> = emptyList(),
+    val rows: List<Widget> = emptyList(),
+    val dynamicChildrenId: String? = null,
+    val dynamicRowsId: String? = null,
+    val isScrollable: Boolean = false,
+    val scrollDirection: String? = null,
+    val columns: List<TableColumn> = emptyList()
+) : Widget() {
+    val effectiveRows: List<Widget>
+        get() = rows.ifEmpty { children }
+    val effectiveDynamicId: String?
+        get() = dynamicRowsId ?: dynamicChildrenId
+}
+
+@Serializable
+@SerialName("TableRow")
+data class TableRowWidget(
+    override val id: String? = null,
+    override val fillMaxWidth: Boolean = false,
+    override val fillMaxSize: Boolean = false,
+    override val weight: Float? = null,
+    override val classes: List<String> = emptyList(),
+    override val visibilityId: String? = null,
+    val children: List<Widget> = emptyList()
+) : Widget()
