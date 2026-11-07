@@ -39,3 +39,11 @@ include(":shared")
 include(":server")
 include(":applet-provider")
 include(":lanternaApp")
+
+includeBuild("externals/keight") {
+    name = "keightBuild"
+    dependencySubstitution {
+        substitute(module("io.github.alexzhirkevich:keight")).using(project(":keight"))
+        substitute(module("io.github.alexzhirkevich:keight-core")).using(project(":keight-core"))
+    }
+}

@@ -1,0 +1,4 @@
+[submodule "keight"]
+	path = externals/keight
+	url = https://github.com/alexzhirkevich/keight.git
+	branch = main
