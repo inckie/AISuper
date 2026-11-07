@@ -113,14 +113,14 @@ class McpServer(
             }
             routing {
                 // SSE Endpoint for standard MCP
-                get("/sse") {
+                suspend fun handleSse(call: io.ktor.server.application.ApplicationCall) {
                     val sessionId = UUID.randomUUID().toString()
                     val channel = Channel<JsonObject>(Channel.UNLIMITED)
                     sessions[sessionId] = channel
 
                     Logger.i("MCP") { "New SSE session established: $sessionId" }
                     call.response.cacheControl(CacheControl.NoCache(null))
-                    
+
                     try {
                         call.respondTextWriter(contentType = ContentType.Text.EventStream) {
                             write("event: endpoint\n")
@@ -138,6 +138,10 @@ class McpServer(
                         Logger.i("MCP") { "SSE session closed: $sessionId" }
                     }
                 }
+
+                // SSE Endpoint for standard MCP (supports /sse and /mcp/sse)
+                get("/sse") { handleSse(call) }
+                get("/mcp/sse") { handleSse(call) }
 
                 post("/mcp") {
                     try {
