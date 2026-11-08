@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T05:03:47.078480+00:00'
 id: ui-layout-system
-modified: '2026-09-02T00:01:36.330169+00:00'
+modified: '2026-11-08T02:31:58.438460+00:00'
 tags:
 - ui
 - layout
@@ -32,6 +32,10 @@ The UI is rendered using a "thin" layer that maps the widget tree to platform-sp
 *   **Native UI (`:composeApp`)**: Uses **Compose Multiplatform** to render widgets on Android, iOS, and Desktop.
 *   **Web UI (`client-react/`)**: A recursive **React** renderer that maps the same widget tree to DOM elements.
 *   **App Widgets**: **Jetpack Glance** implementation for Android home screen widgets.
+
+## Modal Dialogs & Alerts
+
+Modal dialogs (such as awaitable, non-cancellable confirmations) are managed by a separate modal context provider (`ModalContextProvider`) completely outside the widget rendering tree. See [[modal-dialog-system|Modal Dialog and Confirmation System]].
 
 ## Design Patterns
 For more details on building interfaces, see the [[dynamic-interfaces-skill|Dynamic Interfaces Skill]].

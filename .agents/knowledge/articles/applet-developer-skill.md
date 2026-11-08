@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:28.009872+00:00'
 id: applet-developer-skill
-modified: '2026-09-15T12:08:37.893862+00:00'
+modified: '2026-11-08T02:32:59.450757+00:00'
 tags:
 - skills
 - development
@@ -52,6 +52,7 @@ As an applet developer, you should rely entirely on these defined interfaces rat
 
 - **Coding Discipline**: See [[ponytail-skill|Ponytail AI Development Skill]] for the mandatory minimalist ladder (YAGNI, minimal diffs, native engine widgets first).
 - **UI & Layouts**: See [[dynamic-interfaces-skill|Dynamic Interfaces Skill]] for how to construct valid JSON widget trees.
+- **Modal Dialogs & Confirmations**: See [[modal-dialog-system|Modal Dialog and Confirmation System]] for awaitable, non-cancellable user confirmations via `await confirm(...)` or `await showConfirmation(...)`.
 - **Widget Types**: Use `template/applet/types/layout-types.ts` as the absolute source of truth for allowed widget properties. **Do not invent non-existing properties.**
 - **Runtime Native APIs**: See `template/typescript/types/runtime-globals.d.ts` for globally injected functions available in your applet's JS environment (e.g., `setValue`, `getValue`, `httpGet`, `persistentStorageGet`).
 - **JS Module Creation**: See [[js-modules-creation-skill|JS Modules Creation Skill]] for critical guidelines on engine quirks (e.g., avoiding `switch` statements) and writing safe TS/JS modules.

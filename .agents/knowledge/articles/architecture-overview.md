@@ -4,7 +4,7 @@ categories:
 - architecture
 created: '2026-06-20T04:50:15.468213+00:00'
 id: architecture-overview
-modified: '2026-06-20T05:04:01.339489+00:00'
+modified: '2026-11-08T02:32:17.627367+00:00'
 tags:
 - architecture
 - overview
@@ -47,6 +47,7 @@ Contains:
 | `runtime/` | `Applet`, `Feature`, `AppletManifest`, `AppletResourceLoader`, `StorageBindings`, `XmlJsonParser` |
 | `engine/` | `AppJSEngine` interface, `KeightJSEngine` (QuickJS), `createAppJSEngine()` expect/actual, `JsonBridgeConversion` |
 | `layout/` | Serializable widget model: `Widget` union, `LayoutRoot`, `StyleSheet`, `StyleRule`, `StyleTokens` |
+| `modal/` | Decoupled modal system: `ModalRequest`, `ConfirmationRequest`, `ModalHostState`, `DefaultModalHostState` (see [[modal-dialog-system\|Modal Dialog System]]) |
 | `modules/` | `FeatureModule`, `FeatureModuleContext`, `FeatureModuleHost`, `FeatureModuleFactory`; built-in impls: `http`, `audioPlayer`, `geolocation`, `jsModule`, `mcpHttp` |
 | `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` |
 | `headless/` | `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels` (DTOs), `RemoteAppletClient` (Ktor HTTP client) |
@@ -71,6 +72,7 @@ Responsible for **all Compose UI rendering and platform entry points**. No serve
 
 | Source set | Key files |
 |---|---|
+| `commonMain/modal/` | `ModalContextProvider.kt` – standalone modal host rendering dialogs over the UI |
 | `commonMain/layout/frontend/rikka/` | `RikkaLayoutRenderer.kt` (primary renderer), `RikkaFrontendTheme.kt` |
 | `commonMain/layout/frontend/material3/` | `Material3LayoutRenderer.kt` |
 | `commonMain/layout/` | `LayoutRenderUtils.kt`, `ColorUtils.kt` |
@@ -135,6 +137,7 @@ Platform entry point (MainActivity / main.kt / …)
             │   ├─ Load + evaluate feature script (AppJSEngine / Keight)
             │   ├─ Attach FeatureModules via FeatureModuleHost
             │   └─ Call script.initialize()
+            ├─ modalHost (StateFlow<ModalRequest?>) → ModalContextProvider (Compose Dialogs)
             └─ currentFeature / layoutRoot / values (StateFlows)
                  └─ RikkaLayoutRenderer / Material3LayoutRenderer → Compose UI
 ```
@@ -163,6 +166,7 @@ UI event (Compose click / React button)
                     └─ AppJSEngine.callFunction(actionName, args)
                          └─ JS feature script function
                               ├─ May call registered Kotlin module functions
+                              ├─ May call await confirm(...) → modalHost.showConfirmation()
                               ├─ May call setValue(key, value) → values StateFlow emits
                               └─ Layout / values changes → snapshot pushed to client (SSE / recompose)
 ```
