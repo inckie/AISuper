@@ -31,7 +31,7 @@ globalThis.onmessage = async (e) => {
   if (msg.type === 'init') {
     syncClient = new SyncRpcClient(msg.sab);
     appletContext = { appletId: msg.appletId, featureId: msg.featureId };
-    setupGlobals();
+    setupGlobals(msg.moduleProxies);
     globalThis.postMessage({ type: 'initialized' });
     return;
   }
@@ -39,7 +39,8 @@ globalThis.onmessage = async (e) => {
   if (msg.type === 'loadScript') {
     try {
       // Indirect eval to declare functions into globalThis
-      (0, eval)(msg.script);
+      const cleanScript = msg.script.replace(/^\s*["']use strict["'];?/g, '');
+      (0, eval)(cleanScript);
       globalThis.postMessage({ type: 'scriptLoaded', success: true });
     } catch (err) {
       console.error(`[FeatureWorker ${appletContext.featureId}] Script eval error:`, err);
@@ -75,7 +76,22 @@ globalThis.onmessage = async (e) => {
   }
 };
 
-function setupGlobals() {
+function setupGlobals(moduleProxies = []) {
+  // 0. Module Proxies (${moduleName}_${functionName})
+  if (Array.isArray(moduleProxies)) {
+    for (const mod of moduleProxies) {
+      const modName = mod.name;
+      if (Array.isArray(mod.exports)) {
+        for (const fnName of mod.exports) {
+          const proxyName = `${modName}_${fnName}`;
+          globalThis[proxyName] = function (...args) {
+            return syncClient.call('callModule', [modName, fnName, args]);
+          };
+        }
+      }
+    }
+  }
+
   // 1. State Value bindings (SYNC)
   globalThis.getValue = function (key) {
     return syncClient.call('getValue', [key]);
@@ -179,6 +195,19 @@ function setupGlobals() {
   };
   globalThis.persistentStoragePutObject = function (scope, key, value) {
     return syncClient.call('persistentStoragePutObject', [scope, key, value]);
+  };
+
+  // 5b. Centralized Cookie-Aware HTTP Client (Host Sync RPC)
+  globalThis.httpGet = function (url, headers = {}) {
+    return syncClient.call('httpGet', [url, headers]);
+  };
+
+  globalThis.httpPost = function (url, body = '', headers = {}) {
+    return syncClient.call('httpPost', [url, body, headers]);
+  };
+
+  globalThis.httpRequestRaw = function (method, url, body = '', headers = {}) {
+    return syncClient.call('httpRequestRaw', [method, url, body, headers]);
   };
 
   // 6. Utilities & Logging

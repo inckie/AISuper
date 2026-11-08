@@ -79,7 +79,7 @@ export class SyncRpcHost {
     this.decoder = new TextDecoder();
   }
 
-  handleRpc() {
+  async handleRpc() {
     const reqLen = Atomics.load(this.statusInt32, HEADER_REQ_LEN_IDX);
     const copy = new Uint8Array(reqLen);
     copy.set(this.dataUint8.subarray(0, reqLen));
@@ -87,8 +87,12 @@ export class SyncRpcHost {
     const { method, args } = JSON.parse(reqStr);
 
     try {
-      const result = this.handler(method, args);
-      const encoded = this.encoder.encode(JSON.stringify({ result }));
+      const result = await this.handler(method, args);
+      const encoded = this.encoder.encode(JSON.stringify({ result: result !== undefined ? result : null }));
+
+      if (encoded.length > this.maxPayload) {
+        throw new Error(`Sync RPC response exceeds buffer capacity (${encoded.length} > ${this.maxPayload})`);
+      }
 
       this.dataUint8.set(encoded, 0);
       Atomics.store(this.statusInt32, HEADER_RESP_LEN_IDX, encoded.length);

@@ -8,19 +8,20 @@ export class StateStorage {
     this.loadPersistent();
   }
 
-  loadPersistent() {
+  async init() {
     if (!this.persistentFilePath || typeof tjs === 'undefined') return;
     try {
-      tjs.readFile(this.persistentFilePath).then(data => {
-        try {
-          const str = new TextDecoder().decode(data);
-          const obj = JSON.parse(str);
-          for (const [k, v] of Object.entries(obj)) {
-            this.persistent.set(k, v);
-          }
-        } catch (_) {}
-      }).catch(() => {});
+      const data = await tjs.readFile(this.persistentFilePath);
+      const str = new TextDecoder().decode(data);
+      const obj = JSON.parse(str);
+      for (const [k, v] of Object.entries(obj)) {
+        this.persistent.set(k, v);
+      }
     } catch (_) {}
+  }
+
+  loadPersistent() {
+    this.init().catch(() => {});
   }
 
   savePersistent() {
