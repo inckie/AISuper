@@ -61,6 +61,8 @@ Each block and module should come with a set of test cases for the sandbox. For 
 
 The reference implementation is split into clearly separated layers so that the same applet logic can run in native UI or headlessly behind a web server.
 
+All Kotlin Multiplatform and Android Studio project files live in `kotlin/` (open `kotlin/` when launching Android Studio).
+
 ## Core / Logic layer (`:shared`)
 
 All applet execution lives in the `:shared` Kotlin Multiplatform module — no UI framework, no server, just pure logic:

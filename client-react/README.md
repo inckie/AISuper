@@ -1,6 +1,6 @@
 # AISuper React Client
 
-React + TypeScript client for the headless server in `../server`.
+React + TypeScript client for the headless server in `../kotlin/server`.
 
 ## Features
 
@@ -31,7 +31,7 @@ npm run preview
 ## Run server (separate terminal)
 
 ```powershell
-Set-Location "D:\Work\Mobile\Android\AISuper"
+Set-Location "D:\Work\Mobile\Android\AISuper\kotlin"
 .\gradlew.bat :server:run
 ```
 

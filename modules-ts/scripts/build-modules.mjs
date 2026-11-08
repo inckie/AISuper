@@ -11,7 +11,7 @@ const sourceModulesDir = path.join(modulesRoot, "modules");
 // Single output location: Compose Multiplatform resources in :applet-provider.
 // jvmMain resources are configured in Gradle to include this same directory,
 // so no second copy is needed.
-const outputDir = path.join(repoRoot, "applet-provider", "src", "commonMain", "composeResources", "files");
+const outputDir = path.join(repoRoot, "kotlin", "applet-provider", "src", "commonMain", "composeResources", "files");
 const watchMode = process.argv.includes("--watch");
 
 async function readModuleConfigs() {

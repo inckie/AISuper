@@ -8,14 +8,14 @@
       "languages": {
         "kotlin": {
           "include": [
-            "androidApp/**/*.kt",
-            "applet-provider/**/*.kt",
-            "composeApp/**/*.kt",
-            "iosApp/**/*.kt",
-            "kotlin-js-store/**/*.kt",
-            "lanternaApp/**/*.kt",
-            "server/**/*.kt",
-            "shared/**/*.kt"
+            "kotlin/androidApp/**/*.kt",
+            "kotlin/applet-provider/**/*.kt",
+            "kotlin/composeApp/**/*.kt",
+            "kotlin/iosApp/**/*.kt",
+            "kotlin/kotlin-js-store/**/*.kt",
+            "kotlin/lanternaApp/**/*.kt",
+            "kotlin/server/**/*.kt",
+            "kotlin/shared/**/*.kt"
           ],
           "exclude": []
         },
