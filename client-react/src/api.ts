@@ -32,20 +32,32 @@ const postJson = async <T>(url: string, body: unknown): Promise<T> => {
 
 export const serverApi = {
   async health(baseUrl: string): Promise<{ ok: boolean }> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('health');
+    }
     const response = await fetch(`${baseUrl}/health`);
     return parseResponse<{ ok: boolean }>(response);
   },
 
   async listSessions(baseUrl: string): Promise<string[]> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('listSessions');
+    }
     const response = await fetch(`${baseUrl}/sessions`);
     return parseResponse<string[]>(response);
   },
 
   async createSession(baseUrl: string, manifestPath: string): Promise<CreateSessionResponse> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('createSession', { manifestPath });
+    }
     return postJson<CreateSessionResponse>(`${baseUrl}/sessions`, { manifestPath });
   },
 
   async getState(baseUrl: string, sessionId: string): Promise<HeadlessSessionSnapshot> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('getState', { sessionId });
+    }
     const response = await fetch(`${baseUrl}/sessions/${sessionId}/state`);
     return parseResponse<HeadlessSessionSnapshot>(response);
   },
@@ -56,6 +68,9 @@ export const serverApi = {
     action: string,
     args: JsonValue[]
   ): Promise<HeadlessSessionSnapshot> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('sendAction', { sessionId, action, args });
+    }
     return postJson<HeadlessSessionSnapshot>(`${baseUrl}/sessions/${sessionId}/action`, {
       action,
       args
@@ -68,6 +83,9 @@ export const serverApi = {
     id: string,
     value: JsonValue
   ): Promise<HeadlessSessionSnapshot> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('setValue', { sessionId, id, value });
+    }
     return postJson<HeadlessSessionSnapshot>(`${baseUrl}/sessions/${sessionId}/value`, {
       id,
       value
@@ -82,13 +100,29 @@ export const serverApi = {
     command: string,
     args: JsonValue[]
   ): Promise<HeadlessSessionSnapshot> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('moduleCommand', { sessionId, moduleType, target, command, args });
+    }
     return postJson<HeadlessSessionSnapshot>(`${baseUrl}/sessions/${sessionId}/module-command`, {
       moduleType,
       target,
       command,
       args
     });
+  },
+
+  async respondModal(
+    baseUrl: string,
+    sessionId: string,
+    id: string,
+    confirmed: boolean
+  ): Promise<HeadlessSessionSnapshot> {
+    if (typeof window !== 'undefined' && (window as any).tiny?.api) {
+      return (window as any).tiny.api.call('respondModal', { sessionId, id, confirmed });
+    }
+    return postJson<HeadlessSessionSnapshot>(`${baseUrl}/sessions/${sessionId}/modal-response`, {
+      id,
+      confirmed
+    });
   }
 };
-
-

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://tinyjs.app/schema/tinyjs.schema.json",
+  "name": "aisuper",
+  "title": "AISuper Pure JS",
+  "size": "1024x768",
+  "id": "com.damn.aisuper.tinyjs",
+  "version": "0.1.0"
+}

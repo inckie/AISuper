@@ -189,6 +189,15 @@ export interface LayoutRoot {
   layout: Widget;
 }
 
+export interface ConfirmationModalRequest {
+  id: string;
+  title?: string;
+  message?: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDestructive?: boolean;
+}
+
 export interface HeadlessSessionSnapshot {
   sessionId: string;
   reason: string;
@@ -197,6 +206,7 @@ export interface HeadlessSessionSnapshot {
   layout?: LayoutRoot | null;
   styleSheet?: StyleSheet | null;
   framework?: string;
+  modal?: ConfirmationModalRequest | null;
 }
 
 export interface CreateSessionResponse {

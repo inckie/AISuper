@@ -7,7 +7,7 @@ export interface SettingsState {
 
 export const DEFAULT_SETTINGS: SettingsState = {
   baseUrl: 'http://localhost:8080',
-  manifestPath: 'files/applet.json'
+  manifestPath: ''
 };
 
 export function readStoredSettings(): SettingsState {
@@ -15,9 +15,10 @@ export function readStoredSettings(): SettingsState {
     const raw = localStorage.getItem('aisuper-web-settings');
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<SettingsState>;
+    const manifest = parsed.manifestPath?.trim();
     return {
       baseUrl: parsed.baseUrl?.trim() || DEFAULT_SETTINGS.baseUrl,
-      manifestPath: parsed.manifestPath?.trim() || DEFAULT_SETTINGS.manifestPath
+      manifestPath: (manifest && manifest !== 'files/applet.json' && !manifest.includes('d:/Work')) ? manifest : ''
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -48,28 +49,27 @@ export function SettingsPanel({
       <label>
         Server URL
         <input
+          type="text"
           value={draftSettings.baseUrl}
-          onChange={(event) => setDraftSettings((s) => ({ ...s, baseUrl: event.target.value }))}
+          onChange={(e) => setDraftSettings((s) => ({ ...s, baseUrl: e.target.value }))}
+          placeholder="http://localhost:8080"
         />
       </label>
       <label>
         Manifest Path
         <input
+          type="text"
           value={draftSettings.manifestPath}
-          onChange={(event) => setDraftSettings((s) => ({ ...s, manifestPath: event.target.value }))}
+          onChange={(e) => setDraftSettings((s) => ({ ...s, manifestPath: e.target.value }))}
+          placeholder="/path/to/applet or applet.zip"
         />
       </label>
       <div className="panel-actions">
-        <button
-          className="primary-btn"
-          onClick={() => {
-            onSaveAndConnect(draftSettings);
-          }}
-        >
-          Save + Connect
+        <button className="primary-btn" onClick={() => onSaveAndConnect(draftSettings)}>
+          Save & Connect
         </button>
-        <button className="secondary-btn" onClick={onClose}>
-          Close
+        <button className="ghost-btn" onClick={onClose}>
+          Cancel
         </button>
       </div>
     </aside>

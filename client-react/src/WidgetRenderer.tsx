@@ -204,7 +204,7 @@ export function WidgetRenderer({
                   <tr key={rIdx} style={{ backgroundColor: rowBg }}>
                     {visibleCells.map((cell: Widget, cIdx: number) => {
                       const colDef = columns[cIdx];
-                      const colWidth = colDef?.width ? ${colDef.width}px : undefined;
+                      const colWidth = colDef?.width ? `${colDef.width}px` : undefined;
                       return (
                         <td
                           key={cIdx}
@@ -250,7 +250,7 @@ export function WidgetRenderer({
           }}
         >
           {children.map((child, index) => (
-            <Fragment key={${child.id ?? child.type}-}>
+            <Fragment key={`${child.id ?? child.type}-${index}`}>
               <WidgetRenderer
                 widget={child}
                 values={values}
