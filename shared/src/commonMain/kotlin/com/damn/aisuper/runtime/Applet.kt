@@ -17,8 +17,11 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.damn.aisuper.modal.DefaultModalHostState
+import com.damn.aisuper.modal.ModalHostState
 
 /**
  * Core runtime Applet definition.
@@ -47,6 +50,8 @@ class Applet(
     private val ui = AppletUI(appletPersistentStorage)
     val currentStyleSheet = ui.currentStyleSheet
     val currentFramework = ui.currentFramework
+
+    val modalHost: ModalHostState = DefaultModalHostState()
 
     private var manifest: AppletManifest? = null
 
@@ -158,6 +163,42 @@ class Applet(
             JsonNull
         }
 
+        val confirmHandler: suspend (List<JsonElement>) -> JsonElement = { args ->
+            val firstArg = args.firstOrNull()
+            val title: String
+            val message: String
+            val confirmText: String
+            val cancelText: String
+            val isDestructive: Boolean
+
+            if (firstArg is kotlinx.serialization.json.JsonObject) {
+                title = firstArg["title"]?.jsonPrimitive?.contentOrNull ?: "Подтверждение"
+                message = firstArg["message"]?.jsonPrimitive?.contentOrNull ?: ""
+                confirmText = firstArg["confirmText"]?.jsonPrimitive?.contentOrNull ?: "Подтвердить"
+                cancelText = firstArg["cancelText"]?.jsonPrimitive?.contentOrNull ?: "Отмена"
+                isDestructive = firstArg["isDestructive"]?.jsonPrimitive?.booleanOrNull ?: false
+            } else {
+                message = firstArg?.jsonPrimitive?.contentOrNull ?: ""
+                title = args.getOrNull(1)?.jsonPrimitive?.contentOrNull ?: "Подтверждение"
+                confirmText = args.getOrNull(2)?.jsonPrimitive?.contentOrNull ?: "Подтвердить"
+                cancelText = args.getOrNull(3)?.jsonPrimitive?.contentOrNull ?: "Отмена"
+                isDestructive = args.getOrNull(4)?.jsonPrimitive?.booleanOrNull ?: false
+            }
+
+            val result = modalHost.showConfirmation(
+                title = title,
+                message = message,
+                confirmText = confirmText,
+                cancelText = cancelText,
+                isDestructive = isDestructive
+            )
+            JsonPrimitive(result)
+        }
+
+        engine.registerSuspendFunction("confirm", confirmHandler)
+        engine.registerSuspendFunction("showConfirmation", confirmHandler)
+        engine.registerSuspendFunction("confirmation", confirmHandler)
+
         // Storage bindings are registered via extension to keep argument parsing logic in one place.
         engine.registerStorageBindings(
             featureTransient = featureTransient,
@@ -220,6 +261,7 @@ class Applet(
     }
 
     fun close() {
+        modalHost.dismissCurrent()
         _currentFeature.value?.close()
     }
 }

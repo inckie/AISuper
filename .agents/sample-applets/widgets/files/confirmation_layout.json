@@ -1,0 +1,67 @@
+{
+  "layout": {
+    "type": "Column",
+    "fillMaxSize": true,
+    "children": [
+      {
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+          {
+            "type": "Button",
+            "text": "<< Back",
+            "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNSAxOGwtNi02IDYtNiI+PC9wYXRoPjwvc3ZnPg==",
+            "action": "launch:menu"
+          },
+          { "type": "Text", "text": "Confirmation Dialog Demo", "weight": 1, "classes": ["header_text"] }
+        ]
+      },
+      {
+        "type": "Column",
+        "weight": 1,
+        "fillMaxWidth": true,
+        "isScrollable": true,
+        "classes": ["screen"],
+        "children": [
+          {
+            "type": "Text",
+            "text": "Native Modal Dialogs (Awaitable & Non-Cancellable)",
+            "classes": ["section_title"]
+          },
+          {
+            "type": "Text",
+            "text": "Try the confirmation dialogs below. QuickJS execution pauses via 'await confirm(...)' until you choose an option. Outside clicks and back presses are blocked.",
+            "classes": ["body_text"]
+          },
+          {
+            "type": "Text",
+            "id": "lastResultLabel",
+            "text": "Last action: (none yet)",
+            "classes": ["section_title"]
+          },
+          {
+            "type": "Button",
+            "text": "1. Standard Confirmation",
+            "action": "demoStandardConfirm",
+            "fillMaxWidth": true,
+            "classes": ["menu_button"]
+          },
+          {
+            "type": "Button",
+            "text": "2. Destructive Confirmation (Delete)",
+            "action": "demoDestructiveConfirm",
+            "fillMaxWidth": true,
+            "classes": ["menu_button"]
+          },
+          {
+            "type": "Button",
+            "text": "3. Simple String Confirm",
+            "action": "demoSimpleStringConfirm",
+            "fillMaxWidth": true,
+            "classes": ["menu_button"]
+          }
+        ]
+      }
+    ]
+  }
+}

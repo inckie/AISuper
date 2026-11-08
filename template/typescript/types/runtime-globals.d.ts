@@ -24,6 +24,19 @@ declare function setLayout(layoutPath: string): Promise<void>;
 declare function launchFeature(featureId: string): Promise<void>;
 declare function getFeatures(): string[];
 
+// Modal / Dialog Management
+interface ConfirmationOptions {
+    title?: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+}
+
+declare function confirm(options: ConfirmationOptions | string, title?: string, confirmText?: string, cancelText?: string, isDestructive?: boolean): Promise<boolean>;
+declare function showConfirmation(options: ConfirmationOptions | string, title?: string, confirmText?: string, cancelText?: string, isDestructive?: boolean): Promise<boolean>;
+declare function confirmation(options: ConfirmationOptions | string, title?: string, confirmText?: string, cancelText?: string, isDestructive?: boolean): Promise<boolean>;
+
 // UI Theme/Framework Management
 declare function getAvailableThemes(): string[];
 declare function getCurrentTheme(): string;

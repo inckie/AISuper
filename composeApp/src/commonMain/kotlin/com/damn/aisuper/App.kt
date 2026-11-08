@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.damn.aisuper.applet.AppletProvider
 import com.damn.aisuper.applet.ComposeAppletProvider
 import com.damn.aisuper.engine.createAppJSEngine
+import com.damn.aisuper.modal.ModalContextProvider
 import com.damn.aisuper.layout.StyleSheet
 import com.damn.aisuper.layout.frontend.LayoutFrontend
 import com.damn.aisuper.layout.frontend.material3.Material3FrontendTheme
@@ -89,70 +90,72 @@ fun App(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(resolveAppBackground(styleSheet, Color.White))
-    ) {
-        if (localAppletError != null) {
-            BasicText(
-                localAppletError!!,
-                modifier = Modifier.safeContentPadding()
-            )
-            return@Column
-        }
+    ModalContextProvider(modalHost = applet.modalHost) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(resolveAppBackground(styleSheet, Color.White))
+        ) {
+            if (localAppletError != null) {
+                BasicText(
+                    localAppletError!!,
+                    modifier = Modifier.safeContentPadding()
+                )
+                return@Column
+            }
 
-        if (layoutRoot == null) {
-            BasicText(
-                if (currentFeature == null) "Loading Applet..." else "Loading Feature...",
-                modifier = Modifier.safeContentPadding()
-            )
-        } else {
-            val widget = layoutRoot.layout
-            val renderModifier = Modifier.fillMaxSize().safeContentPadding()
+            if (layoutRoot == null) {
+                BasicText(
+                    if (currentFeature == null) "Loading Applet..." else "Loading Feature...",
+                    modifier = Modifier.safeContentPadding()
+                )
+            } else {
+                val widget = layoutRoot.layout
+                val renderModifier = Modifier.fillMaxSize().safeContentPadding()
 
-            when (frontend) {
-                LayoutFrontend.Material3 -> {
-                    Material3FrontendTheme(styleSheet = styleSheet) {
-                        Material3RenderWidget(
-                            widget = widget,
-                            values = layoutValues,
-                            styleSheet = styleSheet,
-                            onValueChange = { id, value ->
-                                applet.updateValue(id, value)
-                            },
-                            onAction = { action, args ->
-                                scope.launch {
-                                    applet.handleAction(action, args)
-                                }
-                            },
-                            onModuleCommand = { moduleType, target, command, args ->
-                                applet.handleModuleCommand(moduleType, target, command, args)
-                            },
-                            modifier = renderModifier
-                        )
+                when (frontend) {
+                    LayoutFrontend.Material3 -> {
+                        Material3FrontendTheme(styleSheet = styleSheet) {
+                            Material3RenderWidget(
+                                widget = widget,
+                                values = layoutValues,
+                                styleSheet = styleSheet,
+                                onValueChange = { id, value ->
+                                    applet.updateValue(id, value)
+                                },
+                                onAction = { action, args ->
+                                    scope.launch {
+                                        applet.handleAction(action, args)
+                                    }
+                                },
+                                onModuleCommand = { moduleType, target, command, args ->
+                                    applet.handleModuleCommand(moduleType, target, command, args)
+                                },
+                                modifier = renderModifier
+                            )
+                        }
                     }
-                }
 
-                LayoutFrontend.Rikka -> {
-                    RikkaFrontendTheme(styleSheet = styleSheet) {
-                        RikkaRenderWidget(
-                            widget = widget,
-                            values = layoutValues,
-                            styleSheet = styleSheet,
-                            onValueChange = { id, value ->
-                                applet.updateValue(id, value)
-                            },
-                            onAction = { action, args ->
-                                scope.launch {
-                                    applet.handleAction(action, args)
-                                }
-                            },
-                            onModuleCommand = { moduleType, target, command, args ->
-                                applet.handleModuleCommand(moduleType, target, command, args)
-                            },
-                            modifier = renderModifier
-                        )
+                    LayoutFrontend.Rikka -> {
+                        RikkaFrontendTheme(styleSheet = styleSheet) {
+                            RikkaRenderWidget(
+                                widget = widget,
+                                values = layoutValues,
+                                styleSheet = styleSheet,
+                                onValueChange = { id, value ->
+                                    applet.updateValue(id, value)
+                                },
+                                onAction = { action, args ->
+                                    scope.launch {
+                                        applet.handleAction(action, args)
+                                    }
+                                },
+                                onModuleCommand = { moduleType, target, command, args ->
+                                    applet.handleModuleCommand(moduleType, target, command, args)
+                                },
+                                modifier = renderModifier
+                            )
+                        }
                     }
                 }
             }

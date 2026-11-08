@@ -68,6 +68,11 @@
       "layout": "files/timeout_layout.json",
       "script": "files/timeout_script.js",
       "name": "Timeout Demo"
+    },
+    "confirmation": {
+      "layout": "files/confirmation_layout.json",
+      "script": "files/confirmation_script.js",
+      "name": "Confirmation Dialog Demo"
     }
   }
 }
