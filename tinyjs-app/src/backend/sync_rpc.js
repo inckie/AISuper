@@ -1,5 +1,37 @@
-// sync_rpc.js - Synchronous RPC bridge using SharedArrayBuffer & Atomics
-// Enables worker isolates to synchronously block during host & cross-isolate calls.
+/**
+ * @wk-id tinyjs/sync-rpc
+ * @wk-title TinyJS Synchronous RPC Bridge (sync_rpc.js)
+ * @wk-tags tinyjs, rpc, atomics, sharedarraybuffer, workers, isolation
+ * @wk-categories tinyjs-runtime
+ *
+ * # Synchronous RPC Bridge
+ *
+ * Enables Web Worker JavaScript isolates to execute synchronous blocking host and
+ * cross-module RPC calls without burning CPU, preserving full VM isolation while maintaining
+ * backward compatibility with synchronous applet APIs like `getValue(key)`, `setValue(key, val)`,
+ * `storageGet(scope, key)`, and module proxy methods like `security_getPromoCards()`.
+ *
+ * ## Architecture & Mechanism
+ * 1. **Shared Memory Layout**: A `SharedArrayBuffer` (typically 512 KB) is shared between the host and worker.
+ *    The first 16 bytes serve as an atomic status and length header (`Int32Array`):
+ *    - Index 0 (`HEADER_STATUS_IDX`): Status flag (`0: IDLE`, `1: REQ_PENDING`, `2: RESP_READY`, `3: ERROR`).
+ *    - Index 1 (`HEADER_REQ_LEN_IDX`): Request payload length in bytes.
+ *    - Index 2 (`HEADER_RESP_LEN_IDX`): Response payload length in bytes.
+ *    - Index 3 (`HEADER_SEQ_IDX`): Sequence counter.
+ *    - Bytes 16+ (`PAYLOAD_OFFSET`): JSON UTF-8 payload buffer.
+ * 2. **Client Invocation (`SyncRpcClient.call`)**:
+ *    - Serializes `{ method, args }` into the payload buffer.
+ *    - Posts `{ type: '__sync_rpc__' }` to the host thread via message channel.
+ *    - Calls `Atomics.wait(statusInt32, 0, 0)` which puts the calling isolate thread to sleep efficiently.
+ * 3. **Host Handling (`SyncRpcHost.handleRpc`)**:
+ *    - Reads the request JSON, executes the registered handler (can be async/Promise).
+ *    - Serializes the result or error into the payload buffer.
+ *    - Updates `HEADER_RESP_LEN_IDX` and sets status to `STATUS_RESP_READY` or `STATUS_ERROR`.
+ *    - Calls `Atomics.notify(statusInt32, 0, 1)` to wake up the sleeping worker thread.
+ * 4. **Worker Resumes**:
+ *    - Worker wakes up from `Atomics.wait`, decodes the response string, and resets status to `STATUS_IDLE`.
+ *    - Returns the unwrapped result directly or throws on error.
+ */
 
 const STATUS_IDLE = 0;
 const STATUS_REQ_PENDING = 1;

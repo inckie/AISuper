@@ -1,4 +1,25 @@
-// storage.js - Scoped transient & persistent state storage
+/**
+ * @wk-id tinyjs/storage
+ * @wk-title Scoped Transient and Persistent Storage (storage.js)
+ * @wk-tags tinyjs, storage, persistence, scoped-state
+ * @wk-categories tinyjs-runtime
+ *
+ * # Scoped Transient and Persistent Storage
+ *
+ * Implements the AISuper storage contract supporting both in-memory transient storage
+ * (`storageGet`, `storagePut`) and file-backed persistent storage (`persistentStorageGet`, `persistentStoragePut`).
+ *
+ * ## Scoping Rules (`buildKey`)
+ * - `applet`: Scoped across the entire applet (`applet:${appletId}:${key}`). Used for auth sessions and tokens.
+ * - `feature`: Scoped to a specific feature (`feature:${appletId}:${featureId}:${key}`).
+ * - `module`: Scoped to a feature's module (`module:${appletId}:${featureId}:${moduleName}:${key}`).
+ * - `module.global`: Shared across features for a given module (`mod_global:${appletId}:${moduleName}:${key}`).
+ * - `global`: Unscoped key (`global:${key}`).
+ *
+ * ## Persistence
+ * When configured with a file path (defaults to `${tjs.tmpDir}/aisuper_storage.json`), all persistent puts/deletes
+ * write JSON to disk, while `init()` ensures existing data is fully loaded prior to applet script execution.
+ */
 
 export class StateStorage {
   constructor(persistentFilePath = null) {

@@ -1,4 +1,16 @@
-// applet_resolver.js - Resolves applet paths from folders, applet.json files, or .zip archives
+/**
+ * @wk-id tinyjs/applet-resolver
+ * @wk-title Applet Manifest Resolver & ZIP Handler (applet_resolver.js)
+ * @wk-tags tinyjs, applet-resolver, manifest, zip, extraction
+ * @wk-categories tinyjs-runtime
+ *
+ * # Applet Manifest Resolver
+ *
+ * Automatically resolves and loads AISuper applet manifests from multiple input formats:
+ * 1. Direct path to `applet.json`.
+ * 2. Directory containing `applet.json` or `files/applet.json`.
+ * 3. Compressed `.zip` archives (extracts to a temporary directory via [[src:internals/tinyjs/zip-extractor]]).
+ */
 import { extractZip } from './zip_extractor.js';
 
 export async function resolveAppletManifest(inputPath) {

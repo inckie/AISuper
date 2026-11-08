@@ -1,4 +1,25 @@
-// http_service.js - Centralized HTTP client with automatic Cookie Jar matching Kotlin HttpComponent
+/**
+ * @wk-id tinyjs/http-service
+ * @wk-title Centralized HTTP Service & Cookie Jar (http_service.js)
+ * @wk-tags tinyjs, http, networking, cookies, cookie-jar, security, secunit
+ * @wk-categories tinyjs-runtime
+ *
+ * # Centralized HTTP Service & Cookie Jar
+ *
+ * Provides host-managed networking equivalent to AISuper's Kotlin `HttpComponent` (`install(HttpCookies)`).
+ * All worker isolates (features and JS modules) route their HTTP requests through this service.
+ *
+ * ## Key Capabilities
+ * 1. **Centralized Session State**: Cookies set during authentication (`POST /Auth/api/signin`)
+ *    are captured in `CookieJar` and automatically included in subsequent requests from any isolate
+ *    (`POST /Auth/api/SessionToken`, `GET /HomeControl/api/security/objects`, `GET /Fleet/api/Fleet/...`).
+ * 2. **Multi-Cookie Header Parsing**: Handles txiki.js concatenated `Set-Cookie` headers (delimited by semicolons),
+ *    newline-delimited headers, and comma-separated tokens without losing cookie values or attributes.
+ * 3. **Subdomain Matching**: Respects cookie domain scoping rules (`.secunit.ru` matches `services.secunit.ru`).
+ * 4. **HTTP 411 Length Required Prevention**: Automatically injects `Content-Length: '0'` for empty `POST` or `PUT`
+ *    requests, preventing strict reverse proxies / ASP.NET IIS servers from returning 411 errors.
+ * 5. **Standard Desktop User-Agent**: Emits a standard browser User-Agent header by default to prevent anti-bot blocking.
+ */
 
 const KNOWN_COOKIE_ATTRS = new Set([
   'path',

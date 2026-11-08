@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonElement
  * 
  * @wk-id layout-models
  * @wk-tags kotlin, layout, ui
- * @wk-categories system-overview
+ * @wk-categories ui-layout-system
  *
  * Defines the spatial arrangement of Widgets (Column, Row) used by the [[ui-layout-system]].
  */

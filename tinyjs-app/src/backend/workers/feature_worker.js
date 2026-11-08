@@ -1,4 +1,20 @@
-// feature_worker.js - Sandboxed isolate worker for Feature execution
+/**
+ * @wk-id tinyjs/feature-worker
+ * @wk-title Sandboxed Feature Worker Isolate (feature_worker.js)
+ * @wk-tags tinyjs, worker, feature, sandbox, isolate, confirm, modal
+ * @wk-categories tinyjs-runtime
+ *
+ * # Feature Worker Isolate
+ *
+ * Runs user feature business logic in an isolated Web Worker QuickJS thread.
+ *
+ * ## Global Environment Setup (`setupGlobals`)
+ * - **State Value Bindings**: Synchronous `getValue(key)`, `setValue(key, val)`, and async `subscribeValue`.
+ * - **Cross-Module Proxies**: Auto-generated `${moduleName}_${fnName}` functions calling attached modules via `SyncRpcClient`.
+ * - **Modal Confirmation Dialogs**: `confirm(options, title)`, `showConfirmation`, `confirmation`.
+ * - **Feature Layouts**: `setLayout(layoutKey)`, `launchFeature(featureId)`.
+ * - **Networking & Storage**: `httpGet`, `httpPost`, `httpRequestRaw`, `storageGet/Put`, `persistentStorageGet/Put`.
+ */
 import { SyncRpcClient } from '../sync_rpc.js';
 
 let syncClient = null;

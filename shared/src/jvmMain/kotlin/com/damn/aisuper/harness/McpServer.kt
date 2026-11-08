@@ -54,7 +54,7 @@ data class McpError(
  *
  * @wk-id mcp-server
  * @wk-tags kotlin, mcp, server
- * @wk-categories system-overview
+ * @wk-categories ai-harness-skill
  *
  * Exposes the AISuper runtime to an AI agent via the MCP protocol.
  */

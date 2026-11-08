@@ -1,4 +1,26 @@
-// main.js - TinyJS backend entry point for AISuper
+/**
+ * @wk-id tinyjs/main
+ * @wk-title TinyJS Backend Entry Point (main.js)
+ * @wk-tags tinyjs, runtime, backend, entrypoint, rpc, cli, drag-drop
+ * @wk-categories tinyjs-runtime
+ *
+ * # TinyJS Backend Entry Point
+ *
+ * The root process file executed by txiki.js when TinyJS initializes.
+ * Exposes the IPC bridge API between the native system WebView frontend and the QuickJS backend.
+ *
+ * ## Responsibilities
+ * 1. **CLI Argument Processing (`init(app)`)**:
+ *    Inspects `tjs.args` for folders, manifests (`applet.json`), or `.zip` archives passed on startup.
+ * 2. **Native Drag & Drop Handling (`onOpenFiles(paths, app)`)**:
+ *    Invoked by TinyJS launcher when folders or archives are dropped directly onto the window.
+ * 3. **Frontend RPC API (`export const api`)**:
+ *    - `createSession({ manifestPath })`: Resolves manifest and starts a new session.
+ *    - `getState({ sessionId })`: Retrieves current snapshot.
+ *    - `sendAction({ sessionId, action, args })`: Dispatches button click or UI action to feature isolate.
+ *    - `setValue({ sessionId, id, value })`: Updates state value from user input (e.g. TextField, Switch).
+ *    - `respondModal({ sessionId, id, confirmed })`: Delivers confirmation decision to pending isolate.
+ */
 import { AppletSession } from './applet_session.js';
 import { resolveAppletManifest } from './applet_resolver.js';
 

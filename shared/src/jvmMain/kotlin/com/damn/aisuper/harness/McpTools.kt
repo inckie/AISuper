@@ -23,7 +23,7 @@ data class McpParameter(
  *
  * @wk-id mcp-tools
  * @wk-tags kotlin, mcp, tools
- * @wk-categories system-overview
+ * @wk-categories ai-harness-skill
  *
  * Provides a suite of tools for agents to interact with the applet lifecycle and file system.
  */

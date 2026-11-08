@@ -23,9 +23,18 @@
           "include": [
             "client-react/**/*.ts",
             "client-react/**/*.tsx",
-            "modules-ts/**/*.ts"
+            "modules-ts/**/*.ts",
+            "tinyjs-app/types/**/*.ts"
           ],
           "exclude": []
+        },
+        "javascript": {
+          "include": [
+            "tinyjs-app/src/**/*.js"
+          ],
+          "exclude": [
+            "tinyjs-app/src/frontend/assets/**"
+          ]
         }
       }
     },

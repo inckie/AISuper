@@ -1,4 +1,18 @@
-// module_worker.js - Sandboxed isolate worker for JS Modules (applet-scoped)
+/**
+ * @wk-id tinyjs/module-worker
+ * @wk-title Sandboxed JS Module Worker Isolate (module_worker.js)
+ * @wk-tags tinyjs, worker, js-module, sandbox, isolate, exports
+ * @wk-categories tinyjs-runtime
+ *
+ * # JS Module Worker Isolate
+ *
+ * Runs applet-level JS modules (e.g. `auth`, `armada_api`, `security`, `kids_tracker`) in long-lived isolates.
+ *
+ * ## Key Characteristics
+ * - **Applet Scope**: Retained in memory across feature navigations; does not terminate when features switch.
+ * - **Export Declaration**: Modules declare callable functions via `registerExports(moduleName, [functions...])`.
+ * - **Host RPC Bridge**: Storage and networking calls route through `sendHostRpc` to the host session.
+ */
 let appletContext = { appletId: '', moduleName: '' };
 const pendingHostRpcs = new Map();
 

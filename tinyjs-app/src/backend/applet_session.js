@@ -1,4 +1,33 @@
-// applet_session.js - Manages applet lifecycle, workers, layouts, themes, and snapshots
+/**
+ * @wk-id tinyjs/applet-session
+ * @wk-title TinyJS AppletSession Lifecycle & Host State (applet_session.js)
+ * @wk-tags tinyjs, applet-session, lifecycle, snapshot, isolations, workers, state
+ * @wk-categories tinyjs-runtime
+ *
+ * # AppletSession Lifecycle & Host Manager
+ *
+ * `AppletSession` orchestrates the complete runtime execution of an AISuper applet:
+ * - Manifest loading and validation (`applet.json`).
+ * - Layout parsing and theme stylesheet management (`stylesById`).
+ * - Isolate management: Spawns sandboxed `Worker` threads for features (`feature_worker.js`)
+ *   and long-lived applet-scoped JS modules (`module_worker.js`).
+ * - SharedArrayBuffer Synchronous RPC Host (`SyncRpcHost`).
+ * - Native Modal Dialog lifecycle (`confirm`, `activeModal`).
+ * - State snapshots emitted to the WebView UI (`getSnapshot()`).
+ *
+ * ## Lifecycle & Architecture
+ * 1. **Initialization (`load()`)**:
+ *    - Awaits persistent state storage (`await this.storage.init()`).
+ *    - Reads and parses the manifest and all configured style sheets.
+ *    - Launches the entry feature (`manifest.entryFeature`).
+ * 2. **Feature Transitions (`launchFeature(featureId)`)**:
+ *    - Resolves all pending invocations on the old feature worker before graceful termination.
+ *    - Creates an isolate worker with a fresh 512 KB `SharedArrayBuffer`.
+ *    - Instantiates module proxies (`${moduleName}_${fnName}`) bridging cross-isolate calls.
+ * 3. **JS Module Caching (`getOrCreateJsModule(moduleDef)`)**:
+ *    - Modules are instantiated once per applet and retained across feature changes.
+ *    - Preserves module-level heap state (e.g. `currentUser`, auth tokens).
+ */
 import { SyncRpcBuffer, SyncRpcHost } from './sync_rpc.js';
 import { StateStorage } from './storage.js';
 import { HttpService } from './http_service.js';

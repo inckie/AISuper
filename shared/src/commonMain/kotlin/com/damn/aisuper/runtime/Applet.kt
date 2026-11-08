@@ -28,7 +28,7 @@ import com.damn.aisuper.modal.ModalHostState
  * 
  * @wk-id applet-core
  * @wk-tags kotlin, runtime, lifecycle
- * @wk-categories system-overview
+ * @wk-categories applet-lifecycle
  *
  * Manages the lifecycle and feature modules for a dynamically loaded Applet.
  * See [[applet-lifecycle]] for loading mechanisms.

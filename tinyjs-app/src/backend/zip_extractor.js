@@ -1,4 +1,16 @@
-// zip_extractor.js - Pure JavaScript ZIP decompressor using Web Streams DecompressionStream
+/**
+ * @wk-id tinyjs/zip-extractor
+ * @wk-title Pure JS ZIP Extractor (zip_extractor.js)
+ * @wk-tags tinyjs, zip, decompression, streams
+ * @wk-categories tinyjs-runtime
+ *
+ * # Pure JS ZIP Extractor
+ *
+ * Zero-dependency ZIP file reader and decompressor leveraging standard Web Streams
+ * `new DecompressionStream('deflate-raw')`. Parses local file headers (`0x04034b50`),
+ * supports uncompressed (`method 0`) and Deflate (`method 8`) streams, and writes
+ * extracted file trees recursively without external binary tools.
+ */
 
 export async function extractZip(zipFilePath, destDir) {
   const bytes = await tjs.readFile(zipFilePath);

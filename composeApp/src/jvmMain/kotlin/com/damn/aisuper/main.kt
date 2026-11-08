@@ -30,7 +30,7 @@ import java.io.File
  *
  * @wk-id main-entry
  * @wk-tags kotlin, desktop, entry-point
- * @wk-categories system-overview
+ * @wk-categories architecture-overview
  *
  * Bootstraps the AISuper environment, parses CLI arguments for applet loading, and starts the MCP server.
  */
