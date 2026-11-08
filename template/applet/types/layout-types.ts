@@ -20,6 +20,11 @@ export interface StyleRule {
   alignment?: string | null;
   iconPosition?: string | null;
   iconOnly?: boolean | null;
+  noBreak?: boolean | null;
+  noWrap?: boolean | null;
+  whiteSpace?: string | null;
+  maxLines?: number | null;
+  overflow?: string | null;
 }
 
 export interface StyleTokens {
@@ -64,6 +69,8 @@ export interface TextWidget extends WidgetBase {
   type: 'Text';
   text?: string;
   align?: string | null;
+  noBreak?: boolean | null;
+  maxLines?: number | null;
 }
 
 export interface TextFieldWidget extends WidgetBase {
@@ -82,6 +89,8 @@ export interface ButtonWidget extends WidgetBase {
   icon?: string | null;
   action?: string;
   actionArgs?: JsonValue[];
+  noBreak?: boolean | null;
+  maxLines?: number | null;
 }
 
 export interface ImageWidget extends WidgetBase {

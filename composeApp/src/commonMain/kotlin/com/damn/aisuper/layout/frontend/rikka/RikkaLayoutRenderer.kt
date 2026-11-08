@@ -29,6 +29,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.damn.aisuper.layout.AudioPlayerWidget
@@ -182,11 +183,27 @@ fun RenderWidget(
                 else -> FontWeight.Normal
             }
 
+            val hasNoBreakClass = widget.classes.any {
+                it.equals("no_break", ignoreCase = true) ||
+                it.equals("no-break", ignoreCase = true) ||
+                it.equals("nowrap", ignoreCase = true) ||
+                it.equals("no-wrap", ignoreCase = true)
+            }
+            val isNoBreak = widget.noBreak == true || style.isNoBreak || hasNoBreakClass
+            val maxLines = widget.maxLines ?: style.maxLines ?: if (isNoBreak) 1 else Int.MAX_VALUE
+            val overflow = when (style.overflow?.lowercase()) {
+                "clip" -> TextOverflow.Clip
+                "ellipsis" -> TextOverflow.Ellipsis
+                else -> if (isNoBreak || maxLines != Int.MAX_VALUE) TextOverflow.Ellipsis else TextOverflow.Clip
+            }
+
             Text(
                 text = displayText,
                 variant = TextVariant.P,
                 color = textColor,
                 textAlign = textAlign,
+                maxLines = maxLines,
+                overflow = overflow,
                 style = TextStyle(fontWeight = fontWeight),
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
             )
@@ -256,6 +273,20 @@ fun RenderWidget(
             val variant = if (isGhost) zed.rainxch.rikkaui.components.ui.button.ButtonVariant.Ghost
                           else zed.rainxch.rikkaui.components.ui.button.ButtonVariant.Default
 
+            val hasNoBreakClass = widget.classes.any {
+                it.equals("no_break", ignoreCase = true) ||
+                it.equals("no-break", ignoreCase = true) ||
+                it.equals("nowrap", ignoreCase = true) ||
+                it.equals("no-wrap", ignoreCase = true)
+            }
+            val isNoBreak = widget.noBreak ?: style.noBreak ?: style.noWrap ?: if (hasNoBreakClass) true else style.isNoBreak
+            val maxLines = widget.maxLines ?: style.maxLines ?: if (isNoBreak) 1 else Int.MAX_VALUE
+            val overflow = when (style.overflow?.lowercase()) {
+                "clip" -> TextOverflow.Clip
+                "ellipsis" -> TextOverflow.Ellipsis
+                else -> if (isNoBreak || maxLines != Int.MAX_VALUE) TextOverflow.Ellipsis else TextOverflow.Clip
+            }
+
             Button(
                 onClick = { onAction(widget.action, widget.actionArgs) },
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
@@ -272,7 +303,11 @@ fun RenderWidget(
                 }
 
                 if (showText) {
-                    Text(text = widget.text)
+                    Text(
+                        text = widget.text,
+                        maxLines = maxLines,
+                        overflow = overflow
+                    )
                 }
 
                 if (showIcon && iconOnRight) {

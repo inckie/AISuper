@@ -64,7 +64,12 @@ function mergedWith(base: StyleRule, other?: StyleRule | null): StyleRule {
     paddingVertical: other.paddingVertical ?? base.paddingVertical,
     cornerRadius: other.cornerRadius ?? base.cornerRadius,
     fontSize: other.fontSize ?? base.fontSize,
-    textAlign: other.textAlign ?? base.textAlign
+    textAlign: other.textAlign ?? base.textAlign,
+    noBreak: other.noBreak ?? base.noBreak,
+    noWrap: other.noWrap ?? base.noWrap,
+    whiteSpace: other.whiteSpace ?? base.whiteSpace,
+    maxLines: other.maxLines ?? base.maxLines,
+    overflow: other.overflow ?? base.overflow
   };
 }
 

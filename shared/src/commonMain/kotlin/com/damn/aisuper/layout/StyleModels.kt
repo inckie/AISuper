@@ -32,8 +32,19 @@ data class StyleRule(
     val textAlign: String? = null, // "left", "center", "right", "justify"
     val alignment: String? = null, // "start", "center", "end", "top", "bottom"
     val iconPosition: String? = null, // "start", "end"
-    val iconOnly: Boolean? = null
+    val iconOnly: Boolean? = null,
+    val noBreak: Boolean? = null,
+    val noWrap: Boolean? = null,
+    val whiteSpace: String? = null, // "nowrap", "no-wrap", "normal", "pre"
+    val maxLines: Int? = null,
+    val overflow: String? = null // "ellipsis", "clip"
 ) {
+    val isNoBreak: Boolean
+        get() = noBreak == true ||
+                noWrap == true ||
+                whiteSpace?.equals("nowrap", ignoreCase = true) == true ||
+                whiteSpace?.equals("no-wrap", ignoreCase = true) == true
+
     fun mergedWith(other: StyleRule?): StyleRule {
         if (other == null) return this
         return StyleRule(
@@ -49,7 +60,12 @@ data class StyleRule(
             textAlign = other.textAlign ?: textAlign,
             alignment = other.alignment ?: alignment,
             iconPosition = other.iconPosition ?: iconPosition,
-            iconOnly = other.iconOnly ?: iconOnly
+            iconOnly = other.iconOnly ?: iconOnly,
+            noBreak = other.noBreak ?: noBreak,
+            noWrap = other.noWrap ?: noWrap,
+            whiteSpace = other.whiteSpace ?: whiteSpace,
+            maxLines = other.maxLines ?: maxLines,
+            overflow = other.overflow ?: overflow
         )
     }
 }
@@ -59,4 +75,3 @@ data class NamedStyleSheet(
     val name: String,
     val sheet: StyleSheet
 )
-

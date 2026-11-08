@@ -2,6 +2,7 @@ package com.damn.aisuper.layout.frontend.material3
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -190,12 +192,30 @@ fun RenderWidget(
                 else -> FontWeight.Normal
             }
 
+            val hasNoBreakClass = widget.classes.any {
+                it.equals("no_break", ignoreCase = true) ||
+                it.equals("no-break", ignoreCase = true) ||
+                it.equals("nowrap", ignoreCase = true) ||
+                it.equals("no-wrap", ignoreCase = true)
+            }
+            val isNoBreak = widget.noBreak == true || style.isNoBreak || hasNoBreakClass
+            val maxLines = widget.maxLines ?: style.maxLines ?: if (isNoBreak) 1 else Int.MAX_VALUE
+            val softWrap = !isNoBreak
+            val overflow = when (style.overflow?.lowercase()) {
+                "clip" -> TextOverflow.Clip
+                "ellipsis" -> TextOverflow.Ellipsis
+                else -> if (isNoBreak || maxLines != Int.MAX_VALUE) TextOverflow.Ellipsis else TextOverflow.Clip
+            }
+
             Text(
                 text = displayText,
                 color = textColor,
                 fontSize = fontSize,
                 textAlign = textAlign,
                 fontWeight = fontWeight,
+                maxLines = maxLines,
+                softWrap = softWrap,
+                overflow = overflow,
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style)
             )
         }
@@ -304,10 +324,27 @@ fun RenderWidget(
             val showText = style.iconOnly != true || !showIcon
             val iconOnRight = style.iconPosition == "end" || style.iconPosition == "right"
 
+            val hasNoBreakClass = widget.classes.any {
+                it.equals("no_break", ignoreCase = true) ||
+                it.equals("no-break", ignoreCase = true) ||
+                it.equals("nowrap", ignoreCase = true) ||
+                it.equals("no-wrap", ignoreCase = true)
+            }
+            val isNoBreak = widget.noBreak ?: style.noBreak ?: style.noWrap ?: if (hasNoBreakClass) true else style.isNoBreak
+            val maxLines = widget.maxLines ?: style.maxLines ?: if (isNoBreak) 1 else Int.MAX_VALUE
+            val softWrap = !isNoBreak
+            val overflow = when (style.overflow?.lowercase()) {
+                "clip" -> TextOverflow.Clip
+                "ellipsis" -> TextOverflow.Ellipsis
+                else -> if (isNoBreak || maxLines != Int.MAX_VALUE) TextOverflow.Ellipsis else TextOverflow.Clip
+            }
+            val fontSize = style.fontSize?.sp ?: TextUnit.Unspecified
+
             Button(
                 onClick = { onAction(widget.action, widget.actionArgs) },
                 modifier = modifier.then(widget.layoutModifier()).applyStyleRule(style),
-                colors = buttonColors
+                colors = buttonColors,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 if (showIcon && !iconOnRight) {
                     AsyncImage(
@@ -319,7 +356,13 @@ fun RenderWidget(
                 }
                 
                 if (showText) {
-                    Text(widget.text)
+                    Text(
+                        text = widget.text,
+                        fontSize = fontSize,
+                        maxLines = maxLines,
+                        softWrap = softWrap,
+                        overflow = overflow
+                    )
                 }
 
                 if (showIcon && iconOnRight) {

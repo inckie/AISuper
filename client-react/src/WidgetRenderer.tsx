@@ -34,6 +34,21 @@ function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
     alignSelf = 'center';
   }
 
+  const hasNoBreak =
+    style.noBreak === true ||
+    style.noWrap === true ||
+    style.whiteSpace === 'nowrap' ||
+    style.whiteSpace === 'no-wrap' ||
+    (widget as any).noBreak === true ||
+    widget.classes?.some((c) => ['no_break', 'no-break', 'nowrap', 'no-wrap'].includes(c.toLowerCase()));
+
+  const whiteSpace = hasNoBreak
+    ? 'nowrap'
+    : (style.whiteSpace as any) ?? undefined;
+
+  const textOverflow =
+    style.overflow === 'ellipsis' || hasNoBreak ? 'ellipsis' : (style.overflow as any) ?? undefined;
+
   return {
     width: widget.fillMaxWidth ? '100%' : undefined,
     height: widget.fillMaxSize ? '100%' : undefined,
@@ -44,6 +59,9 @@ function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
     borderRadius: style.cornerRadius ?? undefined,
     fontSize: style.fontSize ?? undefined,
     fontWeight: style.fontWeight ?? undefined,
+    whiteSpace,
+    textOverflow,
+    overflow: hasNoBreak ? 'hidden' : undefined,
     textAlign:
       textAlign === 'center' || textAlign === 'right' || textAlign === 'left' || textAlign === 'justify'
         ? textAlign

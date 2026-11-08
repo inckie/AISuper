@@ -161,8 +161,17 @@ fun RenderWidget(
                     "left", "start" -> TextAlign.Start
                     else -> null
                 }
+                val hasNoBreakClass = widget.classes.any {
+                    it.equals("no_break", ignoreCase = true) ||
+                    it.equals("no-break", ignoreCase = true) ||
+                    it.equals("nowrap", ignoreCase = true) ||
+                    it.equals("no-wrap", ignoreCase = true)
+                }
+                val isNoBreak = widget.noBreak == true || style.isNoBreak || hasNoBreakClass
+                val maxLines = widget.maxLines ?: style.maxLines ?: if (isNoBreak) 1 else Int.MAX_VALUE
                 Text(
                     text = displayText,
+                    maxLines = maxLines,
                     style = TextStyle(color = ColorProvider(textColor), fontSize = fontSize, textAlign = textAlign),
                     modifier = modifier.then(widget.glanceLayoutModifier()).then(style.toGlanceModifier())
                 )

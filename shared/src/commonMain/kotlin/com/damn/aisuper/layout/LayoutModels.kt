@@ -70,7 +70,9 @@ data class TextWidget(
     override val classes: List<String> = emptyList(),
     override val visibilityId: String? = null,
     val text: String = "",
-    val align: String? = null
+    val align: String? = null,
+    val noBreak: Boolean? = null,
+    val maxLines: Int? = null
 ) : Widget()
 
 @Serializable
@@ -106,7 +108,9 @@ data class ButtonWidget(
     val text: String = "",
     val icon: String? = null,
     val action: String = "",
-    val actionArgs: List<JsonElement> = emptyList()
+    val actionArgs: List<JsonElement> = emptyList(),
+    val noBreak: Boolean? = null,
+    val maxLines: Int? = null
 ) : Widget()
 
 @Serializable
