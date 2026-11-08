@@ -80,6 +80,10 @@ fun main(args: Array<String>) = application {
             val window = this.window
             LaunchedEffect(window, mcpServer) {
                 mcpServer?.setWindowBoundsProvider {
+                    try {
+                        window.toFront()
+                        window.requestFocus()
+                    } catch (_: Exception) {}
                     Rectangle(window.x, window.y, window.width, window.height)
                 }
             }

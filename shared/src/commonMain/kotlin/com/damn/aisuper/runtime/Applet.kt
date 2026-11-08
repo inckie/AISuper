@@ -7,8 +7,10 @@ import com.damn.aisuper.storage.StateStorageFactory
 import com.damn.aisuper.storage.StorageContext
 import com.damn.aisuper.storage.StorageScope
 import com.damn.aisuper.util.Logger
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -165,7 +167,7 @@ class Applet(
     }
 
 
-    suspend fun launchFeature(featureId: String) {
+    suspend fun launchFeature(featureId: String): Unit = withContext(NonCancellable) {
         val featureDef = manifest?.features?.get(featureId)
         if (featureDef != null) {
             _currentFeature.value?.close()
@@ -188,8 +190,8 @@ class Applet(
                 persistentBackend = appletPersistentStorage,
                 storageContext = storageContext
             )
-            feature.load()
             _currentFeature.value = feature
+            feature.load()
         } else {
             Logger.w("Runtime") { "Feature '$featureId' not found." }
         }
