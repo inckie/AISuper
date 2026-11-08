@@ -6,7 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,8 +78,14 @@ fun main(args: Array<String>) = application {
         }
     }
 
+    val windowState = rememberWindowState(
+        position = WindowPosition(100.dp, 100.dp),
+        size = DpSize(380.dp, 750.dp)
+    )
+
     Window(
         onCloseRequest = ::exitApplication,
+        state = windowState,
         title = "AISuper",
     ) {
         if (mcpPort != null && mcpServer != null) {
@@ -87,6 +97,9 @@ fun main(args: Array<String>) = application {
                         java.awt.EventQueue.invokeLater {
                             if (window.state == java.awt.Frame.ICONIFIED) {
                                 window.state = java.awt.Frame.NORMAL
+                            }
+                            if (window.x >= 1920 || window.x < 0) {
+                                window.setLocation(100, 100)
                             }
                             window.isAlwaysOnTop = true
                             window.toFront()
@@ -104,14 +117,20 @@ fun main(args: Array<String>) = application {
                     try {
                         java.awt.EventQueue.invokeLater {
                             window.setSize(width, height)
+                            if (window.x >= 1920 || window.x < 0) {
+                                window.setLocation(100, 100)
+                            }
                         }
                     } catch (_: Exception) {}
                 }
                 mcpServer?.setWindowTapHandler { x, y ->
                     try {
                         java.awt.EventQueue.invokeLater {
-                            val target = window.contentPane.findComponentAt(x, y) ?: window.contentPane
-                            val pt = javax.swing.SwingUtilities.convertPoint(window.contentPane, x, y, target)
+                            val insets = window.insets
+                            val contentX = (x - insets.left).coerceAtLeast(0)
+                            val contentY = (y - insets.top).coerceAtLeast(0)
+                            val target = window.contentPane.findComponentAt(contentX, contentY) ?: window.contentPane
+                            val pt = javax.swing.SwingUtilities.convertPoint(window.contentPane, contentX, contentY, target)
                             val time = System.currentTimeMillis()
 
                             // Dispatch AWT mouse events directly to the component without moving the OS mouse cursor

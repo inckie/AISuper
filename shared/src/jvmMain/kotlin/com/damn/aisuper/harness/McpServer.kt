@@ -70,6 +70,11 @@ class McpServer(
     private var windowTapHandler: ((Int, Int) -> Unit)? = null
     private var windowScrollHandler: ((Int?, Int?, Int) -> Unit)? = null
     private var windowDragHandler: ((Int, Int, Int, Int, Long) -> Unit)? = null
+    private var screenshotProvider: (() -> String)? = null
+
+    fun setScreenshotProvider(provider: () -> String) {
+        this.screenshotProvider = provider
+    }
 
     fun setWindowBoundsProvider(provider: () -> java.awt.Rectangle?) {
         windowBoundsProvider = provider
@@ -192,6 +197,8 @@ class McpServer(
         InputTapTool(this),
         InputScrollTool(this),
         InputDragTool(this),
+        ModalGetTool(applet),
+        ModalRespondTool(applet),
         AdbShellInputTool()
     ).associateBy { it.name }
 

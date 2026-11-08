@@ -486,3 +486,45 @@ class AdbShellInputTool : McpTool {
         }
     }
 }
+
+class ModalGetTool(private val applet: Applet) : McpTool {
+    override val name = "modal_get"
+    override val description = "Gets the currently active modal dialog, if any"
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val active = applet.modalHost.activeModal.value
+        return if (active is com.damn.aisuper.modal.ConfirmationRequest) {
+            buildJsonObject {
+                put("active", true)
+                put("type", "confirmation")
+                put("id", active.id)
+                put("title", active.title)
+                put("message", active.message)
+                put("confirmText", active.confirmText)
+                put("cancelText", active.cancelText)
+                put("isDestructive", active.isDestructive)
+            }
+        } else {
+            buildJsonObject {
+                put("active", false)
+            }
+        }
+    }
+}
+
+class ModalRespondTool(private val applet: Applet) : McpTool {
+    override val name = "modal_respond"
+    override val description = "Responds to the currently active modal dialog"
+    override val parameters = listOf(
+        McpParameter("confirm", "Whether to confirm (true) or cancel (false)", type = "boolean", required = true)
+    )
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val confirm = args["confirm"]?.jsonPrimitive?.booleanOrNull ?: true
+        val handled = applet.modalHost.respondToActive(confirm)
+        return buildJsonObject {
+            put("success", handled)
+            put("message", if (handled) "Responded to modal: $confirm" else "No active modal found")
+        }
+    }
+}
