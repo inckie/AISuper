@@ -4,9 +4,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.window.application
 import com.damn.aisuper.applet.AppletProviders
@@ -78,13 +80,177 @@ fun main(args: Array<String>) = application {
     ) {
         if (mcpPort != null && mcpServer != null) {
             val window = this.window
+            val coroutineScope = rememberCoroutineScope()
             LaunchedEffect(window, mcpServer) {
-                mcpServer?.setWindowBoundsProvider {
+                val focusAction = {
                     try {
-                        window.toFront()
-                        window.requestFocus()
+                        java.awt.EventQueue.invokeLater {
+                            if (window.state == java.awt.Frame.ICONIFIED) {
+                                window.state = java.awt.Frame.NORMAL
+                            }
+                            window.isAlwaysOnTop = true
+                            window.toFront()
+                            window.requestFocus()
+                            window.isAlwaysOnTop = false
+                        }
                     } catch (_: Exception) {}
+                }
+                mcpServer?.setWindowFocusHandler(focusAction)
+                mcpServer?.setWindowBoundsProvider {
+                    focusAction()
                     Rectangle(window.x, window.y, window.width, window.height)
+                }
+                mcpServer?.setWindowResizeHandler { width, height ->
+                    try {
+                        java.awt.EventQueue.invokeLater {
+                            window.setSize(width, height)
+                        }
+                    } catch (_: Exception) {}
+                }
+                mcpServer?.setWindowTapHandler { x, y ->
+                    try {
+                        java.awt.EventQueue.invokeLater {
+                            val target = window.contentPane.findComponentAt(x, y) ?: window.contentPane
+                            val pt = javax.swing.SwingUtilities.convertPoint(window.contentPane, x, y, target)
+                            val time = System.currentTimeMillis()
+
+                            // Dispatch AWT mouse events directly to the component without moving the OS mouse cursor
+                            target.dispatchEvent(java.awt.event.MouseEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_ENTERED,
+                                time,
+                                0,
+                                pt.x, pt.y,
+                                0,
+                                false
+                            ))
+                            target.dispatchEvent(java.awt.event.MouseEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_MOVED,
+                                time,
+                                0,
+                                pt.x, pt.y,
+                                0,
+                                false
+                            ))
+                            target.dispatchEvent(java.awt.event.MouseEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_PRESSED,
+                                time,
+                                java.awt.event.InputEvent.BUTTON1_DOWN_MASK,
+                                pt.x, pt.y,
+                                1,
+                                false,
+                                java.awt.event.MouseEvent.BUTTON1
+                            ))
+                            target.dispatchEvent(java.awt.event.MouseEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_RELEASED,
+                                time + 20,
+                                0,
+                                pt.x, pt.y,
+                                1,
+                                false,
+                                java.awt.event.MouseEvent.BUTTON1
+                            ))
+                            target.dispatchEvent(java.awt.event.MouseEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_CLICKED,
+                                time + 25,
+                                0,
+                                pt.x, pt.y,
+                                1,
+                                false,
+                                java.awt.event.MouseEvent.BUTTON1
+                            ))
+                        }
+                    } catch (e: Exception) {
+                        Logger.e("Harness", throwable = e) { "Failed to tap: ${e.message}" }
+                    }
+                }
+                mcpServer?.setWindowScrollHandler { x, y, amount ->
+                    try {
+                        java.awt.EventQueue.invokeLater {
+                            val px = x ?: (window.contentPane.width / 2)
+                            val py = y ?: (window.contentPane.height / 2)
+                            val target = window.contentPane.findComponentAt(px, py) ?: window.contentPane
+                            val pt = javax.swing.SwingUtilities.convertPoint(window.contentPane, px, py, target)
+                            val time = System.currentTimeMillis()
+
+                            target.dispatchEvent(java.awt.event.MouseWheelEvent(
+                                target,
+                                java.awt.event.MouseEvent.MOUSE_WHEEL,
+                                time,
+                                0,
+                                pt.x, pt.y,
+                                0,
+                                false,
+                                java.awt.event.MouseWheelEvent.WHEEL_UNIT_SCROLL,
+                                amount,
+                                amount
+                            ))
+                        }
+                    } catch (e: Exception) {
+                        Logger.e("Harness", throwable = e) { "Failed to scroll: ${e.message}" }
+                    }
+                }
+                mcpServer?.setWindowDragHandler { startX, startY, endX, endY, durationMs ->
+                    coroutineScope.launch(Dispatchers.IO) {
+                        try {
+                            val target = window.contentPane.findComponentAt(startX, startY) ?: window.contentPane
+                            val ptStart = javax.swing.SwingUtilities.convertPoint(window.contentPane, startX, startY, target)
+                            val ptEnd = javax.swing.SwingUtilities.convertPoint(window.contentPane, endX, endY, target)
+
+                            val time = System.currentTimeMillis()
+                            java.awt.EventQueue.invokeLater {
+                                target.dispatchEvent(java.awt.event.MouseEvent(
+                                    target,
+                                    java.awt.event.MouseEvent.MOUSE_PRESSED,
+                                    time,
+                                    java.awt.event.InputEvent.BUTTON1_DOWN_MASK,
+                                    ptStart.x, ptStart.y,
+                                    1,
+                                    false,
+                                    java.awt.event.MouseEvent.BUTTON1
+                                ))
+                            }
+
+                            val steps = 20
+                            val stepDelay = (durationMs / steps).coerceAtLeast(10)
+                            for (i in 1..steps) {
+                                val curX = ptStart.x + ((ptEnd.x - ptStart.x) * i / steps)
+                                val curY = ptStart.y + ((ptEnd.y - ptStart.y) * i / steps)
+                                java.awt.EventQueue.invokeLater {
+                                    target.dispatchEvent(java.awt.event.MouseEvent(
+                                        target,
+                                        java.awt.event.MouseEvent.MOUSE_DRAGGED,
+                                        System.currentTimeMillis(),
+                                        java.awt.event.InputEvent.BUTTON1_DOWN_MASK,
+                                        curX, curY,
+                                        0,
+                                        false,
+                                        java.awt.event.MouseEvent.BUTTON1
+                                    ))
+                                }
+                                Thread.sleep(stepDelay)
+                            }
+
+                            java.awt.EventQueue.invokeLater {
+                                target.dispatchEvent(java.awt.event.MouseEvent(
+                                    target,
+                                    java.awt.event.MouseEvent.MOUSE_RELEASED,
+                                    System.currentTimeMillis(),
+                                    0,
+                                    ptEnd.x, ptEnd.y,
+                                    1,
+                                    false,
+                                    java.awt.event.MouseEvent.BUTTON1
+                                ))
+                            }
+                        } catch (e: Exception) {
+                            Logger.e("Harness", throwable = e) { "Failed to drag: ${e.message}" }
+                        }
+                    }
                 }
             }
         }

@@ -65,9 +65,104 @@ class McpServer(
     private val appletRoot: File? = null
 ) {
     private var windowBoundsProvider: (() -> java.awt.Rectangle?)? = null
+    private var windowFocusHandler: (() -> Unit)? = null
+    private var windowResizeHandler: ((Int, Int) -> Unit)? = null
+    private var windowTapHandler: ((Int, Int) -> Unit)? = null
+    private var windowScrollHandler: ((Int?, Int?, Int) -> Unit)? = null
+    private var windowDragHandler: ((Int, Int, Int, Int, Long) -> Unit)? = null
 
     fun setWindowBoundsProvider(provider: () -> java.awt.Rectangle?) {
         windowBoundsProvider = provider
+    }
+
+    fun setWindowFocusHandler(handler: () -> Unit) {
+        windowFocusHandler = handler
+    }
+
+    fun setWindowResizeHandler(handler: (Int, Int) -> Unit) {
+        windowResizeHandler = handler
+    }
+
+    fun setWindowTapHandler(handler: (Int, Int) -> Unit) {
+        windowTapHandler = handler
+    }
+
+    fun setWindowScrollHandler(handler: (Int?, Int?, Int) -> Unit) {
+        windowScrollHandler = handler
+    }
+
+    fun setWindowDragHandler(handler: (Int, Int, Int, Int, Long) -> Unit) {
+        windowDragHandler = handler
+    }
+
+    fun bringToForeground(): Boolean {
+        val handler = windowFocusHandler
+        return if (handler != null) {
+            try {
+                handler.invoke()
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun resizeWindow(width: Int, height: Int): Boolean {
+        val handler = windowResizeHandler
+        return if (handler != null) {
+            try {
+                handler.invoke(width, height)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun tap(x: Int, y: Int): Boolean {
+        val handler = windowTapHandler
+        return if (handler != null) {
+            try {
+                handler.invoke(x, y)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun scroll(x: Int?, y: Int?, amount: Int): Boolean {
+        val handler = windowScrollHandler
+        return if (handler != null) {
+            try {
+                handler.invoke(x, y, amount)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun drag(startX: Int, startY: Int, endX: Int, endY: Int, durationMs: Long): Boolean {
+        val handler = windowDragHandler
+        return if (handler != null) {
+            try {
+                handler.invoke(startX, startY, endX, endY, durationMs)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     private val scope = CoroutineScope(Dispatchers.Default)
@@ -91,6 +186,12 @@ class McpServer(
         LayoutGetTool(applet),
         LayoutGetTool(applet, "ui_state_get"),
         ScreenshotTakeTool(this),
+        WindowFocusTool(this),
+        WindowBringToForegroundTool(this),
+        WindowResizeTool(this),
+        InputTapTool(this),
+        InputScrollTool(this),
+        InputDragTool(this),
         AdbShellInputTool()
     ).associateBy { it.name }
 

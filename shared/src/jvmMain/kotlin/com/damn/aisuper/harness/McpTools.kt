@@ -337,11 +337,128 @@ class ScreenshotTakeTool(private val server: McpServer) : McpTool {
     override val description = "Takes a screenshot of the window"
 
     override suspend fun execute(args: JsonObject): JsonElement {
+        server.bringToForeground()
+        kotlinx.coroutines.delay(100)
         val base64Image = server.takeScreenshot()
         return buildJsonObject {
             put("type", "image")
             put("data", base64Image)
             put("mimeType", "image/png")
+        }
+    }
+}
+
+class WindowFocusTool(private val server: McpServer) : McpTool {
+    override val name = "window_focus"
+    override val description = "Brings the application window to foreground and requests focus"
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val success = server.bringToForeground()
+        return buildJsonObject {
+            put("success", success)
+            put("message", if (success) "Window brought to foreground" else "Window focus handler not available")
+        }
+    }
+}
+
+class WindowBringToForegroundTool(private val server: McpServer) : McpTool {
+    override val name = "window_bring_to_foreground"
+    override val description = "Brings the application window to foreground and restores it if minimized"
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val success = server.bringToForeground()
+        return buildJsonObject {
+            put("success", success)
+            put("message", if (success) "Window brought to foreground" else "Window focus handler not available")
+        }
+    }
+}
+
+class WindowResizeTool(private val server: McpServer) : McpTool {
+    override val name = "window_resize"
+    override val description = "Resizes the desktop application window to the given width and height"
+    override val parameters = listOf(
+        McpParameter("width", "Window width in pixels", type = "integer"),
+        McpParameter("height", "Window height in pixels", type = "integer")
+    )
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val width = args["width"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing or invalid width")
+        val height = args["height"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing or invalid height")
+        val success = server.resizeWindow(width, height)
+        return buildJsonObject {
+            put("success", success)
+            put("width", width)
+            put("height", height)
+        }
+    }
+}
+
+class InputTapTool(private val server: McpServer) : McpTool {
+    override val name = "input_tap"
+    override val description = "Performs a tap/click at window-relative coordinates (x, y) like ADB tap"
+    override val parameters = listOf(
+        McpParameter("x", "X coordinate relative to window content area", type = "integer"),
+        McpParameter("y", "Y coordinate relative to window content area", type = "integer")
+    )
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val x = args["x"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing or invalid x")
+        val y = args["y"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing or invalid y")
+        val success = server.tap(x, y)
+        return buildJsonObject {
+            put("success", success)
+            put("x", x)
+            put("y", y)
+        }
+    }
+}
+
+class InputScrollTool(private val server: McpServer) : McpTool {
+    override val name = "input_scroll"
+    override val description = "Performs a mouse wheel scroll. Positive amount scrolls down, negative scrolls up."
+    override val parameters = listOf(
+        McpParameter("amount", "Number of scroll notches (e.g. 3 to scroll down, -3 to scroll up)", type = "integer"),
+        McpParameter("x", "Optional X coordinate relative to window content area", type = "integer", required = false),
+        McpParameter("y", "Optional Y coordinate relative to window content area", type = "integer", required = false)
+    )
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val amount = args["amount"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing or invalid amount")
+        val x = args["x"]?.jsonPrimitive?.intOrNull
+        val y = args["y"]?.jsonPrimitive?.intOrNull
+        val success = server.scroll(x, y, amount)
+        return buildJsonObject {
+            put("success", success)
+            put("amount", amount)
+        }
+    }
+}
+
+class InputDragTool(private val server: McpServer) : McpTool {
+    override val name = "input_drag"
+    override val description = "Simulates a drag/swipe gesture from (startX, startY) to (endX, endY) like ADB swipe"
+    override val parameters = listOf(
+        McpParameter("startX", "Starting X coordinate", type = "integer"),
+        McpParameter("startY", "Starting Y coordinate", type = "integer"),
+        McpParameter("endX", "Ending X coordinate", type = "integer"),
+        McpParameter("endY", "Ending Y coordinate", type = "integer"),
+        McpParameter("durationMs", "Duration of the drag in milliseconds (default 300)", type = "integer", required = false)
+    )
+
+    override suspend fun execute(args: JsonObject): JsonElement {
+        val startX = args["startX"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing startX")
+        val startY = args["startY"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing startY")
+        val endX = args["endX"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing endX")
+        val endY = args["endY"]?.jsonPrimitive?.intOrNull ?: throw IllegalArgumentException("Missing endY")
+        val durationMs = args["durationMs"]?.jsonPrimitive?.longOrNull ?: 300L
+        val success = server.drag(startX, startY, endX, endY, durationMs)
+        return buildJsonObject {
+            put("success", success)
+            put("startX", startX)
+            put("startY", startY)
+            put("endX", endX)
+            put("endY", endY)
         }
     }
 }
