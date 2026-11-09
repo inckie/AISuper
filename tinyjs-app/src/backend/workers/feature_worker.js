@@ -24,18 +24,18 @@ const pendingModals = new Map();
 function parseConfirmArgs(options, title, confirmText, cancelText, isDestructive) {
   if (typeof options === 'object' && options !== null) {
     return {
-      title: options.title || 'Подтверждение',
+      title: options.title || 'Confirmation',
       message: options.message || '',
-      confirmText: options.confirmText || 'Подтвердить',
-      cancelText: options.cancelText || 'Отмена',
+      confirmText: options.confirmText || 'Confirm',
+      cancelText: options.cancelText || 'Cancel',
       isDestructive: Boolean(options.isDestructive)
     };
   }
   return {
-    title: title || 'Подтверждение',
+    title: title || 'Confirmation',
     message: String(options || ''),
-    confirmText: confirmText || 'Подтвердить',
-    cancelText: cancelText || 'Отмена',
+    confirmText: confirmText || 'Confirm',
+    cancelText: cancelText || 'Cancel',
     isDestructive: Boolean(isDestructive)
   };
 }

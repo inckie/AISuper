@@ -172,16 +172,16 @@ class Applet(
             val isDestructive: Boolean
 
             if (firstArg is kotlinx.serialization.json.JsonObject) {
-                title = firstArg["title"]?.jsonPrimitive?.contentOrNull ?: "Подтверждение"
+                title = firstArg["title"]?.jsonPrimitive?.contentOrNull ?: "Confirmation"
                 message = firstArg["message"]?.jsonPrimitive?.contentOrNull ?: ""
-                confirmText = firstArg["confirmText"]?.jsonPrimitive?.contentOrNull ?: "Подтвердить"
-                cancelText = firstArg["cancelText"]?.jsonPrimitive?.contentOrNull ?: "Отмена"
+                confirmText = firstArg["confirmText"]?.jsonPrimitive?.contentOrNull ?: "Confirm"
+                cancelText = firstArg["cancelText"]?.jsonPrimitive?.contentOrNull ?: "Cancel"
                 isDestructive = firstArg["isDestructive"]?.jsonPrimitive?.booleanOrNull ?: false
             } else {
                 message = firstArg?.jsonPrimitive?.contentOrNull ?: ""
-                title = args.getOrNull(1)?.jsonPrimitive?.contentOrNull ?: "Подтверждение"
-                confirmText = args.getOrNull(2)?.jsonPrimitive?.contentOrNull ?: "Подтвердить"
-                cancelText = args.getOrNull(3)?.jsonPrimitive?.contentOrNull ?: "Отмена"
+                title = args.getOrNull(1)?.jsonPrimitive?.contentOrNull ?: "Confirmation"
+                confirmText = args.getOrNull(2)?.jsonPrimitive?.contentOrNull ?: "Confirm"
+                cancelText = args.getOrNull(3)?.jsonPrimitive?.contentOrNull ?: "Cancel"
                 isDestructive = args.getOrNull(4)?.jsonPrimitive?.booleanOrNull ?: false
             }
 

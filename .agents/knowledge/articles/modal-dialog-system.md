@@ -57,10 +57,10 @@ Defined in `shared/src/commonMain/kotlin/com/damn/aisuper/modal/ModalModels.kt`:
 
 - `ModalRequest`: Sealed interface defining any modal request presented over the UI.
 - `ConfirmationRequest`: Confirmation modal primitive containing:
-  - `title`: Header text
+  - `title`: Header text (default `"Confirmation"`)
   - `message`: Description text
-  - `confirmText`: Label for positive action (default `"Подтвердить"` / `"OK"`)
-  - `cancelText`: Label for negative action (default `"Отмена"`)
+  - `confirmText`: Label for positive action (default `"Confirm"` / `"OK"`)
+  - `cancelText`: Label for negative action (default `"Cancel"`)
   - `isDestructive`: Boolean flag to highlight destructive actions with error/warning styling
   - `onResult: (Boolean) -> Unit`: Callback returning user decision
 - `ModalHostState`: Interface with:
@@ -107,16 +107,16 @@ declare function confirmation(options: ConfirmationOptions | string, title?: str
 
 ```javascript
 async function onToggleProtection(objectId, targetState) {
-    var title = targetState ? "Постановка на охрану" : "Снятие с охраны";
-    var actionVerb = targetState ? "поставить объект на охрану" : "снять объект с охраны";
-    var message = "Вы уверены, что хотите " + actionVerb + "?";
+    var title = targetState ? "Arm Protection" : "Disarm Protection";
+    var actionVerb = targetState ? "arm the facility" : "disarm the facility";
+    var message = "Are you sure you want to " + actionVerb + "?";
 
     // Non-cancellable awaitable confirmation
     var confirmed = await confirm({
         title: title,
         message: message,
-        confirmText: targetState ? "Поставить" : "Снять",
-        cancelText: "Отмена",
+        confirmText: targetState ? "Arm" : "Disarm",
+        cancelText: "Cancel",
         isDestructive: !targetState // Highlight disarming in red/destructive
     });
 

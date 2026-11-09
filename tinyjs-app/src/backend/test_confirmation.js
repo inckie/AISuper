@@ -77,6 +77,8 @@ async function run() {
   assert(lastSnapshot?.modal !== null, 'Simple string modal request dispatched');
   assert(lastSnapshot.modal.title === 'Quick Confirmation', `Simple title: ${lastSnapshot.modal.title}`);
   assert(lastSnapshot.modal.message === 'Proceed with default configuration?', `Simple message: ${lastSnapshot.modal.message}`);
+  assert(lastSnapshot.modal.confirmText === 'Confirm', `Default confirm text is Confirm: ${lastSnapshot.modal.confirmText}`);
+  assert(lastSnapshot.modal.cancelText === 'Cancel', `Default cancel text is Cancel: ${lastSnapshot.modal.cancelText}`);
 
   const modal3Id = lastSnapshot.modal.id;
   session.respondToModal(modal3Id, true);

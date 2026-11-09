@@ -23,7 +23,7 @@ data class ConfirmationRequest(
     val title: String,
     val message: String,
     val confirmText: String = "OK",
-    val cancelText: String = "Отмена",
+    val cancelText: String = "Cancel",
     val isDestructive: Boolean = false,
     val onResult: (Boolean) -> Unit
 ) : ModalRequest
@@ -38,7 +38,7 @@ interface ModalHostState {
         title: String,
         message: String,
         confirmText: String = "OK",
-        cancelText: String = "Отмена",
+        cancelText: String = "Cancel",
         isDestructive: Boolean = false
     ): Boolean
 

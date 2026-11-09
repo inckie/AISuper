@@ -301,7 +301,7 @@ export default function App(): JSX.Element {
       {snapshot?.modal && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-dialog">
-            <h3 className="modal-title">{snapshot.modal.title || 'Подтверждение'}</h3>
+            <h3 className="modal-title">{snapshot.modal.title || 'Confirmation'}</h3>
             {snapshot.modal.message && (
               <p className="modal-message">{snapshot.modal.message}</p>
             )}
@@ -311,14 +311,14 @@ export default function App(): JSX.Element {
                 className="modal-btn modal-cancel-btn"
                 onClick={() => handleModalResponse(snapshot.modal!.id, false)}
               >
-                {snapshot.modal.cancelText || 'Отмена'}
+                {snapshot.modal.cancelText || 'Cancel'}
               </button>
               <button
                 type="button"
                 className={`modal-btn modal-confirm-btn${snapshot.modal.isDestructive ? ' destructive' : ''}`}
                 onClick={() => handleModalResponse(snapshot.modal!.id, true)}
               >
-                {snapshot.modal.confirmText || 'Подтвердить'}
+                {snapshot.modal.confirmText || 'Confirm'}
               </button>
             </div>
           </div>
