@@ -50,7 +50,6 @@ Contains:
 | `modal/` | Decoupled modal system: `ModalRequest`, `ConfirmationRequest`, `ModalHostState`, `DefaultModalHostState` (see [[modal-dialog-system\|Modal Dialog System]]) |
 | `modules/` | `FeatureModule`, `FeatureModuleContext`, `FeatureModuleHost`, `FeatureModuleFactory`; built-in impls: `http`, `audioPlayer`, `geolocation`, `jsModule`, `mcpHttp` |
 | `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` |
-| `headless/` | `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels` (DTOs), `RemoteAppletClient` (Ktor HTTP client) |
 
 ### `:applet-provider`  *(Kotlin Multiplatform library)*
 Targets: same as `:shared` + Compose Resources plugin.
@@ -87,7 +86,7 @@ Loads applets via `ComposeAppletProvider` from `:applet-provider`.
 Thin Android app module that depends on `:composeApp`. Provides `AndroidManifest.xml`, signing, and packaging.
 
 ### `:server`  *(JVM application – Ktor)*
-A **headless HTTP server** that runs applets server-side and exposes them over REST + SSE so web/remote clients can drive them.
+A **headless HTTP server** that runs applets server-side and exposes them over REST + SSE so web/remote clients can drive them. Contains the headless layer (`com.damn.aisuper.headless`: `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels`, `RemoteAppletClient`).
 
 Entry point: `ServerMain.kt`
 1. Builds an `AppletResourceLoader` via `AppletProviders.filesystem(fallbackToClasspath = true)`.

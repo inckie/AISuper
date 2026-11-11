@@ -2,7 +2,7 @@
 
 JVM HTTP/SSE transport exposing headless runtime sessions from `:shared`.
 
-Core abstractions (`HeadlessSessionManager`, snapshots, API DTOs, remote client) live in `com.damn.aisuper.headless` inside `:shared`.
+Core abstractions (`HeadlessSessionManager`, snapshots, API DTOs, remote client) live in `com.damn.aisuper.headless` inside `:server`.
 
 ## Endpoints
 

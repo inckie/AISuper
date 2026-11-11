@@ -8,7 +8,7 @@ including all Gradle/npm modules, their responsibilities, and their interactions
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                         :shared  (KMP library)                            │
-│   runtime │ engine │ layout │ modules │ storage │ headless                │
+│   runtime │ engine │ layout │ modules │ storage                          │
 │   Android · iOS · JVM · JS · wasmJS · quickJS                            │
 └───────┬─────────────────────────────────────────┬────────────────────────┘
         │                                         │
@@ -54,7 +54,6 @@ Every other module depends on this one.
 | `layout/` | `Widget` (union type), `LayoutRoot`, `StyleSheet`, `StyleRule`, `StyleTokens` | Platform-agnostic JSON layout model – no rendering |
 | `modules/` | `FeatureModule`, `FeatureModuleContext`, `FeatureModuleHost`, `FeatureModuleFactory`; impls: `http`, `audioPlayer`, `geolocation`, `jsModule`, `mcpHttp` | Native Kotlin modules that extend JS context |
 | `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` | Hierarchical, scope-isolated state |
-| `headless/` | `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels`, `RemoteAppletClient` | Server-side session lifecycle + REST/SSE DTOs |
 
 ### `:applet-provider`
 **Type**: Kotlin Multiplatform library (with Compose Resources)
@@ -282,7 +281,7 @@ UI Widget (onAction)
 - Modules register functions into JS context via `context.registerFunction` / `context.registerSuspendFunction`
 
 ### 6. Headless Layer
-**File**: `shared/src/commonMain/kotlin/.../headless/`
+**File**: `kotlin/server/src/main/kotlin/.../headless/`
 
 - `HeadlessSession` bridges `Applet` state flows → `SharedFlow<HeadlessSessionSnapshot>`
 - `HeadlessSessionManager` manages session lifecycle
