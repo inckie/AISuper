@@ -3,6 +3,8 @@ package com.damn.aisuper.lanterna
 import com.damn.aisuper.applet.AppletProviders
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.*
+import com.damn.aisuper.modal.ConfirmationRequest
+import com.damn.aisuper.modal.ModalRequest
 import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.util.LogLevel
 import com.damn.aisuper.util.Logger
@@ -173,6 +175,54 @@ fun main(args: Array<String>) {
                             mainPanel.addComponent(Label("Loading Feature Layout..."))
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // 3b. Observe and display Modal Requests (e.g. non-cancellable confirmations).
+    // Note: We use a custom BasicWindow instead of Lanterna's built-in MessageDialog because:
+    // 1) Applets specify arbitrary button labels (e.g. "Arm", "Disarm", "Delete") via confirmText/cancelText,
+    //    whereas MessageDialog is restricted to predefined MessageDialogButton enum values (OK, Cancel, Yes, No, etc.).
+    // 2) Non-blocking reactive lifecycle allows closing the dialog immediately if answered or dismissed
+    //    remotely (e.g. via MCP automation tool `modal_respond`).
+    // 3) Explicitly enforces non-cancellable semantics (setCloseWindowWithEscape(false)).
+    scope.launch {
+        var currentModalWindow: BasicWindow? = null
+        applet.modalHost.activeModal.collect { modal ->
+            gui.updateUI {
+                currentModalWindow?.let { win ->
+                    gui.removeWindow(win)
+                    currentModalWindow = null
+                }
+
+                if (modal is ConfirmationRequest) {
+                    val dialog = BasicWindow(modal.title)
+                    dialog.setHints(listOf(Window.Hint.MODAL, Window.Hint.CENTERED))
+                    dialog.setCloseWindowWithEscape(false)
+
+                    val panel = Panel(LinearLayout(Direction.VERTICAL))
+                    panel.addComponent(Label(modal.message))
+                    panel.addComponent(EmptySpace(TerminalSize(0, 1)))
+
+                    val buttonPanel = Panel(LinearLayout(Direction.HORIZONTAL))
+                    val confirmBtn = Button(modal.confirmText) {
+                        modal.onResult(true)
+                        dialog.close()
+                    }
+                    val cancelBtn = Button(modal.cancelText) {
+                        modal.onResult(false)
+                        dialog.close()
+                    }
+
+                    buttonPanel.addComponent(confirmBtn)
+                    buttonPanel.addComponent(cancelBtn)
+                    panel.addComponent(buttonPanel)
+
+                    dialog.component = panel
+                    currentModalWindow = dialog
+                    gui.addWindow(dialog)
+                    confirmBtn.takeFocus()
                 }
             }
         }
