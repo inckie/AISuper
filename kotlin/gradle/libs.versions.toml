@@ -1,6 +1,6 @@
 [versions]
-agp = "9.3.2"
-agpKmp = "9.3.2"
+agp = "9.5.1"
+agpKmp = "9.5.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -22,13 +22,13 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.12.0"
 material3 = "1.12.0-alpha03"
 keight = "0.0.07"
-quickjsKt = "1.0.15"
+quickjsKt = "1.0.18"
 ktor = "3.6.1"
 coil = "3.6.3"
 glance = "1.2.0"
 klibsKstorage = "5.4.0"
 kotlinx-browser = "0.5.0"
-kotlinx-datetime = "0.7.1"
+kotlinx-datetime = "0.8.0"
 
 [libraries]
 composemediaplayer-audio = { module = "io.github.kdroidfilter:composemediaplayer-audio", version.ref = "composemediaplayerAudio" }
