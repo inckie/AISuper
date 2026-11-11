@@ -41,8 +41,6 @@ class LogBufferSink(private val maxEntries: Int = 1000) : LogSink {
     fun clear() = _entries.clear()
 }
 
-internal expect fun currentTimeMillis(): Long
-
 object Logger {
     var minLevel: LogLevel = LogLevel.DEBUG
     private val tagLevels = mutableMapOf<String, LogLevel>()
