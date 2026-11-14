@@ -164,7 +164,7 @@ Pass the path to your custom applet ZIP or directory as a command-line argument:
 .\gradlew.bat :composeApp:run --args="C:\path\to\my-applet.zip"
 ```
 
-*For more details on building the JVM Desktop app, see [JVM Application Packaging Guide](docs/JVM_APP_PACKAGING.md).*
+*For more details on building and packaging the JVM Desktop app, see the `applet-lifecycle` article in the `wikiknowledge-aisuper` Knowledge Base.*
 
 ### Loading on Android
 On Android, only `.zip` applets are supported. You can load a custom applet using two methods:

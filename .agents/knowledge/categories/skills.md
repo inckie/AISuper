@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T04:51:20.602117+00:00'
 id: skills
-modified: '2026-09-15T12:08:10.233466+00:00'
+modified: '2026-11-14T03:01:02.068787+00:00'
 tags:
 - skills
 - ai-agent
@@ -24,7 +24,7 @@ This category contains specialized guidelines, references, and recipes designed 
 ## Articles in This Category
 
 <!-- ai:start -->
-### [[ponytail-skill|Ponytail AI Development Skill]]
+### [[ponytail-skill|Ponytail: Minimalist AI Development Skill]]
 **MANDATORY CODING DISCIPLINE.** Enforces the ladder of simplicity (YAGNI, stdlib/native first, shortest diff) for both core Kotlin runtime and TS/JSON applets.
 
 ### [[applet-developer|Applet Developer Workflow]]
@@ -37,7 +37,7 @@ The primary entry point for AI applet developers. Defines the sandbox purpose, k
 A comprehensive guide to building UIs. Details widget properties, reactive data binding patterns (Static vs Dynamic), and responsive design strategies.
 
 ### [[js-modules-creation-skill|JS Modules Creation Skill]]
-Specific technical rules for creating TypeScript/JavaScript modules. Covers the Keight runtime's compatibility rules and the JS-to-Kotlin bridge contract.
+Specific technical rules for creating and testing TypeScript/JavaScript modules. Covers Keight runtime compatibility rules, polyfill testing, and the JS-to-Kotlin bridge contract.
 
 ### [[ai-harness-skill|AI Harness Skill]]
 Technical reference for the MCP-based development harness. Lists available tools for reloading applets, inspecting state, and viewing logs in real-time.

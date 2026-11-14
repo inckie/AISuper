@@ -2,7 +2,7 @@
 categories: []
 created: '2026-06-20T05:03:43.480844+00:00'
 id: system-overview
-modified: '2026-11-08T04:17:28.780338+00:00'
+modified: '2026-11-14T03:01:56.512181+00:00'
 tags:
 - overview
 - philosophy
@@ -34,12 +34,13 @@ The system is composed of two primary actors:
 ### [[architecture|Architecture]] & [[architecture-overview|System Architecture]]
 Overview of the core engineering foundations and execution environments powering AISuper:
 - **[[architecture|Architecture]]**: Master category covering the high-level design, KMP Multiplatform logic core, dynamic layout engines, and the standalone TinyJS runtime.
-- **[[architecture-overview|Architecture Overview]]**: Detailed technical breakdown of the Kotlin Multiplatform core, the headless server layer, and the React web frontend.
+- **[[architecture-overview|Architecture Overview]]**: Detailed technical breakdown of the Kotlin Multiplatform core, the headless server layer, platform backends, security model, and the React web frontend.
 
 ### Subsystems & User Interface
 - **[[ui-layout-system|UI and Layout System]]**: Reference for the data-driven JSON widget hierarchy rendered natively (Compose) or in WebViews (React).
 - **[[modal-dialog-system|Modal Dialog and Confirmation System]]**: Awaitable, non-cancellable confirmation modal architecture ensuring user verification for security-critical actions across all runtimes.
-- **[[applet-lifecycle|Applet Lifecycle and Loading]]**: Technical details on how applets are packaged, distributed, verified, and dynamically loaded across platforms.
+- **[[state-management-and-persistence|State Management and Persistence]]**: Type-safe, scope-isolated dual-storage architecture (transient in-memory and persistent `KStorage` backends) across `APPLET`, `FEATURE`, `MODULE`, and `MODULE_GLOBAL` scopes.
+- **[[applet-lifecycle|Applet Lifecycle and Loading]]**: Technical details on how applets are packaged, distributed, verified, and dynamically loaded across platforms, including JVM Desktop and Lanterna TUI packaging.
 
 ### AI Developer Capabilities & Tooling
 - **[[skills|AI Developer Skills]]**: Index of specialized skills, developer workflows, and Model Context Protocol (MCP) tooling enabling AI agents to design, generate, debug, and test applets.

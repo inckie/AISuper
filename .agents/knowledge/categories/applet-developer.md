@@ -3,7 +3,7 @@ categories:
 - skills
 created: '2026-06-20T04:56:56.680754+00:00'
 id: applet-developer
-modified: '2026-07-02T01:14:47.158915+00:00'
+modified: '2026-11-14T03:00:58.539778+00:00'
 tags:
 - skills
 - applet-developer
@@ -31,6 +31,9 @@ By following these skills, an agent can build complex, responsive, and reliable 
 ## Articles in This Category
 
 <!-- ai:start -->
+### [[ponytail-skill|Ponytail: Minimalist AI Development Skill]]
+Mandatory minimalist coding discipline enforcing the ladder of simplicity (YAGNI, stdlib/native widgets first, shortest working diff).
+
 ### [[applet-developer-skill|Applet Developer Skill]]
 The core entry point defining the purpose and mindset of an applet developer.
 
@@ -47,7 +50,7 @@ A comprehensive dictionary of all supported visual UI widgets (like `Column`, `R
 Documentation for the real-time development environment and MCP-based control bridge.
 
 ### [[js-modules-creation-skill|JS Modules Creation Skill]]
-Guidelines for writing TypeScript/JavaScript modules that are compatible with the Keight runtime.
+Guidelines for writing and unit testing TypeScript/JavaScript modules compatible with the Keight runtime.
 
 ### [[applet-debugging-recipes-skill|Applet Debugging Recipes]]
 Practical hints for inspecting logs, state, and layouts to solve common development issues.

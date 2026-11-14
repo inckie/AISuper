@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:58.173333+00:00'
 id: js-modules-creation-skill
-modified: '2026-09-15T12:09:05.407181+00:00'
+modified: '2026-11-14T03:00:30.132341+00:00'
 tags:
 - skills
 - js-modules
@@ -201,6 +201,9 @@ The parser automatically decodes XML entities, extracts attributes into an `@att
 Following [[ponytail-skill]], non-trivial module logic must leave ONE runnable check behind:
 - Parser/unit checks (Node):
   - `modules-ts/tests/*.test.mjs`
+- Vitest + Polyfills (`modules-ts/tests/test-setup.ts`):
+  - Provides `setupTestEnvironment()`, `mockHttpGet(url, response)`, `parseXmlString(xml)` (matching Kotlin `XmlJsonParser` output), and sample fixtures (e.g. `MetroMoverTestData`).
+  - Call `setupTestEnvironment()` in `beforeEach()`, register mock responses with `mockHttpGet()`, and assert parsed outputs without booting the Kotlin runtime.
 - Keight behavior (JVM common tests):
   - `composeApp/src/commonTest/kotlin/com/damn/aisuper/engine/KeightJSModuleIntegrationTest.kt`
 
@@ -210,7 +213,7 @@ Following [[ponytail-skill]], non-trivial module logic must leave ONE runnable c
 # Set JAVA_HOME once per session
 $env:JAVA_HOME="c:\Users\ink\.jdks\jbr-21.0.8\"
 
-# Build TypeScript modules → JS assets
+# Build TypeScript modules → JS assets (also supports: npm run typecheck, npm run watch, npm test)
 Set-Location "D:\Work\Mobile\Android\AISuper\modules-ts"
 npm run build
 

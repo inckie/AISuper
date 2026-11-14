@@ -4,7 +4,7 @@ categories:
 - architecture
 created: '2026-06-20T04:50:15.468213+00:00'
 id: architecture-overview
-modified: '2026-11-08T02:32:17.627367+00:00'
+modified: '2026-11-14T03:00:43.489191+00:00'
 tags:
 - architecture
 - overview
@@ -49,7 +49,7 @@ Contains:
 | `layout/` | Serializable widget model: `Widget` union, `LayoutRoot`, `StyleSheet`, `StyleRule`, `StyleTokens` |
 | `modal/` | Decoupled modal system: `ModalRequest`, `ConfirmationRequest`, `ModalHostState`, `DefaultModalHostState` (see [[modal-dialog-system\|Modal Dialog System]]) |
 | `modules/` | `FeatureModule`, `FeatureModuleContext`, `FeatureModuleHost`, `FeatureModuleFactory`; built-in impls: `http`, `audioPlayer`, `geolocation`, `jsModule`, `mcpHttp` |
-| `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` |
+| `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` (see [[state-management-and-persistence\|State Management and Persistence]]) |
 
 ### `:applet-provider`  *(Kotlin Multiplatform library)*
 Targets: same as `:shared` + Compose Resources plugin.
@@ -86,7 +86,7 @@ Loads applets via `ComposeAppletProvider` from `:applet-provider`.
 Thin Android app module that depends on `:composeApp`. Provides `AndroidManifest.xml`, signing, and packaging.
 
 ### `:server`  *(JVM application – Ktor)*
-A **headless HTTP server** that runs applets server-side and exposes them over REST + SSE so web/remote clients can drive them. Contains the headless layer (`com.damn.aisuper.headless`: `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels`, `RemoteAppletClient`).
+A **headless HTTP server** that runs applets server-side and exposes them over REST + SSE so web/remote clients can drive them without a native runtime. Contains the headless layer (`com.damn.aisuper.headless`: `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels`, `RemoteAppletClient`).
 
 Entry point: `ServerMain.kt`
 1. Builds an `AppletResourceLoader` via `AppletProviders.filesystem(fallbackToClasspath = true)`.
@@ -169,3 +169,21 @@ UI event (Compose click / React button)
                               ├─ May call setValue(key, value) → values StateFlow emits
                               └─ Layout / values changes → snapshot pushed to client (SSE / recompose)
 ```
+
+---
+
+## Platform Backends & Security Model
+
+### Platform Matrix
+* **Android**: QuickJS (Keight), `SharedPreferences` (`KStorage`), Compose + Glance (App Widgets)
+* **iOS**: QuickJS (Keight), `UserDefaults` (`KStorage`), Compose Multiplatform
+* **Desktop/JVM**: QuickJS (Keight), file-based properties (`KStorage`), Compose for Desktop / Lanterna TUI
+* **Web / Browser (Compose)**: Native browser JS, `LocalStorage` (`KStorage`), Compose for Web canvas
+* **Web / Browser (React)**: No Kotlin; `client-react/` connects to `:server` via REST/SSE with server-side storage
+
+### Security Model
+1. **Scope Enforcement**: `ScopedStateStorage` prevents cross-scope access (see [[state-management-and-persistence|State Management and Persistence]]).
+2. **Script Isolation**: JS executes in a sandboxed engine; only explicitly registered host functions are callable.
+3. **Function Registration**: Native modules declare their exact JS surface via `registerFunction` / `registerSuspendFunction`.
+4. **Type Validation**: Automatic `JsonElement` ↔ JS conversion via `JsonBridgeConversion`.
+5. **No Direct File Access**: All I/O is routed through controlled modules.

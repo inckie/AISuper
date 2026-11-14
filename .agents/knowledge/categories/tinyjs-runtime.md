@@ -3,7 +3,7 @@ categories:
 - architecture
 created: '2026-11-08T04:01:32.145297+00:00'
 id: tinyjs-runtime
-modified: '2026-11-08T04:16:49.551932+00:00'
+modified: '2026-11-14T03:01:23.817704+00:00'
 tags:
 - tinyjs
 - quickjs

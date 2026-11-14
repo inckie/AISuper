@@ -83,9 +83,7 @@ npm run watch
 
 ## Documentation
 
-- **[JS Module Development Guide](../docs/JS_MODULE_DEVELOPMENT.md)** - Complete guide for writing JS modules
-- **[Testing JS Modules](../docs/TESTING_JS_MODULES.md)** - How to test modules with polyfills
-- **[XML Parsing Architecture](../docs/ARCHITECTURE_XML_PARSING.md)** - How XML parsing works with Kotlin/JS integration
+Documentation for JS module development, Keight runtime compatibility, polyfill testing, and XML parsing is maintained in the `wikiknowledge-aisuper` Knowledge Base (see `js-modules-creation-skill`).
 
 ## Development Environment
 
