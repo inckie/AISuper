@@ -6,43 +6,180 @@
     "destructiveColor": "#DC2626"
   },
   "defaults": {
-    "Column": { "padding": 16 },
-    "Row": { "paddingVertical": 8 },
-    "Text": { "textColor": "#D645B5", "fontSize": 16 },
-    "TextField": { "containerColor": "#FFE8F5", "textColor": "#D645B5", "cornerRadius": 24, "paddingVertical": 2 },
-    "Button": { "containerColor": "#F066B3", "textColor": "#FFFFFF", "cornerRadius": 24, "padding": 2 },
-    "Dropdown": { "containerColor": "#FFEBF5", "textColor": "#B3559F", "cornerRadius": 20 },
-    "AudioPlayer": { "backgroundColor": "#FFD7E7", "cornerRadius": 24, "padding": 10 }
+    "Column": {
+      "padding": 16
+    },
+    "Row": {
+      "paddingVertical": 8
+    },
+    "Text": {
+      "textColor": "#D645B5",
+      "fontSize": 16
+    },
+    "TextField": {
+      "containerColor": "#FFE8F5",
+      "textColor": "#D645B5",
+      "cornerRadius": 24,
+      "paddingVertical": 2
+    },
+    "Button": {
+      "containerColor": "#F066B3",
+      "textColor": "#FFFFFF",
+      "cornerRadius": 24,
+      "padding": 2
+    },
+    "Dropdown": {
+      "containerColor": "#FFEBF5",
+      "textColor": "#B3559F",
+      "cornerRadius": 20
+    },
+    "AudioPlayer": {
+      "backgroundColor": "#FFD7E7",
+      "cornerRadius": 24,
+      "padding": 10
+    }
   },
   "classes": {
-    "screen": { "backgroundColor": "#FFF0F9", "padding": 12 },
-    "header_text": { "textColor": "#B3559F", "paddingVertical": 12, "fontSize": 24, "textAlign": "center", "fontWeight": "bold" },
-    "section_title": { "textColor": "#D645B5", "paddingVertical": 8, "fontSize": 20, "fontWeight": "bold" },
-    "menu_button": { "containerColor": "#F066B3", "textColor": "#FFF7FB", "cornerRadius": 32 },
-    "back_button": { "containerColor": "#F472B6", "textColor": "#4A044E", "cornerRadius": 32 },
-    "theme_dropdown": { "containerColor": "#FFEBF5", "textColor": "#B3559F", "cornerRadius": 20 },
-    "icon_only": { "iconOnly": true, "padding": 4 },
-    "icon_right": { "iconPosition": "end" },
-    "ghost_button": { "containerColor": "transparent", "textColor": "#D645B5" },
-    "message_bubble": { "padding": 10, "cornerRadius": 16, "fontSize": 15 },
-    "user_bubble": { "backgroundColor": "#F066B3", "textColor": "#FFFFFF", "alignment": "end" },
-    "echo_bubble": { "backgroundColor": "#FFE8F5", "textColor": "#D645B5", "alignment": "start" },
-    "system_message": { "textColor": "#B3559F", "fontSize": 14, "alignment": "center", "fontWeight": "bold" },
-    "bg-accent": { "backgroundColor": "#F066B3" },
-    "bg-accent-light": { "backgroundColor": "#FFE8F5" },
-    "p-2": { "padding": 8 },
-    "rounded-lg": { "cornerRadius": 12 },
-    "align-end": { "alignment": "end" },
-    "align-start": { "alignment": "start" },
-    "align-center": { "alignment": "center" },
-    "text-right": { "textAlign": "right" },
-    "text-center": { "textAlign": "center" },
-    "small_text": { "fontSize": 12 },
-    "hourly_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
-    "hourly_cell_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 },
-    "daily_row": { "paddingHorizontal": 6, "paddingVertical": 4 },
-    "daily_row_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 },
-    "daily_cell": { "paddingHorizontal": 6, "paddingVertical": 4 },
-    "daily_cell_alt": { "backgroundColor": "#FFE4F4", "paddingHorizontal": 6, "paddingVertical": 4 }
+    "screen": {
+      "backgroundColor": "#FFF0F9",
+      "padding": 12
+    },
+    "header_text": {
+      "textColor": "#B3559F",
+      "paddingVertical": 12,
+      "fontSize": 24,
+      "textAlign": "center",
+      "fontWeight": "bold"
+    },
+    "section_title": {
+      "textColor": "#D645B5",
+      "paddingVertical": 8,
+      "fontSize": 20,
+      "fontWeight": "bold"
+    },
+    "menu_button": {
+      "containerColor": "#F066B3",
+      "textColor": "#FFF7FB",
+      "cornerRadius": 32
+    },
+    "back_button": {
+      "containerColor": "#F472B6",
+      "textColor": "#4A044E",
+      "cornerRadius": 32
+    },
+    "theme_dropdown": {
+      "containerColor": "#FFEBF5",
+      "textColor": "#B3559F",
+      "cornerRadius": 20
+    },
+    "icon_only": {
+      "iconOnly": true,
+      "padding": 4
+    },
+    "icon_right": {
+      "iconPosition": "end"
+    },
+    "ghost_button": {
+      "containerColor": "transparent",
+      "textColor": "#D645B5"
+    },
+    "message_bubble": {
+      "padding": 10,
+      "cornerRadius": 16,
+      "fontSize": 15
+    },
+    "user_bubble": {
+      "backgroundColor": "#F066B3",
+      "textColor": "#FFFFFF",
+      "alignment": "end"
+    },
+    "echo_bubble": {
+      "backgroundColor": "#FFE8F5",
+      "textColor": "#D645B5",
+      "alignment": "start"
+    },
+    "system_message": {
+      "textColor": "#B3559F",
+      "fontSize": 14,
+      "alignment": "center",
+      "fontWeight": "bold"
+    },
+    "bg-accent": {
+      "backgroundColor": "#F066B3"
+    },
+    "bg-accent-light": {
+      "backgroundColor": "#FFE8F5"
+    },
+    "p-2": {
+      "padding": 8
+    },
+    "rounded-lg": {
+      "cornerRadius": 12
+    },
+    "align-end": {
+      "alignment": "end"
+    },
+    "align-start": {
+      "alignment": "start"
+    },
+    "align-center": {
+      "alignment": "center"
+    },
+    "text-right": {
+      "textAlign": "right"
+    },
+    "text-center": {
+      "textAlign": "center"
+    },
+    "small_text": {
+      "fontSize": 12
+    },
+    "hourly_cell": {
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "hourly_cell_alt": {
+      "backgroundColor": "#FFE4F4",
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "daily_row": {
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "daily_row_alt": {
+      "backgroundColor": "#FFE4F4",
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "daily_cell": {
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "daily_cell_alt": {
+      "backgroundColor": "#FFE4F4",
+      "paddingHorizontal": 6,
+      "paddingVertical": 4
+    },
+    "arrival_card": {
+      "backgroundColor": "#FFE8F5",
+      "padding": 10,
+      "cornerRadius": 12
+    },
+    "arrival_eta": {
+      "textColor": "#BE185D",
+      "fontWeight": "bold",
+      "textAlign": "right"
+    },
+    "notice_card": {
+      "backgroundColor": "#FEF3C7",
+      "padding": 10,
+      "cornerRadius": 12
+    },
+    "notice_title": {
+      "textColor": "#92400E",
+      "fontWeight": "bold",
+      "fontSize": 14
+    }
   }
 }

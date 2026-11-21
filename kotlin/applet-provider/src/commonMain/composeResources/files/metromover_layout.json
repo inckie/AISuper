@@ -72,6 +72,11 @@
       },
       {
         "type": "Column",
+        "dynamicChildrenId": "metromoverTabs",
+        "fillMaxWidth": true
+      },
+      {
+        "type": "Column",
         "dynamicChildrenId": "metromoverContent",
         "fillMaxWidth": true,
         "weight": 1,

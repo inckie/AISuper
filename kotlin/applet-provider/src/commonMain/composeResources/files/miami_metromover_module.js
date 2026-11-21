@@ -308,14 +308,23 @@ async function get_network_svg(active_loops, highlight_station_id, width = 720, 
   if (include_trains) {
     try {
       const trains = await get_trains();
+      const dirToAngle = { NB: 0, EB: 90, SB: 180, WB: 270 };
       for (const train of trains) {
         if (!Number.isFinite(train.latitude) || !Number.isFinite(train.longitude)) continue;
         const loopId = normalizeId(train.loopId || "");
         if (loopId && !activeSet.has(loopId) && activeSet.size > 0) continue;
         const [tx, ty] = project(train.latitude, train.longitude);
-        const trainColor = loopId && ((_a = routeMap.get(loopId)) == null ? void 0 : _a.color) || "#1E293B";
-        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="7" fill="${trainColor}" stroke="white" stroke-width="2"/>`);
-        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="2.5" fill="white"/>`);
+        const trainColor = loopId && ((_a = routeMap.get(loopId)) == null ? void 0 : _a.color) || "#F59E0B";
+        const angleDeg = Number.isFinite(train.heading)
+          ? train.heading
+          : (train.direction && dirToAngle[train.direction] !== void 0 ? dirToAngle[train.direction] : null);
+        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="13" fill="white" opacity="0.95"/>`);
+        svgParts.push(`<circle cx="${tx}" cy="${ty}" r="10.5" fill="#0F172A" stroke="${trainColor}" stroke-width="3"/>`);
+        if (angleDeg !== null) {
+          svgParts.push(`<polygon points="0,-7 5.5,5 0,2 -5.5,5" fill="#FACC15" transform="translate(${tx},${ty}) rotate(${angleDeg})"/>`);
+        } else {
+          svgParts.push(`<polygon points="0,-5.5 5.5,0 0,5.5 -5.5,0" fill="#FACC15" transform="translate(${tx},${ty})"/>`);
+        }
         liveTrainsCount++;
       }
     } catch (_) {
@@ -491,6 +500,16 @@ function parseTrainsJson(jsonStr) {
       const match = item.Info.match(/\((SB|NB|EB|WB)\)/i);
       if (match) direction = match[1].toUpperCase();
     }
+    if (!direction && item.Direction) {
+      const d = String(item.Direction).trim().toUpperCase();
+      if (d === "NB" || d === "SB" || d === "EB" || d === "WB") direction = d;
+      else if (d.startsWith("N")) direction = "NB";
+      else if (d.startsWith("S")) direction = "SB";
+      else if (d.startsWith("E")) direction = "EB";
+      else if (d.startsWith("W")) direction = "WB";
+    }
+    const rawHeading = item.Heading !== void 0 && item.Heading !== null ? Number(item.Heading) : NaN;
+    const heading = Number.isFinite(rawHeading) ? rawHeading : void 0;
     trains.push({
       id: idVal,
       latitude: item.Latitude,
@@ -498,6 +517,7 @@ function parseTrainsJson(jsonStr) {
       loopId: item.ShapeID || void 0,
       loopName: item.ShapeID ? loopNames[item.ShapeID] || item.ShapeID : void 0,
       direction,
+      heading,
       cars: item.vehicleNumber || void 0,
       updated: item.CarsUpdated || void 0
     });

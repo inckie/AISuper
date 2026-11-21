@@ -7,15 +7,19 @@ var activeLoops = {
     "OTR": false
 };
 var stations = [];
+var activeTab = "arrivals";
 var selectedArrivals = null;
 var selectedStationTitle = "";
 var selectedStationId = "";
+var nearestStationId = "";
+var nearestDistanceText = "";
 var loopInfoText = "";
-var nearestStationText = "";
 var loopSvgDataUri = "";
+var liveTrainCount = 0;
 
 function initialize() {
-    setValue("metromover_status", "Loading Metromover data (JS module)...");
+    setValue("metromover_status", "Loading Metromover data...");
+    setValue("metromoverTabs", []);
     setValue("metromoverContent", []);
     setValue("metromover_spinner_visible", true);
     refreshOverview();
@@ -54,41 +58,20 @@ async function refreshOverview() {
     setValue("metromover_status", "Fetching loops and stations...");
     setValue("metromover_spinner_visible", true);
     try {
-        consoleLog("DEBUG: refreshOverview start");
-
-        consoleLog("DEBUG: calling miamiMetromover_list_loops()");
         var loopResponse = await miamiMetromover_list_loops();
-        consoleLog("DEBUG: loopResponse returned, type:", typeof loopResponse);
-        consoleLog("DEBUG: loopResponse isArray?", Array.isArray(loopResponse));
-        if (Array.isArray(loopResponse)) {
-            consoleLog("DEBUG: loopResponse.length =", loopResponse.length);
-        }
-        consoleLog("DEBUG: loopResponse value:", stringifySafe(loopResponse));
-
-        consoleLog("DEBUG: calling miamiMetromover_list_stations()");
         var stationResponse = await miamiMetromover_list_stations();
-        consoleLog("DEBUG: stationResponse returned, type:", typeof stationResponse);
-        consoleLog("DEBUG: stationResponse isArray?", Array.isArray(stationResponse));
-        if (Array.isArray(stationResponse)) {
-            consoleLog("DEBUG: stationResponse.length =", stationResponse.length);
-            if (stationResponse.length > 0) {
-                consoleLog("DEBUG: first station:", stringifySafe(stationResponse[0]));
-            }
-        }
-        consoleLog("DEBUG: stationResponse value (first 200 chars):", stringifySafe(stationResponse).substring(0, 200));
 
         loops = normalizeArray(loopResponse);
         stations = normalizeArray(stationResponse);
 
-        consoleLog("DEBUG: after normalize: loops.length =", loops.length);
-        consoleLog("DEBUG: after normalize: stations.length =", stations.length);
-        selectedArrivals = null;
-        selectedStationTitle = "";
-        loopInfoText = "";
-        nearestStationText = "";
-        loopSvgDataUri = "";
-
         await updateNetworkMap();
+        if (selectedStationId != "" && selectedStationTitle != "") {
+            try {
+                selectedArrivals = await miamiMetromover_get_station_arrivals(selectedStationId);
+            } catch (e) {
+                consoleError("refresh arrivals failed", e);
+            }
+        }
         renderContent();
         setValue("metromover_status", "Loaded " + stations.length + " stations");
         setValue("metromover_spinner_visible", false);
@@ -101,6 +84,7 @@ async function refreshOverview() {
 }
 
 async function findNearestStation() {
+    activeTab = "arrivals";
     setValue("metromover_status", "Resolving your location...");
     setValue("metromover_spinner_visible", true);
 
@@ -137,12 +121,13 @@ async function findNearestStation() {
             return;
         }
 
-        var distanceText = "";
+        nearestStationId = nearestId;
         if (nearest != undefined && nearest != null && nearest.distanceKm != undefined && nearest.distanceKm != null) {
-            distanceText = " - " + nearest.distanceKm + " km";
+            nearestDistanceText = "Nearest station • " + nearest.distanceKm + " km away";
+        } else {
+            nearestDistanceText = "Nearest station";
         }
 
-        nearestStationText = "Nearest: " + nearestTitle + " (" + nearestId + ")" + distanceText;
         selectedStationId = nearestId;
         await loadArrivals(nearestId, nearestTitle);
     } catch (e) {
@@ -152,50 +137,27 @@ async function findNearestStation() {
     }
 }
 
-async function loadLoopSvg(loopId) {
-    setValue("metromover_status", "Loading loop map: " + loopId + "...");
-    setValue("metromover_spinner_visible", true);
-
-    try {
-        var result = await miamiMetromover_get_loop_svg(loopId, 720, 720, 16);
-
-        var svg = "";
-        var svgUri = "";
-        if (result != undefined && result != null) {
-            if (result.svgDataUri != undefined && result.svgDataUri != null && result.svgDataUri != "") {
-                svgUri = result.svgDataUri;
-            }
-            if (result.svg != undefined && result.svg != null) {
-                svg = result.svg;
-            } else if (typeof result == "string") {
-                svg = result;
-            }
-        }
-
-        if (svgUri == "" && svg != "") {
-            svgUri = "data:image/svg+xml;base64," + base64Encode(svg);
-        }
-
-        if (svgUri != "") {
-            var charCount = svg != "" ? svg.length : svgUri.length;
-            loopInfoText = "Loop " + loopId + " map received (SVG " + charCount + " chars)";
-            loopSvgDataUri = svgUri;
-        } else {
-            loopInfoText = "Loop " + loopId + " map not available";
-            loopSvgDataUri = "";
-        }
-
-        renderContent();
-        setValue("metromover_status", "Loop " + loopId + " loaded");
-        setValue("metromover_spinner_visible", false);
-    } catch (e) {
-        consoleError("loadLoopSvg failed", e);
-        setValue("metromover_status", "Failed to load loop map: " + stringifySafe(e));
+async function switchTab(tab) {
+    activeTab = tab === "map" ? "map" : "arrivals";
+    if (activeTab === "map" && loopSvgDataUri == "") {
+        setValue("metromover_spinner_visible", true);
+        await updateNetworkMap();
         setValue("metromover_spinner_visible", false);
     }
+    renderContent();
+}
+
+async function refreshMap() {
+    setValue("metromover_status", "Refreshing live train map...");
+    setValue("metromover_spinner_visible", true);
+    await updateNetworkMap();
+    renderContent();
+    setValue("metromover_status", loopInfoText || "Map updated");
+    setValue("metromover_spinner_visible", false);
 }
 
 async function loadArrivals(stationId, stationTitle) {
+    activeTab = "arrivals";
     setValue("metromover_status", "Loading arrivals for " + stationTitle + "...");
     setValue("metromover_spinner_visible", true);
 
@@ -205,17 +167,26 @@ async function loadArrivals(stationId, stationTitle) {
         selectedArrivals = result;
         selectedStationTitle = stationTitle;
         selectedStationId = stationId;
-        await updateNetworkMap();
+        if (stationId !== nearestStationId) {
+            nearestDistanceText = "";
+        }
         renderContent();
         setValue("metromover_status", "Arrivals updated for " + stationTitle);
         setValue("metromover_spinner_visible", false);
+
+        // Refresh map highlight & train positions in background
+        updateNetworkMap().then(function() {
+            renderTabs();
+            if (activeTab === "map") {
+                renderContent();
+            }
+        });
     } catch (e) {
         consoleError("loadArrivals failed", e);
         setValue("metromover_status", "Failed to load arrivals: " + stringifySafe(e));
         setValue("metromover_spinner_visible", false);
     }
 }
-
 
 async function updateNetworkMap() {
     var activeList = [];
@@ -243,10 +214,13 @@ async function updateNetworkMap() {
                 return id;
             });
 
-            var trainInfo = (result.trainCount !== undefined && result.trainCount !== null)
-                ? " - " + result.trainCount + " trains active"
+            if (result.trainCount !== undefined && result.trainCount !== null) {
+                liveTrainCount = Number(result.trainCount) || 0;
+            }
+            var trainInfo = liveTrainCount > 0
+                ? " • " + liveTrainCount + " active trains"
                 : "";
-            loopInfoText = "Active loops: " + (activeNames.length > 0 ? activeNames.join(", ") : "None") + trainInfo;
+            loopInfoText = "Loops: " + (activeNames.length > 0 ? activeNames.join(", ") : "None") + trainInfo;
         }
     } catch (e) {
         consoleError("updateNetworkMap failed", e);
@@ -279,11 +253,226 @@ async function toggleAllLoops() {
     renderContent();
 }
 
-function renderContent() {
-    var widgets = [];
+function renderTabs() {
+    var mapLabel = liveTrainCount > 0 ? "Map (" + liveTrainCount + ")" : "Map";
+    setValue("metromoverTabs", [
+        {
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+                {
+                    "type": "Button",
+                    "text": "Arrivals",
+                    "classes": activeTab === "arrivals" ? [] : ["ghost_button"],
+                    "action": "switchTab",
+                    "actionArgs": ["arrivals"],
+                    "weight": 1
+                },
+                {
+                    "type": "Button",
+                    "text": mapLabel,
+                    "classes": activeTab === "map" ? [] : ["ghost_button"],
+                    "action": "switchTab",
+                    "actionArgs": ["map"],
+                    "weight": 1
+                }
+            ]
+        }
+    ]);
+}
 
-    widgets.push({ "type": "Text", "text": "Free automated transit in Downtown, Brickell, and Omni." });
+function formatNoticeHtml(raw) {
+    if (raw == undefined || raw == null) {
+        return "";
+    }
+    var text = String(raw);
+    text = text.replace(/<\s*br\s*\/?>/gi, "\n");
+    text = text.replace(/<\s*\/?(p|div|h[1-6]|ul|ol)\b[^>]*>/gi, "\n");
+    text = text.replace(/<\s*li\b[^>]*>/gi, "\n• ");
+    text = text.replace(/<\s*\/li\s*>/gi, "");
+    text = text.replace(/<[^>]+>/g, "");
+    text = text
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, "\"")
+        .replace(/&#39;/gi, "'")
+        .replace(/&ndash;/gi, "-")
+        .replace(/&mdash;/gi, "—");
 
+    var lines = text.split(/\r?\n/);
+    var cleaned = [];
+    for (var i = 0; i < lines.length; i = i + 1) {
+        var line = lines[i].replace(/\s+/g, " ").trim();
+        if (line !== "") {
+            cleaned.push(line);
+        }
+    }
+    return cleaned.join("\n");
+}
+
+function renderArrivalsTab(widgets) {
+    if (selectedArrivals != undefined && selectedArrivals != null) {
+        var cardChildren = [];
+
+        cardChildren.push({
+            "type": "Row",
+            "fillMaxWidth": true,
+            "children": [
+                {
+                    "type": "Column",
+                    "weight": 1,
+                    "children": [
+                        {
+                            "type": "Text",
+                            "text": selectedStationTitle + " (" + selectedStationId + ")",
+                            "classes": ["section_title"]
+                        }
+                    ].concat(
+                        nearestDistanceText != ""
+                            ? [{ "type": "Text", "text": nearestDistanceText, "classes": ["small_text"] }]
+                            : []
+                    )
+                },
+                {
+                    "type": "Button",
+                    "text": "Refresh",
+                    "classes": ["ghost_button"],
+                    "action": "loadArrivals",
+                    "actionArgs": [selectedStationId, selectedStationTitle]
+                }
+            ]
+        });
+
+        var groups = selectedArrivals.arrivals;
+        if (groups == undefined || groups == null || groups.length == 0) {
+            cardChildren.push({ "type": "Text", "text": "No arrivals currently available." });
+        } else {
+            for (var k = 0; k < groups.length; k = k + 1) {
+                var g = groups[k];
+                var loopName = readField(g, ["loopName", "loopId"]);
+                if (loopName == "") {
+                    loopName = "Loop";
+                }
+
+                var times = g.arrivals;
+                var timesText = "No ETA";
+                if (times != undefined && times != null && times.length > 0) {
+                    timesText = times.join(", ");
+                }
+
+                cardChildren.push({
+                    "type": "Row",
+                    "fillMaxWidth": true,
+                    "classes": ["daily_row_alt", "p-2", "rounded-lg"],
+                    "children": [
+                        { "type": "Text", "text": loopName, "weight": 1 },
+                        { "type": "Text", "text": timesText, "classes": ["arrival_eta"] }
+                    ]
+                });
+            }
+        }
+
+        widgets.push({
+            "type": "Column",
+            "fillMaxWidth": true,
+            "classes": ["arrival_card", "p-2", "rounded-lg"],
+            "children": cardChildren
+        });
+
+        var alertText = formatNoticeHtml(selectedArrivals.messageAlert);
+        var updateText = formatNoticeHtml(selectedArrivals.messageServiceUpdate);
+        var facilitiesText = formatNoticeHtml(selectedArrivals.messageFacilities);
+
+        if (alertText != "" || updateText != "" || facilitiesText != "") {
+            var noticeChildren = [
+                {
+                    "type": "Text",
+                    "text": "Service Alerts & Notices",
+                    "classes": ["notice_title"]
+                }
+            ];
+            if (alertText != "") {
+                noticeChildren.push({
+                    "type": "Text",
+                    "text": "Alert: " + alertText,
+                    "classes": ["small_text"]
+                });
+            }
+            if (updateText != "") {
+                noticeChildren.push({
+                    "type": "Text",
+                    "text": updateText,
+                    "classes": ["small_text"]
+                });
+            }
+            if (facilitiesText != "") {
+                noticeChildren.push({
+                    "type": "Text",
+                    "text": "Facilities: " + facilitiesText,
+                    "classes": ["small_text"]
+                });
+            }
+
+            widgets.push({
+                "type": "Column",
+                "fillMaxWidth": true,
+                "classes": ["notice_card", "p-2", "rounded-lg"],
+                "children": noticeChildren
+            });
+        }
+    } else {
+        widgets.push({
+            "type": "Column",
+            "fillMaxWidth": true,
+            "classes": ["arrival_card", "p-2", "rounded-lg"],
+            "children": [
+                {
+                    "type": "Text",
+                    "text": "Tap Nearest Station above or pick a station below to see live arrivals immediately."
+                }
+            ]
+        });
+    }
+
+    widgets.push({ "type": "Text", "text": "Stations (" + stations.length + ")", "classes": ["section_title"] });
+    for (var j = 0; j < stations.length; j = j + 1) {
+        var station = stations[j];
+        var stationId = readField(station, ["id", "stationId"]);
+        var stationTitle = readField(station, ["title", "name", "stationTitle"]);
+
+        if (stationId == "") {
+            continue;
+        }
+        if (stationTitle == "") {
+            stationTitle = stationId;
+        }
+
+        var isSelected = stationId === selectedStationId;
+        widgets.push({
+            "type": "Row",
+            "fillMaxWidth": true,
+            "classes": isSelected ? ["arrival_card", "p-2", "rounded-lg"] : [],
+            "children": [
+                {
+                    "type": "Text",
+                    "text": (isSelected ? "● " : "") + stationTitle + " (" + stationId + ")",
+                    "weight": 1
+                },
+                {
+                    "type": "Button",
+                    "text": isSelected ? "Viewing" : "Arrivals",
+                    "classes": isSelected ? [] : ["ghost_button"],
+                    "action": "loadArrivals",
+                    "actionArgs": [stationId, stationTitle]
+                }
+            ]
+        });
+    }
+}
+
+function renderMapTab(widgets) {
     widgets.push({ "type": "Text", "text": "Loops & Trails", "classes": ["section_title"] });
 
     widgets.push({
@@ -347,88 +536,50 @@ function renderContent() {
         ]
     });
 
+    widgets.push({
+        "type": "Row",
+        "fillMaxWidth": true,
+        "children": [
+            {
+                "type": "Text",
+                "text": loopInfoText != "" ? loopInfoText : "Live network map",
+                "classes": ["small_text"],
+                "weight": 1
+            },
+            {
+                "type": "Button",
+                "text": "Refresh Map",
+                "classes": ["ghost_button"],
+                "action": "refreshMap"
+            }
+        ]
+    });
+
     if (loopSvgDataUri != "") {
         widgets.push({
             "type": "Image",
             "data": loopSvgDataUri,
-            "description": "Metromover network map with loops and trails",
+            "description": "Metromover network map with live directional trains",
             "fillMaxWidth": true,
-            "height": 280
+            "height": 360
         });
     }
 
-    if (nearestStationText != "") {
-        widgets.push({ "type": "Text", "text": nearestStationText });
+    widgets.push({
+        "type": "Text",
+        "text": "▲ Train + direction   ● Selected station   ○ Station",
+        "classes": ["small_text", "text-center"]
+    });
+}
+
+function renderContent() {
+    renderTabs();
+    var widgets = [];
+    if (activeTab === "map") {
+        renderMapTab(widgets);
+    } else {
+        renderArrivalsTab(widgets);
     }
-
-    if (selectedArrivals != undefined && selectedArrivals != null) {
-        widgets.push({ "type": "Text", "text": "Arrivals: " + selectedStationTitle, "classes": ["section_title"] });
-
-        var groups = selectedArrivals.arrivals;
-        if (groups == undefined || groups == null || groups.length == 0) {
-            widgets.push({ "type": "Text", "text": "No arrivals currently available." });
-        } else {
-            for (var k = 0; k < groups.length; k = k + 1) {
-                var g = groups[k];
-                var loopName = readField(g, ["loopName", "loopId"]);
-                if (loopName == "") {
-                    loopName = "Loop";
-                }
-
-                var times = g.arrivals;
-                var timesText = "No ETA";
-                if (times != undefined && times != null && times.length > 0) {
-                    timesText = times.join(", ");
-                }
-
-                widgets.push({
-                    "type": "Text",
-                    "text": loopName + ": " + timesText
-                });
-            }
-        }
-
-        if (selectedArrivals.messageAlert != undefined && selectedArrivals.messageAlert != null && selectedArrivals.messageAlert != "") {
-            widgets.push({ "type": "Text", "text": "Alert: " + selectedArrivals.messageAlert });
-        }
-        if (selectedArrivals.messageServiceUpdate != undefined && selectedArrivals.messageServiceUpdate != null && selectedArrivals.messageServiceUpdate != "") {
-            widgets.push({ "type": "Text", "text": "Service update: " + selectedArrivals.messageServiceUpdate });
-        }
-    }
-
-    widgets.push({ "type": "Text", "text": "Stations", "classes": ["section_title"] });
-    for (var j = 0; j < stations.length; j = j + 1) {
-        var station = stations[j];
-        var stationId = readField(station, ["id", "stationId"]);
-        var stationTitle = readField(station, ["title", "name", "stationTitle"]);
-
-        if (stationId == "") {
-            continue;
-        }
-
-        if (stationTitle == "") {
-            stationTitle = stationId;
-        }
-
-        widgets.push({
-            "type": "Row",
-            "fillMaxWidth": true,
-            "children": [
-                {
-                    "type": "Text",
-                    "text": stationTitle + " (" + stationId + ")",
-                    "weight": 1
-                },
-                {
-                    "type": "Button",
-                    "text": "Arrivals",
-                    "action": "loadArrivals",
-                    "actionArgs": [stationId, stationTitle]
-                }
-            ]
-        });
-    }
-
     setValue("metromoverContent", widgets);
 }
 
@@ -487,7 +638,6 @@ function stringifySafe(value) {
         return "" + value;
     }
 }
-
 
 function base64Encode(input) {
     if (typeof btoa === "function") {
