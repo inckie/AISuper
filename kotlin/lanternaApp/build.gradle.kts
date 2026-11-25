@@ -25,8 +25,8 @@ configurations.runtimeClasspath {
 }
 
 dependencies {
-    implementation(projects.shared)
-    implementation(projects.appletProvider)
+    implementation(project(":shared"))
+    implementation(project(":applet-provider"))
     
     // Lanterna for the terminal UI
     implementation(libs.lanterna)

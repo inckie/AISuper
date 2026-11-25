@@ -16,8 +16,8 @@ application {
 }
 
 dependencies {
-    implementation(projects.shared)
-    implementation(projects.appletProvider)
+    implementation(project(":shared"))
+    implementation(project(":applet-provider"))
 
     implementation(libs.kotlinx.serialization.json)
 

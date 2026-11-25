@@ -43,7 +43,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.shared)
+            implementation(project(":shared"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)

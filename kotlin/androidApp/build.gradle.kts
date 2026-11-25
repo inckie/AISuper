@@ -40,8 +40,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.composeApp)
-    implementation(projects.shared)
+    implementation(project(":composeApp"))
+    implementation(project(":shared"))
     debugImplementation(libs.compose.uiTooling)
     debugImplementation(libs.compose.uiToolingPreview)
 }

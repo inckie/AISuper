@@ -62,8 +62,8 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation(projects.shared)
-            implementation(projects.appletProvider)
+            implementation(project(":shared"))
+            implementation(project(":applet-provider"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
