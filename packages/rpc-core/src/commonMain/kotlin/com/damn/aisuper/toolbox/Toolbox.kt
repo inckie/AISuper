@@ -1,5 +1,8 @@
 package com.damn.aisuper.toolbox
 
+import com.damn.aisuper.rpc.RpcLock
+import com.damn.aisuper.rpc.withRpcLock
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,8 +40,9 @@ open class ToolboxRegistry {
         fun onToolboxChanged()
     }
 
-    private val lock = Any()
+    private val lock = RpcLock()
     private val providersMap = linkedMapOf<String, ToolProvider>()
+    private val listenersLock = RpcLock()
     private val listeners = mutableListOf<Listener>()
     private var revisionCounter = 0L
 
@@ -46,7 +50,7 @@ open class ToolboxRegistry {
     val state: StateFlow<ToolboxSnapshot> = _state.asStateFlow()
 
     fun register(provider: ToolProvider) {
-        synchronized(lock) {
+        withRpcLock(lock) {
             providersMap[provider.name] = provider
             revisionCounter += 1L
             _state.value = buildSnapshotLocked()
@@ -55,7 +59,7 @@ open class ToolboxRegistry {
     }
 
     fun unregister(name: String) {
-        val removed = synchronized(lock) {
+        val removed = withRpcLock(lock) {
             val prev = providersMap.remove(name)
             if (prev != null) {
                 revisionCounter += 1L
@@ -73,7 +77,7 @@ open class ToolboxRegistry {
     }
 
     fun clear() {
-        val hadAny = synchronized(lock) {
+        val hadAny = withRpcLock(lock) {
             if (providersMap.isNotEmpty()) {
                 providersMap.clear()
                 revisionCounter += 1L
@@ -86,16 +90,16 @@ open class ToolboxRegistry {
         if (hadAny) notifyChanged()
     }
 
-    fun providers(): List<ToolProvider> = synchronized(lock) {
+    fun providers(): List<ToolProvider> = withRpcLock(lock) {
         providersMap.values.toList()
     }
 
-    fun findProvider(name: String): ToolProvider? = synchronized(lock) {
+    fun findProvider(name: String): ToolProvider? = withRpcLock(lock) {
         providersMap[name]
     }
 
     fun tools(providerFilter: String? = null): List<Tool> {
-        val list = synchronized(lock) {
+        val list = withRpcLock(lock) {
             if (providerFilter.isNullOrBlank()) {
                 providersMap.values.toList()
             } else {
@@ -128,18 +132,18 @@ open class ToolboxRegistry {
         return try {
             tool.invoke(arguments)
         } catch (e: Exception) {
-            ToolResult.error("Tool '$name' failed: ${e.message ?: e::class.java.simpleName}")
+            ToolResult.error("Tool '$name' failed: ${e.message ?: e::class.simpleName}")
         }
     }
 
     fun addListener(listener: Listener) {
-        synchronized(listeners) {
+        withRpcLock(listenersLock) {
             listeners.add(listener)
         }
     }
 
     fun removeListener(listener: Listener) {
-        synchronized(listeners) {
+        withRpcLock(listenersLock) {
             listeners.remove(listener)
         }
     }
@@ -207,7 +211,7 @@ open class ToolboxRegistry {
     }
 
     private fun notifyChanged() {
-        val snapshot = synchronized(listeners) { listeners.toList() }
+        val snapshot = withRpcLock(listenersLock) { listeners.toList() }
         snapshot.forEach { listener ->
             try {
                 listener.onToolboxChanged()

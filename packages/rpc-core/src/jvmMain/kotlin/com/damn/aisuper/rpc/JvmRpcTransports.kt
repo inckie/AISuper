@@ -46,43 +46,6 @@ import java.util.concurrent.atomic.AtomicLong
  * and [WebSocketRpcTransport] (persistent Ktor CIO WebSocket client with server push notifications).
  * See [[unified-rpc-surfaces]].
  */
-interface RpcTransport {
-    val id: String
-    val endpointDescription: String
-    suspend fun call(
-        method: String,
-        params: RpcParams = RpcParams.Empty,
-        context: RpcCallContext = RpcCallContext.LOCAL
-    ): RpcResult
-    suspend fun close() {}
-}
-
-/**
- * Zero-serialization in-process transport calling [RpcRouter] directly within the same process.
- */
-class LocalRpcTransport(
-    private val router: RpcRouter,
-    private val surfaceScope: String? = null
-) : RpcTransport {
-    override val id: String = "local"
-    override val endpointDescription: String =
-        if (surfaceScope.isNullOrBlank()) "local://in-process" else "local://$surfaceScope"
-
-    override suspend fun call(
-        method: String,
-        params: RpcParams,
-        context: RpcCallContext
-    ): RpcResult = router.call(
-        method = method,
-        params = params,
-        surfaceScope = surfaceScope,
-        context = context.copy(transport = "direct")
-    )
-}
-
-/**
- * Stateless HTTP JSON-RPC 2.0 transport (`POST` JSON-RPC request -> JSON-RPC response).
- */
 class HttpRpcTransport(
     val endpointUrl: String,
     private val headersProvider: () -> Map<String, String> = { emptyMap() },

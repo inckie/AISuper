@@ -41,6 +41,7 @@ kotlin {
         }
 
         commonMain.dependencies {
+            api("com.damn.aisuper:rpc-core:0.1.0")
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)

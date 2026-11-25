@@ -6,6 +6,7 @@ import com.damn.aisuper.modules.impl.geolocation.GeoIpGeolocationFeatureModuleFa
 import com.damn.aisuper.modules.impl.http.HttpFeatureModuleFactory
 import com.damn.aisuper.modules.impl.js.JsModuleFeatureModuleFactory
 import com.damn.aisuper.modules.impl.mcp.McpHttpFeatureModuleFactory
+import com.damn.aisuper.modules.impl.rpc.RpcSurfaceFeatureModuleFactory
 import com.damn.aisuper.runtime.AppletResourceLoader
 import com.damn.aisuper.runtime.ModuleDefinition
 
@@ -18,7 +19,8 @@ fun buildFeatureModuleFactories(
         HttpFeatureModuleFactory,
         AudioPlayerFeatureModuleFactory,
         McpHttpFeatureModuleFactory,
-        GeoIpGeolocationFeatureModuleFactory
+        GeoIpGeolocationFeatureModuleFactory,
+        RpcSurfaceFeatureModuleFactory()
     )
     factories += platformFeatureModuleFactories()
 

@@ -32,6 +32,7 @@ plugins {
 }
 
 
+includeBuild("../packages/rpc-core")
 include(":composeApp")
 include(":androidApp")
 include(":shared")

@@ -24,7 +24,7 @@ class RemoteRpcSurface(
     initialDescription: String = ""
 ) : RpcSurface {
 
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var cachedDescriptor: SurfaceDescriptor = SurfaceDescriptor(
         name = name,
         description = initialDescription.ifBlank { "Remote RPC surface at ${transport.endpointDescription}" },

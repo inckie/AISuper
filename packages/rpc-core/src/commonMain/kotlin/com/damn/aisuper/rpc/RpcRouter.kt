@@ -97,7 +97,7 @@ class RpcRouter(
                 return RpcResult.Success(
                     buildJsonObject {
                         put("ok", true)
-                        put("timestamp", System.currentTimeMillis())
+                        put("timestamp", currentTimeMillis())
                         scope.toolboxId?.let { put("toolboxId", it) }
                         scope.defaultSurface?.takeIf { it.isNotBlank() }?.let { put("surface", it) }
                     }

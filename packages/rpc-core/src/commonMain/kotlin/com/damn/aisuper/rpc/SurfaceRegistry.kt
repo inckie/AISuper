@@ -16,7 +16,7 @@ data class RpcNotificationEvent(
     val method: String,
     val params: JsonObject,
     val surface: String? = null,
-    val timestampMs: Long = System.currentTimeMillis()
+    val timestampMs: Long = currentTimeMillis()
 )
 
 data class SurfaceRegistrySnapshot(
@@ -40,7 +40,7 @@ data class SurfaceRegistrySnapshot(
  */
 open class SurfaceRegistry {
 
-    private val lock = Any()
+    private val lock = RpcLock()
     private val surfaceMap = linkedMapOf<String, RpcSurface>()
     private var revisionCounter = 0L
 
@@ -54,7 +54,7 @@ open class SurfaceRegistry {
     val notifications: SharedFlow<RpcNotificationEvent> = _notifications.asSharedFlow()
 
     fun register(surface: RpcSurface) {
-        val snap = synchronized(lock) {
+        val snap = withRpcLock(lock) {
             surfaceMap[surface.name] = surface
             revisionCounter += 1L
             buildSnapshotLocked().also { _state.value = it }
@@ -71,7 +71,7 @@ open class SurfaceRegistry {
     }
 
     fun unregister(name: String): RpcSurface? {
-        val (removed, snap) = synchronized(lock) {
+        val (removed, snap) = withRpcLock(lock) {
             val prev = surfaceMap.remove(name)
             if (prev != null) {
                 revisionCounter += 1L
@@ -95,7 +95,7 @@ open class SurfaceRegistry {
     }
 
     fun clear() {
-        val hadAny = synchronized(lock) {
+        val hadAny = withRpcLock(lock) {
             if (surfaceMap.isNotEmpty()) {
                 surfaceMap.clear()
                 revisionCounter += 1L
@@ -117,21 +117,21 @@ open class SurfaceRegistry {
     }
 
     fun refreshSnapshot() {
-        synchronized(lock) {
+        withRpcLock(lock) {
             revisionCounter += 1L
             _state.value = buildSnapshotLocked()
         }
     }
 
-    fun surfaces(): List<RpcSurface> = synchronized(lock) {
+    fun surfaces(): List<RpcSurface> = withRpcLock(lock) {
         surfaceMap.values.toList()
     }
 
-    fun surfaceNames(): List<String> = synchronized(lock) {
+    fun surfaceNames(): List<String> = withRpcLock(lock) {
         surfaceMap.keys.toList()
     }
 
-    fun findSurface(name: String): RpcSurface? = synchronized(lock) {
+    fun findSurface(name: String): RpcSurface? = withRpcLock(lock) {
         surfaceMap[name]
     }
 
@@ -139,7 +139,7 @@ open class SurfaceRegistry {
         descriptors(RpcScope.fromSurfaceFilter(surfaceFilter))
 
     fun descriptors(scope: RpcScope): List<SurfaceDescriptor> {
-        val targets = synchronized(lock) {
+        val targets = withRpcLock(lock) {
             surfaceMap.values.filter { scope.allowsSurface(it.name) }
         }
         return targets.map { surface ->
