@@ -1,5 +1,11 @@
 package com.damn.aisuper.harness
 
+import com.damn.aisuper.rpc.ReflectiveRpcSurface
+import com.damn.aisuper.rpc.RpcCallContext
+import com.damn.aisuper.rpc.RpcParams
+import com.damn.aisuper.rpc.RpcResult
+import com.damn.aisuper.rpc.RpcRouter
+import com.damn.aisuper.rpc.SurfaceRegistry
 import com.damn.aisuper.runtime.Applet
 import com.damn.aisuper.util.LogBufferSink
 import com.damn.aisuper.util.Logger
@@ -173,34 +179,11 @@ class McpServer(
     private val scope = CoroutineScope(Dispatchers.Default)
     private val sessions = ConcurrentHashMap<String, Channel<JsonObject>>()
 
-    val tools = listOf(
-        AppletReloadTool(applet, scope),
-        FeatureLaunchTool(applet, scope),
-        ActionSendTool(applet, scope),
-        ValuesGetTool(applet),
-        ValueSetTool(applet),
-        StorageGetTool(applet),
-        StorageSetTool(applet),
-        LogsGetTool(logBuffer),
-        LogsTailTool(logBuffer),
-        LogsSinceTool(logBuffer),
-        FileListTool(this),
-        FileReadTool(this),
-        FileWriteTool(this),
-        FileDeleteTool(this),
-        LayoutGetTool(applet),
-        LayoutGetTool(applet, "ui_state_get"),
-        ScreenshotTakeTool(this),
-        WindowFocusTool(this),
-        WindowBringToForegroundTool(this),
-        WindowResizeTool(this),
-        InputTapTool(this),
-        InputScrollTool(this),
-        InputDragTool(this),
-        ModalGetTool(applet),
-        ModalRespondTool(applet),
-        AdbShellInputTool()
-    ).associateBy { it.name }
+    private val harnessSurface = ReflectiveRpcSurface(
+        HarnessSurface(applet = applet, scope = scope, logBuffer = logBuffer, server = this)
+    )
+    private val rpcRegistry = SurfaceRegistry().apply { register(harnessSurface) }
+    private val rpcRouter = RpcRouter(rpcRegistry)
 
     fun start() {
         val server = embeddedServer(Netty, port = port, host = "0.0.0.0") {
@@ -295,6 +278,20 @@ class McpServer(
                     val result = handleLogsGet(limit, offset, tagFilter)
                     call.respond(createResponse(JsonPrimitive("logs"), result = result))
                 }
+
+                // Unified JSON-RPC 2.0 & discovery endpoints backed by packages/rpc-core
+                get("/api/rpc/discover") {
+                    call.respond(rpcRegistry.toDiscoveryJson(mcpEnabled = true, baseUrl = "http://127.0.0.1:$port"))
+                }
+
+                post("/api/rpc") {
+                    val raw = call.receive<String>()
+                    val resp = rpcRouter.handleJsonRpc(
+                        rawMessage = raw,
+                        context = RpcCallContext(caller = "harness-http", transport = "http")
+                    )
+                    call.respondText(resp ?: "", ContentType.Application.Json)
+                }
             }
         }
         
@@ -368,24 +365,25 @@ class McpServer(
     }
 
     private fun handleListTools(): JsonElement {
+        val methods = harnessSurface.descriptor().methods.filter { it.exposeInMcp }
         return buildJsonObject {
             put("tools", buildJsonArray {
-                tools.values.forEach { tool ->
+                methods.forEach { method ->
                     add(buildJsonObject {
-                        put("name", tool.name)
-                        put("description", tool.description)
+                        put("name", method.name)
+                        put("description", method.description)
                         put("inputSchema", buildJsonObject {
                             put("type", "object")
                             put("properties", buildJsonObject {
-                                tool.parameters.forEach { param ->
+                                method.parameters.forEach { param ->
                                     put(param.name, buildJsonObject {
-                                        put("type", param.type)
+                                        put("type", param.type.schemaType)
                                         put("description", param.description)
                                     })
                                 }
                             })
                             put("required", buildJsonArray {
-                                tool.parameters.filter { it.required }.forEach { add(it.name) }
+                                method.parameters.filter { it.required }.forEach { add(it.name) }
                             })
                         })
                     })
@@ -396,10 +394,19 @@ class McpServer(
 
     private suspend fun handleCallTool(params: JsonObject): JsonElement {
         val name = params["name"]?.jsonPrimitive?.content
+            ?: throw IllegalArgumentException("Missing tool name")
         val args = params["arguments"] as? JsonObject ?: JsonObject(emptyMap())
 
-        val tool = tools[name] ?: throw IllegalArgumentException("Unknown tool: $name")
-        val result = tool.execute(args)
+        val qualified = if (name.contains('.')) name else "${harnessSurface.name}.$name"
+        val rpcResult = rpcRouter.call(
+            method = qualified,
+            params = RpcParams.Named(args),
+            context = RpcCallContext.MCP
+        )
+        val result = when (rpcResult) {
+            is RpcResult.Success -> rpcResult.data
+            is RpcResult.Error -> throw IllegalArgumentException(rpcResult.message)
+        }
 
         return buildJsonObject {
             put("content", buildJsonArray {
@@ -484,6 +491,6 @@ class McpServer(
 
         val resultLogs = filtered.drop(offset).take(limit)
 
-        return McpTool.formatLogEntries(resultLogs)
+        return HarnessSurface.formatLogEntries(resultLogs)
     }
 }
