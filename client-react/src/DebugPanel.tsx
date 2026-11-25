@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { parseJsonInput } from './layoutUtils';
-import type { HeadlessSessionSnapshot, JsonValue } from './types';
+import {
+  parseJsonInput,
+  type HeadlessSessionSnapshot,
+  type JsonValue,
+} from '@aisuper/applet-web-runtime';
 
 interface DebugPanelProps {
   snapshot: HeadlessSessionSnapshot | null;

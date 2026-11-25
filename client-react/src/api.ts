@@ -1,4 +1,4 @@
-import type { CreateSessionResponse, HeadlessSessionSnapshot, JsonValue } from './types';
+import type { CreateSessionResponse, HeadlessSessionSnapshot, JsonValue } from '@aisuper/applet-web-runtime';
 
 const parseResponse = async <T>(response: Response): Promise<T> => {
   const text = await response.text();

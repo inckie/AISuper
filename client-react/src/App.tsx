@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bug, Settings, FolderOpen, FileArchive, UploadCloud } from 'lucide-react';
 import { serverApi } from './api';
-import { parseColorOrNull, parseJsonInput } from './layoutUtils';
-import { useFocusRegistry, useFrameworkLabel, WidgetRenderer } from './WidgetRenderer';
-import type { HeadlessSessionSnapshot, JsonValue } from './types';
+import {
+  parseColorOrNull,
+  parseJsonInput,
+  useFocusRegistry,
+  useFrameworkLabel,
+  WidgetRenderer,
+  type HeadlessSessionSnapshot,
+  type JsonValue,
+} from '@aisuper/applet-web-runtime';
 import { SettingsPanel, SettingsState, readStoredSettings } from './SettingsPanel';
 import { DebugPanel } from './DebugPanel';
 

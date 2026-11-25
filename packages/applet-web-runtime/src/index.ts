@@ -1,6 +1,6 @@
 export * from './types';
 export * from './layoutUtils';
-export { WidgetRenderer } from './WidgetRenderer';
+export { WidgetRenderer, useFocusRegistry, useFrameworkLabel } from './WidgetRenderer';
 export {
   fetchAppletBundle,
   invalidateAppletBundleCache,

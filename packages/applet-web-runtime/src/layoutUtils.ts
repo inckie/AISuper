@@ -44,9 +44,7 @@ export function parseColorOrNull(raw?: string | null): string | undefined {
   if (!raw) return undefined;
   if (raw.trim().toLowerCase() === 'transparent') return 'transparent';
   const hex = raw.startsWith('#') ? raw.slice(1) : raw;
-  if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(hex)) {
-    return raw; // Allow css named colors or rgb/rgba
-  }
+  if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(hex)) return undefined;
   if (hex.length === 6) return `#${hex}`;
   const a = parseInt(hex.slice(0, 2), 16) / 255;
   const r = parseInt(hex.slice(2, 4), 16);
@@ -57,10 +55,9 @@ export function parseColorOrNull(raw?: string | null): string | undefined {
 
 function mergedWith(base: StyleRule, other?: StyleRule | null): StyleRule {
   if (!other) return base;
-  const effectiveBg = other.backgroundColor ?? other.containerColor ?? base.backgroundColor ?? base.containerColor;
   return {
     textColor: other.textColor ?? base.textColor,
-    backgroundColor: effectiveBg,
+    backgroundColor: other.backgroundColor ?? base.backgroundColor,
     containerColor: other.containerColor ?? base.containerColor,
     padding: other.padding ?? base.padding,
     paddingHorizontal: other.paddingHorizontal ?? base.paddingHorizontal,
@@ -80,18 +77,33 @@ function mergedWith(base: StyleRule, other?: StyleRule | null): StyleRule {
   };
 }
 
+function applyTokenFallbacks(widget: Widget, rule: StyleRule, sheet: StyleSheet): StyleRule {
+  const needsActionColors = widget.type === 'Button' || widget.type === 'Dropdown' || widget.type === 'Switch' || widget.type === 'Slider';
+  if (!needsActionColors) return rule;
+  if (rule.containerColor && rule.textColor) return rule;
+
+  const classes = widget.classes ?? [];
+  const hasDestructiveClass = classes.some((name) => {
+    const normalized = name.toLowerCase();
+    return normalized === 'destructive' || normalized === 'danger' || normalized === 'delete';
+  });
+
+  const token = hasDestructiveClass
+    ? sheet.tokens.destructiveColor ?? sheet.tokens.values.destructiveColor
+    : sheet.tokens.accentColor ?? sheet.tokens.values.accentColor;
+
+  if (!token) return rule;
+  return { ...rule, containerColor: rule.containerColor ?? token };
+}
+
 export function resolveStyleRule(widget: Widget, styleSheet?: StyleSheet | null): StyleRule {
   if (!styleSheet) return {};
   let merged: StyleRule = {};
-  if (styleSheet.defaults && styleSheet.defaults[widget.type]) {
-    merged = mergedWith(merged, styleSheet.defaults[widget.type]);
-  }
+  merged = mergedWith(merged, styleSheet.defaults[widget.type]);
   for (const clazz of widget.classes ?? []) {
-    if (styleSheet.classes && styleSheet.classes[clazz]) {
-      merged = mergedWith(merged, styleSheet.classes[clazz]);
-    }
+    merged = mergedWith(merged, styleSheet.classes[clazz]);
   }
-  return merged;
+  return applyTokenFallbacks(widget, merged, styleSheet);
 }
 
 export function resolveDynamicWidgets(value: JsonValue | undefined): Widget[] {
@@ -112,19 +124,50 @@ export function resolveDynamicWidgets(value: JsonValue | undefined): Widget[] {
   return [];
 }
 
+function parseDropdownOptions(array: JsonValue[]): DropdownOption[] {
+  const options: DropdownOption[] = [];
+  for (const item of array) {
+    if (typeof item === 'string' && item.trim()) {
+      options.push({ value: item, label: item });
+      continue;
+    }
+    if (isObject(item) && typeof item.value === 'string' && item.value.trim()) {
+      options.push({ value: item.value, label: typeof item.label === 'string' ? item.label : item.value });
+    }
+  }
+  return options;
+}
+
 export function resolveDropdownOptions(widget: DropdownWidget, values: Record<string, JsonValue>): DropdownOption[] {
   const valueId = widget.optionsValueId;
   if (!valueId) return widget.options ?? [];
 
   const raw = values[valueId];
   if (Array.isArray(raw)) {
-    return raw.map((item) => {
-      if (typeof item === 'string') return { value: item, label: item };
-      if (isObject(item) && typeof item.value === 'string') {
-        return { value: item.value, label: typeof item.label === 'string' ? item.label : item.value };
+    const fromValues = parseDropdownOptions(raw);
+    return fromValues.length ? fromValues : widget.options ?? [];
+  }
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw) as JsonValue;
+      if (Array.isArray(parsed)) {
+        const fromValues = parseDropdownOptions(parsed);
+        return fromValues.length ? fromValues : widget.options ?? [];
       }
-      return { value: String(item), label: String(item) };
-    });
+    } catch {
+      return widget.options ?? [];
+    }
   }
   return widget.options ?? [];
 }
+
+export function parseJsonInput(input: string): JsonValue {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  try {
+    return JSON.parse(trimmed) as JsonValue;
+  } catch {
+    return input;
+  }
+}
+

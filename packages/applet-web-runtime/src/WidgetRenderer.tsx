@@ -1,4 +1,4 @@
-import React, { Fragment, type CSSProperties } from 'react';
+import { Fragment, useMemo, useRef, type CSSProperties } from 'react';
 import {
   booleanOrNull,
   floatOrNull,
@@ -16,14 +16,16 @@ interface RenderProps {
   styleSheet?: StyleSheet | null;
   onValueChange: (id: string, value: string) => void;
   onAction: (action: string, args: JsonValue[]) => void;
+  onModuleCommand?: (moduleType: string, target: string, command: string, args: JsonValue[]) => void;
   parentDirection?: 'column' | 'row';
+  focusRegistry?: Record<string, HTMLInputElement | null>;
 }
 
 function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
   const textAlign = style.textAlign?.toLowerCase();
   const alignment = style.alignment?.toLowerCase();
 
-  let alignSelf: CSSProperties['alignSelf'] = undefined;
+  let alignSelf = undefined;
   if (alignment === 'start' || alignment === 'left') {
     alignSelf = 'flex-start';
   } else if (alignment === 'end' || alignment === 'right') {
@@ -37,10 +39,15 @@ function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
     style.noWrap === true ||
     style.whiteSpace === 'nowrap' ||
     style.whiteSpace === 'no-wrap' ||
-    (widget as any).noBreak === true;
+    (widget as any).noBreak === true ||
+    widget.classes?.some((c) => ['no_break', 'no-break', 'nowrap', 'no-wrap'].includes(c.toLowerCase()));
 
-  const whiteSpace = hasNoBreak ? 'nowrap' : (style.whiteSpace as any) ?? undefined;
-  const textOverflow = style.overflow === 'ellipsis' || hasNoBreak ? 'ellipsis' : undefined;
+  const whiteSpace = hasNoBreak
+    ? 'nowrap'
+    : (style.whiteSpace as any) ?? undefined;
+
+  const textOverflow =
+    style.overflow === 'ellipsis' || hasNoBreak ? 'ellipsis' : (style.overflow as any) ?? undefined;
 
   return {
     width: widget.fillMaxWidth ? '100%' : undefined,
@@ -50,8 +57,8 @@ function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
     alignSelf,
     color: parseColorOrNull(style.textColor),
     background: parseColorOrNull(style.backgroundColor),
-    borderRadius: style.cornerRadius != null ? `${style.cornerRadius}px` : undefined,
-    fontSize: style.fontSize != null ? `${style.fontSize}px` : undefined,
+    borderRadius: style.cornerRadius ?? undefined,
+    fontSize: style.fontSize ?? undefined,
     fontWeight: style.fontWeight ?? undefined,
     whiteSpace,
     textOverflow,
@@ -62,12 +69,17 @@ function widgetBaseStyle(widget: Widget, style: StyleRule): CSSProperties {
         : undefined,
     padding:
       style.padding != null
-        ? `${style.padding}px`
+        ? style.padding
         : style.paddingVertical != null || style.paddingHorizontal != null
           ? `${style.paddingVertical ?? 0}px ${style.paddingHorizontal ?? 0}px`
           : undefined,
     boxSizing: 'border-box'
   };
+}
+
+function textFieldActionKey(widget: Widget): string {
+  if (widget.type !== 'TextField') return 'default';
+  return (widget.imeAction ?? 'default').trim().toLowerCase();
 }
 
 export function WidgetRenderer({
@@ -76,15 +88,16 @@ export function WidgetRenderer({
   styleSheet,
   onValueChange,
   onAction,
-  parentDirection = 'column'
+  onModuleCommand = () => {},
+  parentDirection = 'column',
+  focusRegistry
 }: RenderProps): JSX.Element | null {
   const visible = widget.visibilityId ? booleanOrNull(values[widget.visibilityId]) ?? true : true;
   if (!visible) return null;
 
   const style = resolveStyleRule(widget, styleSheet);
   const baseStyle = widgetBaseStyle(widget, style);
-  const isLight = styleSheet?.scheme?.toLowerCase() === 'light';
-  const accentColor = parseColorOrNull(styleSheet?.tokens?.accentColor) ?? (isLight ? '#2563EB' : '#00A4EF');
+  const focusMap = focusRegistry ?? {};
 
   switch (widget.type) {
     case 'Column': {
@@ -93,14 +106,12 @@ export function WidgetRenderer({
       const allChildren = [...children, ...dynamic];
       return (
         <div
-          className={widget.isScrollable ? 'metro-scrollbar' : undefined}
           style={{
             ...baseStyle,
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
-            overflowY: widget.isScrollable ? 'auto' : undefined,
-            touchAction: widget.isScrollable ? 'pan-y' : undefined
+            gap: 8,
+            overflowY: widget.isScrollable ? 'auto' : undefined
           }}
         >
           {allChildren.map((child, index) => (
@@ -111,7 +122,9 @@ export function WidgetRenderer({
                 styleSheet={styleSheet}
                 onValueChange={onValueChange}
                 onAction={onAction}
+                onModuleCommand={onModuleCommand}
                 parentDirection="column"
+                focusRegistry={focusMap}
               />
             </Fragment>
           ))}
@@ -125,16 +138,13 @@ export function WidgetRenderer({
       const allChildren = [...children, ...dynamic];
       return (
         <div
-          className={widget.isScrollable ? 'metro-scrollbar' : undefined}
           style={{
             ...baseStyle,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 10,
-            overflowX: widget.isScrollable ? 'auto' : undefined,
-            overflowY: widget.isScrollable ? 'hidden' : undefined,
-            touchAction: widget.isScrollable ? 'pan-x' : undefined
+            gap: 8,
+            overflowX: widget.isScrollable ? 'auto' : undefined
           }}
         >
           {allChildren.map((child, index) => (
@@ -145,7 +155,9 @@ export function WidgetRenderer({
                 styleSheet={styleSheet}
                 onValueChange={onValueChange}
                 onAction={onAction}
+                onModuleCommand={onModuleCommand}
                 parentDirection="row"
+                focusRegistry={focusMap}
               />
             </Fragment>
           ))}
@@ -153,308 +165,75 @@ export function WidgetRenderer({
       );
     }
 
-    case 'Text': {
-      const widgetId = widget.id ?? undefined;
-      const displayText = widgetId ? stringOrNull(values[widgetId]) ?? widget.text ?? '' : widget.text ?? '';
-      return (
-        <div
-          style={{
-            ...baseStyle,
-            color: baseStyle.color ?? (isLight ? '#1F2937' : '#f8fafc'),
-            lineHeight: 1.4
-          }}
-        >
-          {displayText}
-        </div>
-      );
-    }
-
-    case 'TextField': {
-      const widgetId = widget.id ?? undefined;
-      const value = widgetId ? stringOrNull(values[widgetId]) ?? '' : '';
-      return (
-        <input
-          type={widget.password ? 'password' : 'text'}
-          style={{
-            ...baseStyle,
-            width: widget.fillMaxWidth ? '100%' : baseStyle.width ?? '100%',
-            minHeight: 40,
-            padding: '8px 14px',
-            borderRadius: baseStyle.borderRadius ?? 6,
-            border: isLight ? '1px solid rgba(15, 23, 42, 0.16)' : '1px solid rgba(255, 255, 255, 0.15)',
-            background: baseStyle.background ?? (isLight ? '#F3F4F6' : 'rgba(255, 255, 255, 0.05)'),
-            color: baseStyle.color ?? (isLight ? '#111827' : '#ffffff'),
-            fontSize: 14,
-            outline: 'none',
-            backdropFilter: 'blur(10px)'
-          }}
-          value={value}
-          placeholder={widget.hint ?? ''}
-          onChange={(e) => {
-            if (widgetId) {
-              onValueChange(widgetId, e.target.value);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              const actionName = widget.onImeAction ?? widget.imeAction;
-              if (actionName) {
-                onAction(actionName, []);
-              }
-            }
-          }}
-        />
-      );
-    }
-
-    case 'Button': {
-      const isGhost = baseStyle.background === 'transparent';
-      return (
-        <button
-          style={{
-            ...baseStyle,
-            minHeight: 38,
-            padding: baseStyle.padding ?? '8px 16px',
-            borderRadius: baseStyle.borderRadius ?? 6,
-            border: isGhost
-              ? '1px solid transparent'
-              : isLight
-                ? '1px solid rgba(15, 23, 42, 0.12)'
-                : '1px solid rgba(0, 164, 239, 0.4)',
-            background: baseStyle.background ?? 'rgba(0, 164, 239, 0.15)',
-            color: baseStyle.color ?? accentColor,
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap'
-          }}
-          onClick={() => {
-            if (widget.action) {
-              onAction(widget.action, widget.actionArgs ?? []);
-            }
-          }}
-        >
-          {widget.icon && <img src={widget.icon} alt="" style={{ width: 16, height: 16 }} />}
-          <span>{widget.text ?? 'Button'}</span>
-        </button>
-      );
-    }
-
-    case 'Image': {
-      const widgetId = widget.id ?? undefined;
-      const dataFromValues = widgetId ? stringOrNull(values[widgetId]) : null;
-      const src = dataFromValues || widget.data?.trim() || widget.url || '';
-      if (!src) return null;
-      return (
-        <img
-          src={src}
-          alt={widget.description ?? 'image'}
-          style={{
-            ...baseStyle,
-            objectFit: 'contain'
-          }}
-        />
-      );
-    }
-
-    case 'Dropdown': {
-      const widgetId = widget.id ?? undefined;
-      const currentVal = widgetId ? stringOrNull(values[widgetId]) ?? '' : '';
-      const options = resolveDropdownOptions(widget, values);
-      return (
-        <select
-          style={{
-            ...baseStyle,
-            minHeight: 38,
-            padding: '8px 12px',
-            borderRadius: baseStyle.borderRadius ?? 6,
-            border: isLight ? '1px solid rgba(15, 23, 42, 0.16)' : '1px solid rgba(255, 255, 255, 0.15)',
-            background: baseStyle.background ?? (isLight ? '#ffffff' : '#1a1a1a'),
-            color: baseStyle.color ?? (isLight ? '#111827' : '#ffffff'),
-            outline: 'none'
-          }}
-          value={currentVal}
-          onChange={(e) => {
-            if (widgetId) {
-              onValueChange(widgetId, e.target.value);
-            }
-            if (widget.onChangeAction) {
-              onAction(widget.onChangeAction, [e.target.value]);
-            }
-          }}
-        >
-          {widget.hint && <option value="" disabled>{widget.hint}</option>}
-          {options.map((opt, i) => (
-            <option key={i} value={opt.value}>
-              {opt.label ?? opt.value}
-            </option>
-          ))}
-        </select>
-      );
-    }
-
-    case 'Switch': {
-      const widgetId = widget.id ?? undefined;
-      const isChecked = widgetId ? booleanOrNull(values[widgetId]) ?? widget.checked ?? false : widget.checked ?? false;
-      return (
-        <label
-          style={{
-            ...baseStyle,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            cursor: 'pointer'
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={isChecked}
-            style={{ width: 18, height: 18, accentColor }}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              if (widgetId) {
-                onValueChange(widgetId, String(checked));
-              }
-              if (widget.onChangeAction) {
-                onAction(widget.onChangeAction, widget.actionArgs ?? [checked]);
-              }
-            }}
-          />
-          {widget.text && (
-            <span style={{ color: baseStyle.color ?? (isLight ? '#1F2937' : '#e2e8f0'), fontSize: 14 }}>
-              {widget.text}
-            </span>
-          )}
-        </label>
-      );
-    }
-
-    case 'Spinner': {
-      return (
-        <div
-          style={{
-            ...baseStyle,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16
-          }}
-        >
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              border: isLight ? '2px solid rgba(15, 23, 42, 0.12)' : '2px solid rgba(0, 164, 239, 0.2)',
-              borderTopColor: accentColor,
-              animation: 'spin 0.8s linear infinite'
-            }}
-          />
-        </div>
-      );
-    }
-
-    case 'Progress': {
-      const progressVal = widget.progressId ? floatOrNull(values[widget.progressId]) ?? widget.progress ?? 0 : widget.progress ?? 0;
-      const isIndeterminate = widget.indeterminate === true;
-      return (
-        <div
-          style={{
-            ...baseStyle,
-            width: widget.fillMaxWidth ? '100%' : '100%',
-            height: 4,
-            borderRadius: 2,
-            background: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          <div
-            style={{
-              width: isIndeterminate ? '40%' : `${Math.min(100, Math.max(0, progressVal * 100))}%`,
-              height: '100%',
-              background: accentColor,
-              animation: isIndeterminate ? 'pulse 1.2s ease-in-out infinite' : undefined,
-              transition: 'width 0.2s ease'
-            }}
-          />
-        </div>
-      );
-    }
-
     case 'Table': {
       const rows = (widget.rows && widget.rows.length > 0 ? widget.rows : widget.children) ?? [];
-      const dynamicId = widget.dynamicRowsId ?? widget.dynamicChildrenId;
-      const dynamicRows = dynamicId ? resolveDynamicWidgets(values[dynamicId]) : [];
-      const allRows = [...rows, ...dynamicRows];
-      const cols = widget.columns ?? [];
+      const dynamic = widget.dynamicRowsId || widget.dynamicChildrenId
+        ? resolveDynamicWidgets(values[widget.dynamicRowsId ?? widget.dynamicChildrenId!])
+        : [];
+      const allRows = [...rows, ...dynamic].filter(row => {
+        return row.visibilityId ? booleanOrNull(values[row.visibilityId]) ?? true : true;
+      });
 
-      const isVertical = widget.scrollDirection === 'vertical';
-      const isHorizontal = widget.isScrollable && !isVertical;
+      const columns = widget.columns ?? [];
+      const isScrollable = widget.isScrollable ?? false;
 
       return (
         <div
-          className={widget.isScrollable ? 'metro-scrollbar' : undefined}
           style={{
             ...baseStyle,
-            width: widget.fillMaxWidth ? '100%' : baseStyle.width,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowX: isHorizontal ? 'auto' : undefined,
-            overflowY: isVertical ? 'auto' : widget.isScrollable ? 'hidden' : undefined,
-            touchAction: isHorizontal ? 'pan-x' : isVertical ? 'pan-y' : undefined,
-            flexShrink: 0,
-            gap: 2
+            overflowX: isScrollable ? 'auto' : undefined,
+            overflowY: widget.scrollDirection === 'vertical' ? 'auto' : undefined,
+            width: widget.fillMaxWidth ? '100%' : undefined
           }}
         >
-          {allRows.map((row, rIdx) => {
-            const rowChildren = (row as any).children ?? [row];
-            const rowStyle = resolveStyleRule(row, styleSheet);
-            const rowBase = widgetBaseStyle(row, rowStyle);
-            return (
-              <div
-                key={`${row.id ?? 'row'}-${rIdx}`}
-                style={{
-                  ...rowBase,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  width: widget.fillMaxWidth ? '100%' : 'max-content'
-                }}
-              >
-                {rowChildren.map((cell: Widget, cIdx: number) => {
-                  const colDef = cols[cIdx];
-                  const cellStyle: CSSProperties = { boxSizing: 'border-box' };
-                  if (colDef) {
-                    if (colDef.width != null) {
-                      cellStyle.width = `${colDef.width}px`;
-                      cellStyle.minWidth = `${colDef.width}px`;
-                      cellStyle.flexShrink = 0;
-                    } else if (colDef.weight != null) {
-                      cellStyle.flex = `${colDef.weight} 1 0%`;
-                    }
-                  }
-                  return (
-                    <div key={`${cell.id ?? 'cell'}-${cIdx}`} style={cellStyle}>
-                      <WidgetRenderer
-                        widget={cell}
-                        values={values}
-                        styleSheet={styleSheet}
-                        onValueChange={onValueChange}
-                        onAction={onAction}
-                        parentDirection="row"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+          <table style={{ width: widget.fillMaxWidth ? '100%' : 'auto', borderCollapse: 'collapse' }}>
+            <tbody>
+              {allRows.map((row, rIdx) => {
+                const cells = ('children' in row && Array.isArray((row as any).children))
+                  ? (row as any).children
+                  : [row];
+                const visibleCells = cells.filter((c: Widget) => {
+                  return c.visibilityId ? booleanOrNull(values[c.visibilityId]) ?? true : true;
+                });
+                const rowStyle = resolveStyleRule(row, styleSheet);
+                const rowBg = parseColorOrNull(rowStyle.backgroundColor);
+                const rowPadH = rowStyle.paddingHorizontal ?? rowStyle.padding;
+                const rowPadV = rowStyle.paddingVertical ?? rowStyle.padding;
+                const tdPadding = (rowPadV != null || rowPadH != null) ? `${rowPadV ?? 0}px ${rowPadH ?? 0}px` : 0;
+
+                return (
+                  <tr key={rIdx} style={{ backgroundColor: rowBg }}>
+                    {visibleCells.map((cell: Widget, cIdx: number) => {
+                      const colDef = columns[cIdx];
+                      const colWidth = colDef?.width ? `${colDef.width}px` : undefined;
+                      return (
+                        <td
+                          key={cIdx}
+                          style={{
+                            width: colWidth,
+                            textAlign: (cell as any).align ?? undefined,
+                            verticalAlign: 'middle',
+                            padding: tdPadding
+                          }}
+                        >
+                          <WidgetRenderer
+                            widget={cell}
+                            values={values}
+                            styleSheet={styleSheet}
+                            onValueChange={onValueChange}
+                            onAction={onAction}
+                            onModuleCommand={onModuleCommand}
+                            parentDirection="row"
+                            focusRegistry={focusMap}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       );
     }
@@ -468,7 +247,7 @@ export function WidgetRenderer({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            width: '100%'
+            gap: 8
           }}
         >
           {children.map((child, index) => (
@@ -479,7 +258,9 @@ export function WidgetRenderer({
                 styleSheet={styleSheet}
                 onValueChange={onValueChange}
                 onAction={onAction}
+                onModuleCommand={onModuleCommand}
                 parentDirection="row"
+                focusRegistry={focusMap}
               />
             </Fragment>
           ))}
@@ -487,7 +268,292 @@ export function WidgetRenderer({
       );
     }
 
+    case 'Text': {
+      const widgetId = widget.id ?? undefined;
+      const displayText = widgetId ? stringOrNull(values[widgetId]) ?? widget.text ?? '' : widget.text ?? '';
+
+      const alignRaw = widget.align ?? style.textAlign ?? '';
+      const textAlignMap: Record<string, any> = {
+        'center': 'center',
+        'right': 'right',
+        'end': 'right',
+        'start': 'left',
+        'left': 'left',
+        'justify': 'justify'
+      };
+      if (alignRaw) {
+         baseStyle.textAlign = textAlignMap[alignRaw.toLowerCase()] ?? baseStyle.textAlign;
+      }
+
+      return <div style={baseStyle}>{displayText}</div>;
+    }
+
+    case 'TextField': {
+      const widgetId = widget.id ?? undefined;
+      const value = widgetId ? stringOrNull(values[widgetId]) ?? '' : '';
+      const imeAction = textFieldActionKey(widget);
+      return (
+        <input
+          type={widget.password ? 'password' : 'text'}
+          ref={(el) => {
+            if (widgetId) {
+              focusMap[widgetId] = el;
+            }
+          }}
+          style={{
+            ...baseStyle,
+            width: '100%',
+            minHeight: 36,
+            border: '1px solid #334155',
+            borderRadius: 8,
+            background: parseColorOrNull(style.containerColor) ?? '#111827',
+            color: baseStyle.color ?? '#e5e7eb'
+          }}
+          value={value}
+          placeholder={widget.hint ?? ''}
+          onChange={(event) => {
+            if (widgetId) {
+              onValueChange(widgetId, event.target.value);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return;
+            if (imeAction === 'next' && widget.nextFocusId) {
+              focusMap[widget.nextFocusId]?.focus();
+              return;
+            }
+            const actionName = widget.onImeAction ?? widget.imeAction;
+            if (actionName) {
+              onAction(actionName, []);
+            }
+          }}
+        />
+      );
+    }
+
+    case 'Button': {
+      const showIcon = !!widget.icon;
+      const showText = !style.iconOnly || !showIcon;
+      const iconOnRight = style.iconPosition === 'end' || style.iconPosition === 'right';
+
+      const content = (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          {showIcon && !iconOnRight && (
+            <img src={widget.icon!} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+          )}
+          {showText && <span>{widget.text ?? 'Button'}</span>}
+          {showIcon && iconOnRight && (
+            <img src={widget.icon!} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+          )}
+        </div>
+      );
+
+      return (
+        <button
+          style={{
+            ...baseStyle,
+            border: 'none',
+            cursor: 'pointer',
+            minHeight: 36,
+            borderRadius: style.cornerRadius ?? 8,
+            background: parseColorOrNull(style.containerColor ?? style.backgroundColor) ?? '#2563eb',
+            color: parseColorOrNull(style.textColor) ?? '#ffffff',
+            padding: style.padding ?? '8px 12px'
+          }}
+          onClick={() => onAction(widget.action ?? '', widget.actionArgs ?? [])}
+        >
+          {content}
+        </button>
+      );
+    }
+
+    case 'Image': {
+      const widgetId = widget.id ?? undefined;
+      const dataFromValues = widgetId ? stringOrNull(values[widgetId]) : null;
+      const imageModel = dataFromValues || widget.data?.trim() || widget.url || '';
+      if (!imageModel) return null;
+      return (
+        <img
+          src={imageModel}
+          alt={widget.description ?? 'image'}
+          style={{
+            ...baseStyle,
+            width: widget.fillMaxWidth ? '100%' : 64,
+            height: widget.fillMaxWidth ? undefined : 64,
+            maxHeight: widget.fillMaxWidth ? 300 : undefined,
+            objectFit: 'contain'
+          }}
+        />
+      );
+    }
+
+    case 'AudioPlayer': {
+      const prefix = `${widget.player}.media`;
+      const phase = stringOrNull(values[`${prefix}.state`]) ?? 'idle';
+      const position = stringOrNull(values[`${prefix}.positionMs`]) ?? '0';
+      return (
+        <div style={{ ...baseStyle, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div>{`${widget.title ?? 'Audio Player'}: ${phase}`}</div>
+          <div>{`Position: ${position}ms`}</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => onModuleCommand('audioPlayer', widget.player, 'play', [])}>Play</button>
+            <button onClick={() => onModuleCommand('audioPlayer', widget.player, 'pause', [])}>Pause</button>
+            <button onClick={() => onModuleCommand('audioPlayer', widget.player, 'stop', [])}>Stop</button>
+          </div>
+        </div>
+      );
+    }
+
+    case 'Dropdown': {
+      const options = resolveDropdownOptions(widget, values);
+      const widgetId = widget.id ?? undefined;
+      const selectedValue = widgetId ? stringOrNull(values[widgetId]) ?? '' : '';
+      return (
+        <select
+          style={{
+            ...baseStyle,
+            minHeight: 36,
+            borderRadius: 8,
+            border: '1px solid #334155',
+            background: parseColorOrNull(style.containerColor) ?? '#111827',
+            color: baseStyle.color ?? '#e5e7eb'
+          }}
+          value={selectedValue}
+          onChange={(event) => {
+            const newValue = event.target.value;
+            if (widgetId) {
+              onValueChange(widgetId, newValue);
+            }
+            if (widget.onChangeAction) {
+              onAction(widget.onChangeAction, [newValue]);
+            }
+          }}
+        >
+          <option value="">{widget.hint ?? 'Select'}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label ?? option.value}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    case 'Switch': {
+      const widgetId = widget.id ?? undefined;
+      const checked = widgetId ? booleanOrNull(values[widgetId]) ?? (widget.checked ?? false) : widget.checked ?? false;
+      const shouldGrow = widget.weight != null || widget.fillMaxWidth;
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            flex: widget.weight != null ? `${widget.weight} 1 0` : baseStyle.flex
+          }}
+        >
+          <span style={{ flex: shouldGrow ? 1 : 'none' }}>{widget.text ?? ''}</span>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(event) => {
+                const isChecked = event.target.checked;
+                if (widgetId) {
+                  onValueChange(widgetId, String(isChecked));
+                }
+                if (widget.onChangeAction) {
+                  onAction(widget.onChangeAction, widget.actionArgs ?? [isChecked]);
+                }
+              }}
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
+      );
+    }
+
+    case 'Spinner': {
+      return <div className="spinner" style={baseStyle} />;
+    }
+
+    case 'Progress': {
+      const progress = widget.progressId ? floatOrNull(values[widget.progressId]) ?? widget.progress : widget.progress;
+      const clamped = typeof progress === 'number' ? Math.max(0, Math.min(1, progress)) : undefined;
+      if (widget.indeterminate || clamped == null) {
+        return <div className="progress-indeterminate" style={baseStyle} />;
+      }
+      return <progress style={{ ...baseStyle, width: '100%' }} value={clamped} max={1} />;
+    }
+
+    case 'Slider': {
+      const widgetId = widget.id ?? undefined;
+      const min = widget.min ?? 0;
+      const max = widget.max != null && widget.max > min ? widget.max : 100;
+      const step = widget.step ?? 1;
+      const rawValue = widgetId ? floatOrNull(values[widgetId]) ?? widget.value ?? min : widget.value ?? min;
+      const currentValue = Math.min(Math.max(rawValue, min), max);
+      const accentColor = style.containerColor || style.backgroundColor;
+
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            width: widget.fillMaxWidth ? '100%' : undefined,
+            flex: widget.weight != null ? `${widget.weight} 1 0` : baseStyle.flex
+          }}
+        >
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={currentValue}
+            style={{
+              flex: 1,
+              accentColor: accentColor ?? undefined,
+              cursor: 'pointer'
+            }}
+            onChange={(event) => {
+              const numVal = parseFloat(event.target.value);
+              if (widgetId) {
+                onValueChange(widgetId, String(numVal));
+              }
+              if (widget.onChangeAction) {
+                onAction(widget.onChangeAction, widget.actionArgs ? [...widget.actionArgs, numVal] : [numVal]);
+              }
+            }}
+          />
+          <span
+            style={{
+              minWidth: 36,
+              textAlign: 'right',
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: '0.875rem',
+              color: style.textColor ?? undefined
+            }}
+          >
+            {currentValue}
+          </span>
+        </div>
+      );
+    }
+
     default:
-      return null;
+      return parentDirection === 'row' ? <span /> : null;
   }
 }
+
+export function useFocusRegistry(): Record<string, HTMLInputElement | null> {
+  return useRef<Record<string, HTMLInputElement | null>>({}).current;
+}
+
+export function useFrameworkLabel(framework: string | undefined): string {
+  return useMemo(() => (framework?.trim() ? framework : 'Rikka'), [framework]);
+}
+

@@ -100,6 +100,12 @@ export interface ImageWidget extends WidgetBase {
   description?: string;
 }
 
+export interface AudioPlayerWidget extends WidgetBase {
+  type: 'AudioPlayer';
+  player: string;
+  title?: string;
+}
+
 export interface DropdownOption {
   value: string;
   label?: string;
@@ -132,16 +138,6 @@ export interface ProgressWidget extends WidgetBase {
   indeterminate?: boolean;
 }
 
-export interface SliderWidget extends WidgetBase {
-  type: 'Slider';
-  value?: number | null;
-  min?: number;
-  max?: number;
-  step?: number | null;
-  onChangeAction?: string | null;
-  actionArgs?: JsonValue[];
-}
-
 export interface TableColumn {
   weight?: number | null;
   width?: number | null;
@@ -154,13 +150,23 @@ export interface TableWidget extends WidgetBase {
   dynamicChildrenId?: string | null;
   dynamicRowsId?: string | null;
   isScrollable?: boolean;
-  scrollDirection?: string | null;
+  scrollDirection?: 'horizontal' | 'vertical' | 'both' | string | null;
   columns?: TableColumn[];
 }
 
 export interface TableRowWidget extends WidgetBase {
   type: 'TableRow';
   children?: Widget[];
+}
+
+export interface SliderWidget extends WidgetBase {
+  type: 'Slider';
+  value?: number | null;
+  min?: number;
+  max?: number;
+  step?: number | null;
+  onChangeAction?: string | null;
+  actionArgs?: JsonValue[];
 }
 
 export type Widget =
@@ -170,6 +176,7 @@ export type Widget =
   | TextFieldWidget
   | ButtonWidget
   | ImageWidget
+  | AudioPlayerWidget
   | DropdownWidget
   | SwitchWidget
   | SpinnerWidget
@@ -180,6 +187,32 @@ export type Widget =
 
 export interface LayoutRoot {
   layout: Widget;
+}
+
+export interface ConfirmationModalRequest {
+  id: string;
+  title?: string;
+  message?: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDestructive?: boolean;
+}
+
+export interface HeadlessSessionSnapshot {
+  sessionId: string;
+  reason: string;
+  featureId?: string;
+  values: Record<string, JsonValue>;
+  layout?: LayoutRoot | null;
+  styleSheet?: StyleSheet | null;
+  framework?: string;
+  modal?: ConfirmationModalRequest | null;
+}
+
+export interface CreateSessionResponse {
+  id: string;
+  manifestPath: string;
+  state: HeadlessSessionSnapshot;
 }
 
 export interface AppletFeatureDef {
