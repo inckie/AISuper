@@ -17,9 +17,6 @@ import com.damn.aisuper.rpc.RpcRouter
 import com.damn.aisuper.rpc.RpcScope
 import com.damn.aisuper.rpc.Surfaces
 import com.damn.aisuper.toolbox.ParameterType
-import com.damn.aisuper.toolbox.Tool
-import com.damn.aisuper.toolbox.ToolArguments
-import com.damn.aisuper.toolbox.ToolboxRegistry
 
 /**
  * Thin, transport-agnostic Model Context Protocol (MCP) JSON-RPC 2.0 adapter.
@@ -28,22 +25,19 @@ import com.damn.aisuper.toolbox.ToolboxRegistry
  * @wk-tags kotlin, mcp, json-rpc, adapter, ai-tools, pods
  * @wk-categories engineering-specs, agent-architecture
  *
- * Primarily wraps [RpcRouter] / [org.fluentos.foundation.rpc.SurfaceRegistry] so every local native module,
+ * Wraps [RpcRouter] / [com.damn.aisuper.rpc.SurfaceRegistry] so every local native module,
  * JS pod, and mounted remote pod automatically appears as MCP tools without duplicating schemas.
- * Also retains a compatibility constructor backed by [ToolboxRegistry] for legacy callers/tests.
  * See [[unified-rpc-surfaces]].
  */
-class McpServer private constructor(
-    private val rpcRouter: RpcRouter?,
-    private val legacyToolbox: ToolboxRegistry?,
-    private val providerFilter: String?,
-    private val rpcScope: RpcScope,
-    private val serverName: String,
-    private val serverVersion: String
+class McpServer(
+    private val router: RpcRouter,
+    private val scope: RpcScope,
+    private val serverName: String = scope.toolboxId?.takeIf { it.isNotBlank() }?.let { "fluentos-$it" } ?: "fluentos",
+    private val serverVersion: String = "1.0.0"
 ) {
 
     /**
-     * Primary constructor wrapping the unified [RpcRouter] / [org.fluentos.foundation.rpc.SurfaceRegistry]
+     * Convenience constructor wrapping [RpcRouter] / [com.damn.aisuper.rpc.SurfaceRegistry]
      * with a single-surface filter (or global when `surfaceFilter == null`).
      */
     constructor(
@@ -52,45 +46,8 @@ class McpServer private constructor(
         serverName: String = if (surfaceFilter.isNullOrBlank()) "fluentos" else "fluentos-$surfaceFilter",
         serverVersion: String = "1.0.0"
     ) : this(
-        rpcRouter = router,
-        legacyToolbox = null,
-        providerFilter = surfaceFilter?.takeIf { it.isNotBlank() },
-        rpcScope = RpcScope.fromSurfaceFilter(surfaceFilter),
-        serverName = serverName,
-        serverVersion = serverVersion
-    )
-
-    /**
-     * Multi-surface Toolbox constructor wrapping [RpcRouter] with an arbitrary [RpcScope]
-     * (e.g. a named [org.fluentos.foundation.toolbox.ToolboxProfile] exposing a subset of surfaces/methods).
-     */
-    constructor(
-        router: RpcRouter,
-        scope: RpcScope,
-        serverName: String = scope.toolboxId?.takeIf { it.isNotBlank() }?.let { "fluentos-$it" } ?: "fluentos",
-        serverVersion: String = "1.0.0"
-    ) : this(
-        rpcRouter = router,
-        legacyToolbox = null,
-        providerFilter = scope.defaultSurface,
-        rpcScope = scope,
-        serverName = serverName,
-        serverVersion = serverVersion
-    )
-
-    /**
-     * Legacy compatibility constructor wrapping [ToolboxRegistry].
-     */
-    constructor(
-        toolbox: ToolboxRegistry,
-        providerFilter: String? = null,
-        serverName: String = if (providerFilter.isNullOrBlank()) "fluentos" else "fluentos-$providerFilter",
-        serverVersion: String = "1.0.0"
-    ) : this(
-        rpcRouter = null,
-        legacyToolbox = toolbox,
-        providerFilter = providerFilter?.takeIf { it.isNotBlank() },
-        rpcScope = RpcScope.fromSurfaceFilter(providerFilter),
+        router = router,
+        scope = RpcScope.fromSurfaceFilter(surfaceFilter),
         serverName = serverName,
         serverVersion = serverVersion
     )
@@ -144,19 +101,11 @@ class McpServer private constructor(
     }
 
     private fun listTools(): JsonObject {
-        if (rpcRouter != null) {
-            val methods = rpcRouter.registry.descriptors(rpcScope)
-                .flatMap { surface -> surface.methods.filter { it.exposeInMcp } }
-            return buildJsonObject {
-                put("tools", buildJsonArray {
-                    methods.forEach { add(methodToMcpTool(it)) }
-                })
-            }
-        }
-        val toolList = legacyToolbox?.tools(providerFilter).orEmpty()
+        val methods = router.registry.descriptors(scope)
+            .flatMap { surface -> surface.methods.filter { it.exposeInMcp } }
         return buildJsonObject {
             put("tools", buildJsonArray {
-                toolList.forEach { add(toMcpTool(it)) }
+                methods.forEach { add(methodToMcpTool(it)) }
             })
         }
     }
@@ -172,37 +121,13 @@ class McpServer private constructor(
             else -> throw IllegalArgumentException("'arguments' must be a JSON object")
         }
 
-        if (rpcRouter != null) {
-            val rpcRes = rpcRouter.call(
-                method = name,
-                params = RpcParams.Named(argsObject),
-                scope = rpcScope,
-                context = RpcCallContext.MCP
-            )
-            val toolResult = rpcRes.toToolResult()
-            val text = toolResult.asText ?: toolResult.value.toString()
-            return buildJsonObject {
-                put("content", buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("type", "text")
-                            put("text", text)
-                        }
-                    )
-                })
-                if (toolResult.isStructured) {
-                    put("structuredContent", toolResult.value)
-                }
-                put("isError", toolResult.isError)
-            }
-        }
-
-        val toolResult = legacyToolbox!!.invoke(
-            name = name,
-            arguments = ToolArguments.fromJson(argsObject),
-            providerFilter = providerFilter
+        val rpcRes = router.call(
+            method = name,
+            params = RpcParams.Named(argsObject),
+            scope = scope,
+            context = RpcCallContext.MCP
         )
-
+        val toolResult = rpcRes.toToolResult()
         val text = toolResult.asText ?: toolResult.value.toString()
         return buildJsonObject {
             put("content", buildJsonArray {
@@ -258,48 +183,6 @@ class McpServer private constructor(
         return buildJsonObject {
             put("name", method.qualifiedName)
             put("description", method.description)
-            put("inputSchema", inputSchema)
-        }
-    }
-
-    private fun toMcpTool(tool: Tool): JsonObject {
-        val requiredList = mutableListOf<String>()
-        val properties = buildJsonObject {
-            tool.parameters.forEach { param ->
-                put(param.name, buildJsonObject {
-                    put("type", param.type.schemaType)
-                    put("description", param.description)
-                    param.enumValues?.takeIf { it.isNotEmpty() }?.let { values ->
-                        put("enum", buildJsonArray {
-                            values.forEach { add(JsonPrimitive(it)) }
-                        })
-                    }
-                    if (param.type == ParameterType.ARRAY) {
-                        val itemType = (param.itemsType ?: ParameterType.STRING).schemaType
-                        put("items", buildJsonObject {
-                            put("type", itemType)
-                        })
-                    }
-                })
-                if (param.required) {
-                    requiredList.add(param.name)
-                }
-            }
-        }
-
-        val inputSchema = buildJsonObject {
-            put("type", "object")
-            put("properties", properties)
-            if (requiredList.isNotEmpty()) {
-                put("required", buildJsonArray {
-                    requiredList.forEach { add(JsonPrimitive(it)) }
-                })
-            }
-        }
-
-        return buildJsonObject {
-            put("name", tool.name)
-            put("description", tool.description)
             put("inputSchema", inputSchema)
         }
     }
