@@ -465,7 +465,7 @@ export function WidgetRenderer({
                   onValueChange(widgetId, String(isChecked));
                 }
                 if (widget.onChangeAction) {
-                  onAction(widget.onChangeAction, widget.actionArgs ?? [isChecked]);
+                  onAction(widget.onChangeAction, widget.actionArgs ? [...widget.actionArgs, isChecked] : [isChecked]);
                 }
               }}
             />
