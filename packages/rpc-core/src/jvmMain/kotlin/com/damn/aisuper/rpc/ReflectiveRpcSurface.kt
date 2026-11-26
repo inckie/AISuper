@@ -1,7 +1,7 @@
 package com.damn.aisuper.rpc
 
+import com.damn.aisuper.toolbox.ParameterType
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -20,7 +20,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializerOrNull
-import com.damn.aisuper.toolbox.ParameterType
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
@@ -38,7 +37,6 @@ import kotlin.coroutines.resumeWithException
  * Uses `encodeDefaults = true` and `explicitNulls = false` so `@Serializable` DTOs
  * automatically serialize identically to manual `if (x != null) put(...)` builders.
  */
-@OptIn(ExperimentalSerializationApi::class)
 object RpcJson {
     val json = Json {
         encodeDefaults = true
@@ -401,13 +399,13 @@ class ReflectiveRpcSurface(
     ): Any? {
         if (elem is JsonNull) return defaultMissingValue(jvmType)
 
-        return when {
-            jvmType == JsonElement::class.java -> elem
-            jvmType == JsonObject::class.java -> (elem as? JsonObject)
+        return when (jvmType) {
+            JsonElement::class.java -> elem
+            JsonObject::class.java -> (elem as? JsonObject)
                 ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be a JSON object")
-            jvmType == JsonArray::class.java -> (elem as? JsonArray)
+            JsonArray::class.java -> (elem as? JsonArray)
                 ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be a JSON array")
-            jvmType == String::class.java -> {
+            String::class.java -> {
                 val str = (elem as? JsonPrimitive)?.contentOrNull ?: elem.toString()
                 desc.enumValues?.takeIf { it.isNotEmpty() }?.let { allowed ->
                     if (str !in allowed) {
@@ -419,33 +417,33 @@ class ReflectiveRpcSurface(
                 }
                 str
             }
-            jvmType == Int::class.javaPrimitiveType || jvmType == Int::class.javaObjectType -> {
+            Int::class.javaPrimitiveType, Int::class.javaObjectType -> {
                 val prim = elem as? JsonPrimitive
                 prim?.intOrNull
                     ?: prim?.doubleOrNull?.toInt()
                     ?: prim?.contentOrNull?.trim()?.toIntOrNull()
                     ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be an integer")
             }
-            jvmType == Long::class.javaPrimitiveType || jvmType == Long::class.javaObjectType -> {
+            Long::class.javaPrimitiveType, Long::class.javaObjectType -> {
                 val prim = elem as? JsonPrimitive
                 prim?.longOrNull
                     ?: prim?.doubleOrNull?.toLong()
                     ?: prim?.contentOrNull?.trim()?.toLongOrNull()
                     ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be a long integer")
             }
-            jvmType == Double::class.javaPrimitiveType || jvmType == Double::class.javaObjectType -> {
+            Double::class.javaPrimitiveType, Double::class.javaObjectType -> {
                 val prim = elem as? JsonPrimitive
                 prim?.doubleOrNull
                     ?: prim?.contentOrNull?.trim()?.toDoubleOrNull()
                     ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be a number")
             }
-            jvmType == Float::class.javaPrimitiveType || jvmType == Float::class.javaObjectType -> {
+            Float::class.javaPrimitiveType, Float::class.javaObjectType -> {
                 val prim = elem as? JsonPrimitive
                 prim?.floatOrNull
                     ?: prim?.contentOrNull?.trim()?.toFloatOrNull()
                     ?: throw RpcException(RpcErrorCodes.INVALID_PARAMS, "Parameter '${desc.name}' must be a number")
             }
-            jvmType == Boolean::class.javaPrimitiveType || jvmType == Boolean::class.javaObjectType -> {
+            Boolean::class.javaPrimitiveType, Boolean::class.javaObjectType -> {
                 val prim = elem as? JsonPrimitive
                 prim?.booleanOrNull
                     ?: prim?.contentOrNull?.trim()?.lowercase()?.toBooleanStrictOrNull()

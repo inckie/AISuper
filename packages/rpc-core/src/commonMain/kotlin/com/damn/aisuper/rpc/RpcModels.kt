@@ -276,7 +276,7 @@ sealed class RpcParams {
         }
 
         fun fromNullableObject(obj: JsonObject?): RpcParams =
-            if (obj == null || obj.isEmpty()) Empty else Named(obj)
+            if (obj.isNullOrEmpty()) Empty else Named(obj)
     }
 }
 
