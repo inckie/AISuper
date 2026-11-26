@@ -57,8 +57,11 @@ From `kotlin/`:
 
 ### 2. Configure and Build `cui-app` (Windows MSVC + Ninja)
 
+From a **Developer Command Prompt for VS** (or after running your Visual Studio `vcvars64.bat`) at the repository root:
+
 ```powershell
-cmd /c "call `"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat`" >nul && cmake -S d:\Work\Mobile\Android\AISuper\cui-app -B d:\Work\Mobile\Android\AISuper\cui-app\build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build d:\Work\Mobile\Android\AISuper\cui-app\build --config Release"
+cmake -S cui-app -B cui-app/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build cui-app/build --config Release
 ```
 
 CMake automatically copies `aisuper_core.dll` next to `aisuper_cui.exe` and `aisuper_cui_smoke.exe` in `cui-app/build/`.
@@ -70,7 +73,7 @@ CMake automatically copies `aisuper_core.dll` next to `aisuper_cui.exe` and `ais
 .\cui-app\build\aisuper_cui.exe
 
 # Or launch an applet directory, applet.json, or .zip archive directly from CLI
-.\cui-app\build\aisuper_cui.exe "d:\Work\Mobile\Android\AISuper\.agents\sample-applets\widgets\applet.json"
+.\cui-app\build\aisuper_cui.exe ".agents\sample-applets\widgets\applet.json"
 ```
 
 ## Automated End-to-End Smoke Test
@@ -78,7 +81,7 @@ CMake automatically copies `aisuper_core.dll` next to `aisuper_cui.exe` and `ais
 `aisuper_cui_smoke.exe` loads `aisuper_core.dll`, launches the `widgets` sample applet, renders multiple offscreen frames through CUI's software renderer (`cui_sw_renderer`), exercises a non-cancellable modal confirmation round-trip, and verifies LunaSVG `dynamic_svg`, `currentColor` icon rendering, and non-stretched Fit quad dimensions:
 
 ```powershell
-.\cui-app\build\aisuper_cui_smoke.exe "d:\Work\Mobile\Android\AISuper\.agents\sample-applets\widgets\applet.json"
+.\cui-app\build\aisuper_cui_smoke.exe ".agents\sample-applets\widgets\applet.json"
 ```
 
 ## Current Limitations

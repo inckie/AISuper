@@ -4,7 +4,7 @@ categories:
 - system-overview
 created: '2026-11-26T08:06:07.173270+00:00'
 id: cui-native-frontend
-modified: '2026-11-26T08:06:07.173361+00:00'
+modified: '2026-11-26T17:56:50.486174+00:00'
 tags:
 - cui
 - cpp
@@ -105,14 +105,16 @@ Because `cui_image_ex` stretches textures across its assigned `width x height`, 
 ```
 
 ### 5.2. Configure & Build `cui-app` (Windows MSVC + Ninja)
+From a Developer Command Prompt for VS (or after running `vcvars64.bat`) at the repository root:
 ```powershell
-cmd /c "call `"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat`" >nul && cmake -S d:\Work\Mobile\Android\AISuper\cui-app -B d:\Work\Mobile\Android\AISuper\cui-app\build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build d:\Work\Mobile\Android\AISuper\cui-app\build --config Release"
+cmake -S cui-app -B cui-app/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build cui-app/build --config Release
 ```
 
 ### 5.3. Run GUI & End-to-End Smoke Test
 ```powershell
-.\cui-app\build\aisuper_cui.exe "d:\Work\Mobile\Android\AISuper\.agents\sample-applets\widgets\applet.json"
-.\cui-app\build\aisuper_cui_smoke.exe "d:\Work\Mobile\Android\AISuper\.agents\sample-applets\widgets\applet.json"
+.\cui-app\build\aisuper_cui.exe ".agents\sample-applets\widgets\applet.json"
+.\cui-app\build\aisuper_cui_smoke.exe ".agents\sample-applets\widgets\applet.json"
 ```
 
 ## Related Pages
