@@ -3,7 +3,7 @@ categories:
 - system-overview
 created: '2026-06-20T05:03:50.596219+00:00'
 id: applet-lifecycle
-modified: '2026-11-26T05:49:49.750764+00:00'
+modified: '2026-11-26T08:06:16.290538+00:00'
 tags:
 - lifecycle
 - loading
@@ -36,6 +36,7 @@ If a provided path is invalid or fails to load, the application displays a detai
 When launched without a CLI/Intent target, AISuper scans the configured default applets directory for folder applets and `.zip` archives and presents the **Applet Picker**:
 
 - **JVM Desktop**: Defaults to `~/.aisuper/applets` (configurable via **Change Folder**, persisted in `~/.aisuper/aisuper_host.properties`). Also supports **Browse Folder...**, **Browse .zip / .json...**, and drag-and-drop onto the window.
+- **Native Desktop (`cui-app`)**: Displays an interactive window with toolbar **Folder** and **.zip / .json** pickers plus OS drag-and-drop when launched without CLI arguments.
 - **Android**: Defaults to `App Storage / applets` (`/sdcard/Android/data/com.damn.aisuper.androidapp/files/applets`), or any user-selected directory via **Change Folder** (Android Storage Access Framework `OpenDocumentTree`). Also supports **Browse Folder...** and **Browse .zip...**.
 - **Running Status Bar**: While an applet is running, a top status bar provides **☰ Applets** (reopen picker while keeping the active applet alive), **↻** (reload), and on Android **+ Home** to pin a home screen shortcut.
 
@@ -52,15 +53,23 @@ Path to the ZIP, directory, or `applet.json` can be passed as a command-line arg
 .\gradlew.bat :composeApp:run --args="C:\path\to\my-applet.zip"
 ```
 
+### Native Desktop (`cui-app` + `:native-bridge`)
+Zero-JVM C++20 frontend dynamically loading `aisuper_core.dll` (see [[cui-native-frontend|CUI + Kotlin/Native Desktop Frontend]]):
+```powershell
+.\cui-app\build\aisuper_cui.exe "C:\path\to\my-applet-directory"
+.\cui-app\build\aisuper_cui.exe "C:\path\to\my-applet.zip"
+.\cui-app\build\aisuper_cui.exe "C:\path\to\applet.json"
+```
+
 ### Android
 * **Applet Picker**: Scans the default directory (App Storage or selected SAF folder) or browses external folders / `.zip` files.
 * **File Open**: Tapping a `.zip` file in a file manager and selecting "AISuper".
-* **App Shortcut**: Long-pressing the app icon and selecting "Run custom applet..." or a recently opened dynamic applet shortcut.
-* **Pinned Home Screen Shortcuts**: Tapping **+ Home** in the running applet status bar pins a shortcut (`ShortcutManagerCompat.requestPinShortcut`) that launches that applet directly via `com.damn.aisuper.ACTION_LAUNCH_APPLET`.
+* **App Shortcut**: Long-press the app icon and select "Run custom applet..." or a recently opened dynamic applet shortcut.
+* **Pinned Home Screen Shortcuts**: Tap **+ Home** in the running applet status bar to pin a shortcut (`ShortcutManagerCompat.requestPinShortcut`) that launches that applet directly via `com.damn.aisuper.ACTION_LAUNCH_APPLET`.
 
 ---
 
-## JVM Desktop & TUI Packaging
+## JVM Desktop & Native Packaging
 
 ### 1. Standalone Native Directory (Recommended)
 Compiles `:composeApp` into a self-contained directory (`composeApp/build/compose/binaries/main/app/com.damn.aisuper/`) with a native launcher (`com.damn.aisuper.exe`) and a stripped-down bundled JRE (no system Java required):
@@ -84,6 +93,9 @@ Packages the terminal UI runtime into a standalone native directory (`lanternaAp
 .\lanternaApp\build\distributions\app-image\lanternaApp\lanternaApp.exe "C:\path\to\my-applet-directory"
 ```
 If launched without arguments, `:lanternaApp` scans the configured default applets directory and displays a terminal picker.
+
+### 4. Native C++ + Kotlin/Native Desktop (`cui-app/` + `:native-bridge`)
+Pairs a ~1.1 MB C++20/CUI binary (`aisuper_cui.exe`) with the stripped ~9.3 MB Kotlin/Native shared library (`aisuper_core.dll`, no JVM required). See [[cui-native-frontend|CUI + Kotlin/Native Desktop Frontend]] for Gradle + CMake/Ninja build steps.
 
 ---
 

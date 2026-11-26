@@ -39,6 +39,7 @@ include(":shared")
 include(":server")
 include(":applet-provider")
 include(":lanternaApp")
+include(":native-bridge")
 
 includeBuild("../externals/keight") {
     name = "keightBuild"

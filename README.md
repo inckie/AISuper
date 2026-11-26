@@ -69,10 +69,12 @@ All applet execution lives in the `:shared` Kotlin Multiplatform module — no U
 
 - **`Applet`** — loads `applet.json`, manages feature lifecycle, exposes JS globals.
 - **`Feature`** — loads layout JSON + feature script, attaches native modules, dispatches actions/values.
-- **`AppJSEngine`** — abstracts the JavaScript sandbox (QuickJS or Keight on native/JVM; Keight on JS/WASM).
+- **`AppJSEngine`** — abstracts the JavaScript sandbox (QuickJS or Keight on native/JVM/desktop-native; Keight on JS/WASM).
 - **`FeatureModule`** / **`FeatureModuleHost`** — pluggable native modules (HTTP, audio, GPS, MCP, JS modules) that register functions into the JS context.
 - **`StateStorage`** — hierarchical, scope-isolated state with transient and persistent backends (APPLET / FEATURE / MODULE / MODULE_GLOBAL scopes).
-- **`HeadlessSessionManager`** / **`HeadlessSession`** — wraps `Applet` for server-side use; re-emits state changes as a `Flow<HeadlessSessionSnapshot>` for REST/SSE delivery.
+- **`HeadlessSessionManager`** / **`HeadlessSession`** — wraps `Applet` for server-side and native FFI use; re-emits state changes as a `Flow<HeadlessSessionSnapshot>` for REST/SSE or C ABI delivery.
+
+Desktop native targets (`mingwX64`, `linuxX64`, `macosArm64` via `desktopNativeMain`) are supported alongside Android, iOS, JVM, JS, and WASM.
 
 **Important**: Keight JS engine while being an awesome piece of code was never intended to be used as a full blown JS runtime, so it has a lot of small issues.
 
@@ -117,27 +119,42 @@ A Vite + React + TypeScript browser app that connects to `:server`:
 - **`WidgetRenderer.tsx`** — recursive renderer that maps the `HeadlessSessionSnapshot.layout` widget tree to React DOM elements; mirrors the role of `RikkaLayoutRenderer` on native platforms.
 - **`types.ts`** — TypeScript mirror of the Kotlin layout model types.
 
+## Native C++ Desktop Frontend (`:native-bridge` + `cui-app/`)
+
+A lightweight, zero-JVM desktop frontend written in C++20 with [CUI (`v1.5.0`)](https://github.com/yappologistic/CUI) and `LunaSVG`, backed in-process by `:shared` compiled via Kotlin/Native:
+
+- **`:native-bridge`** — compiles `:shared` (`desktopNativeMain`, QuickJS + Keight) into a shared library (`aisuper_core.dll` / `.so` / `.dylib`) exposing a 7-function flat `@CName` C ABI. Release builds strip COFF symbol tables automatically (~9.3 MB DLL).
+- **`cui-app/`** — native C++20 desktop shell (~1.1 MB executable) supporting `.zip` archives (`miniz`), directory/`applet.json` loading, drag-and-drop, Fit (`contain`) image & SVG rendering (`LunaSVG` with `currentColor`), non-cancellable modal confirmations, and a live JSON Snapshot Inspector.
+
+See [cui-app/README.md](cui-app/README.md) for build, run, and smoke-test instructions.
+
 ## How it fits together
 
 ```
-                    ┌────────────────────────────────────────────────────┐
-                    │             :shared  (core logic)                  │
-                    │  Applet · Feature · AppJSEngine · Modules          │
-                    │  Storage · HeadlessSession                         │
-                    └──────────────────────┬─────────────────────────────┘
-                                           │
-              ┌────────────────────────────┼──────────────────────────────────┐
-              ▼                            ▼                                  ▼
-  ┌─────────────────────┐    ┌──────────────────────────┐   ┌──────────────────────────┐
-  │  :composeApp        │    │  :applet-provider        │   │  :server  (Ktor JVM)     │
-  │  Picker · StatusBar │    │  AppletCatalog           │   │  REST + SSE              │
-  │  Compose renderers  │◄───│  JvmAppletScanner        │──►│  HeadlessSessionManager  │
-  │  platform entries   │    │  FS & ZIP Providers      │   └────────────┬─────────────┘
-  └─────────────────────┘    └──────────────────────────┘                │ REST / SSE
-                                                              ┌────────────▼─────────────┐
-                                                              │  client-react/  (npm)    │
-                                                              │  React · WidgetRenderer  │
-                                                              └──────────────────────────┘
+                    ┌───────────────────────────────────────────────────────────┐
+                    │                :shared  (core logic)                      │
+                    │  Applet · Feature · AppJSEngine · Modules · Storage       │
+                    │  HeadlessSession                                          │
+                    └──┬──────────────────┬───────────────────┬─────────────────┘
+                       │                  │                   │
+       ┌───────────────▼──┐    ┌──────────▼─────────┐   ┌─────▼───────────────────┐
+       │ :composeApp      │    │ :applet-provider   │   │ :server  (Ktor JVM)     │
+       │ Picker/StatusBar │    │ AppletCatalog      │   │ REST + SSE              │
+       │ Compose renderers│◄───│ JvmAppletScanner   │──►│ HeadlessSessionManager  │
+       │ platform entries │    │ FS & ZIP Providers │   └──────────┬──────────────┘
+       └──────────────────┘    └────────────────────┘              │ REST / SSE
+                                                        ┌──────────▼──────────────┐
+       ┌──────────────────┐                             │ client-react/  (npm)    │
+       │ :native-bridge   │                             │ React · WidgetRenderer  │
+       │ K/N shared lib   │                             └─────────────────────────┘
+       │ (aisuper_core)   │
+       └────────┬─────────┘
+                │ C ABI (DLL/.so/.dylib)
+       ┌────────▼─────────┐
+       │ cui-app/ (C++20) │
+       │ CUI · LunaSVG    │
+       │ WidgetRenderer   │
+       └──────────────────┘
 ```
 
 # Applet Discovery and Loading
@@ -170,6 +187,13 @@ Pass the path to your custom applet ZIP, directory, or `applet.json` as a comman
 
 # Running during development with Gradle
 .\gradlew.bat :composeApp:run --args="C:\path\to\my-applet.zip"
+```
+
+### Loading via Native Desktop (`cui-app`)
+Launch without arguments and use the toolbar **Folder** / **.zip / .json** pickers or drag-and-drop onto the window, or pass an applet path on the CLI (see [cui-app/README.md](cui-app/README.md)):
+```powershell
+.\cui-app\build\aisuper_cui.exe "C:\path\to\my-applet-directory"
+.\cui-app\build\aisuper_cui.exe "C:\path\to\my-applet.zip"
 ```
 
 *For more details on building and packaging the JVM Desktop app, see the `applet-lifecycle` article in the `wikiknowledge-aisuper` Knowledge Base.*

@@ -4,13 +4,15 @@ categories:
 - architecture
 created: '2026-06-20T04:50:15.468213+00:00'
 id: architecture-overview
-modified: '2026-11-26T05:49:52.736393+00:00'
+modified: '2026-11-26T08:06:39.075794+00:00'
 tags:
 - architecture
 - overview
 - kotlin
 - multiplatform
 - compose
+- cui
+- kotlin-native
 title: Architecture Overview
 type: leaf
 ---
@@ -18,7 +20,7 @@ type: leaf
 # AI Super App - Architecture Overview
 
 ## Overview
-The AI Super App is a container application designed to load and execute dynamic "Applets". Applets are defined by a set of artifacts (manifest JSON, layout JSON, JS/TS scripts) and run inside a sandboxed environment. The core goal is to allow an "External AI" to generate these applets to fulfil specific user needs on-the-fly.
+The AI Super App is a container application designed to load and execute dynamic "Applets". Applets are defined by a set of artifacts (manifest JSON, layout JSON, JS/TS scripts) and run inside a sandboxed environment. The core goal is to allow an "External" AI to generate these applets to fulfil specific user needs on-the-fly.
 
 ---
 
@@ -28,16 +30,20 @@ The AI Super App is a container application designed to load and execute dynamic
 :androidApp  ──► :composeApp ──► :shared
                       │               ▲
                       └──► :applet-provider ──► :shared
-                                 ▲
-:server ────────────────────────►┘
-   (Ktor JVM)     also ──► :shared
+                                 ▲              │
+:server ────────────────────────►┘              │
+   (Ktor JVM)     also ─────────────────────────┤
+                                                │
+:native-bridge (K/N sharedLib) ─────────────────┘
+   ▲  (7-function C ABI: aisuper_core.dll/.so/.dylib)
+cui-app/ (C++20 + CUI + LunaSVG)
 
 client-react/ (npm/Vite)  ── REST/SSE ──► :server
 modules-ts/   (npm/tsc)   ── compiled JS loaded at runtime by :shared engine
 ```
 
 ### `:shared`  *(Kotlin Multiplatform library)*
-Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm`, `js`, `wasmJs`, `quickjsMain`.
+Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm`, `js`, `wasmJs`, `mingwX64`, `linuxX64`, `macosArm64` (`quickjsMain`, `composeAudioMain`, `desktopNativeMain`).
 
 The **pure logic core** – no Compose, no platform UI, no server wiring.
 Contains:
@@ -45,11 +51,11 @@ Contains:
 | Sub-package | Contents |
 |---|---|
 | `runtime/` | `Applet`, `Feature`, `AppletManifest`, `AppletResourceLoader`, `StorageBindings`, `XmlJsonParser` |
-| `engine/` | `AppJSEngine` interface, `KeightJSEngine` (QuickJS), `createAppJSEngine()` expect/actual, `JsonBridgeConversion` |
+| `engine/` | `AppJSEngine` interface, `KeightJSEngine` / `QuickJS` engines, `createAppJSEngine()` expect/actual, `JsonBridgeConversion` |
 | `layout/` | Serializable widget model: `Widget` union, `LayoutRoot`, `StyleSheet`, `StyleRule`, `StyleTokens` |
-| `modal/` | Decoupled modal system: `ModalRequest`, `ConfirmationRequest`, `ModalHostState`, `DefaultModalHostState` (see [[modal-dialog-system\|Modal Dialog System]]) |
+| `modal/` | Decoupled modal system: `ModalRequest`, `ConfirmationRequest`, `ModalHostState`, `DefaultModalHostState` (see [[modal-dialog-system|Modal Dialog System]]) |
 | `modules/` | `FeatureModule`, `FeatureModuleContext`, `FeatureModuleHost`, `FeatureModuleFactory`; built-in impls: `http`, `audioPlayer`, `geolocation`, `jsModule`, `mcpHttp` |
-| `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` (see [[state-management-and-persistence\|State Management and Persistence]]) |
+| `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` (see [[state-management-and-persistence|State Management and Persistence]]) |
 
 ### `:applet-provider`  *(Kotlin Multiplatform library)*
 Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm`, `js`, `wasmJs`.
@@ -80,6 +86,14 @@ Responsible for **all Compose UI rendering, applet picker/status bar host UI, an
 | `androidMain/` | `MainActivity.kt`, `AISuperWidget.kt`, widget helpers |
 | `jvmMain/` | `main.kt` – Desktop Compose window with picker, folder/file dialogs, drag-and-drop, and MCP harness |
 | `webMain/` | `main.kt` – Browser Compose canvas |
+
+### `:native-bridge`  *(Kotlin/Native shared library)*
+Targets: `mingwX64`, `linuxX64`, `macosArm64` (`sharedLib` with `baseName = "aisuper_core"`, post-link symbol stripping on Release builds).
+
+Compiles `:shared` (`desktopNativeMain`) with both QuickJS and Keight JS engines into `aisuper_core.dll` / `.so` / `.dylib` and exports 7 flat `@CName` C functions (`aisuper_session_create`, `load_applet`, `send_action`, `set_value`, `module_command`, `respond_modal`, `destroy`) with atomic `flatMapLatest` state snapshots and modal callbacks.
+
+### `cui-app/`  *(C++20 + CUI v1.5.0 Desktop Frontend)*
+Thin native C++20 desktop shell (~1.1 MB executable) built with CMake/Ninja and CUI (`v1.5.0`), `nlohmann/json`, `miniz`, and `LunaSVG`. Dynamically loads `aisuper_core` via `LoadLibraryW` / `dlopen`, loads directory / `applet.json` / `.zip` / dropped applets, renders widgets with aspect-ratio-preserving Fit images & SVGs (`currentColor`), and hosts persistent modal confirmation dialogs. See [[cui-native-frontend|CUI + Kotlin/Native Desktop Frontend]].
 
 ### `:androidApp`  *(Android application shell)*
 Thin Android app module that depends on `:composeApp`. Provides `AndroidManifest.xml`, signing, and packaging.
@@ -178,6 +192,7 @@ UI event (Compose click / React button)
 * **Android**: QuickJS (Keight), `SharedPreferences` (`KStorage`), Compose + Glance (App Widgets), SAF/ZIP applet loading & pinned/dynamic shortcuts
 * **iOS**: QuickJS (Keight), `UserDefaults` (`KStorage`), Compose Multiplatform
 * **Desktop/JVM**: QuickJS (Keight), file-based properties (`KStorage`), Compose for Desktop / Lanterna TUI, directory/ZIP/drag-and-drop applet loading
+* **Desktop Native (CUI + Kotlin/Native)**: `:native-bridge` (`aisuper_core` DLL/so/dylib) + `cui-app/` (C++20 + CUI v1.5.0 + LunaSVG), QuickJS + Keight, Ktor WinHttp/Curl, file-backed `PersistentStateStorage`, stub audio player
 * **Web / Browser (Compose)**: Native browser JS, `LocalStorage` (`KStorage`), Compose for Web canvas
 * **Web / Browser (React)**: No Kotlin; `client-react/` connects to `:server` via REST/SSE with server-side storage
 

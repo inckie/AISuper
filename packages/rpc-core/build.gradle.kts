@@ -17,6 +17,9 @@ kotlin {
 
     iosArm64()
     iosSimulatorArm64()
+    mingwX64()
+    linuxX64()
+    macosArm64()
 
     js {
         browser()
