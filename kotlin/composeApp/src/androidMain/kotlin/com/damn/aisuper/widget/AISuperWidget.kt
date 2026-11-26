@@ -1,6 +1,5 @@
 package com.damn.aisuper.widget
 
-import aisuper.composeapp.generated.resources.Res
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
@@ -43,7 +42,6 @@ import com.damn.aisuper.layout.frontend.glance.RenderWidget
 import com.damn.aisuper.layout.parseColorOrNull
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
 import com.damn.aisuper.runtime.Applet
-import com.damn.aisuper.runtime.AppletManifest
 import com.damn.aisuper.runtime.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -57,6 +55,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.net.URL
 
+/** Preference key: serialized AndroidAppletRef identifying the applet backing this widget. */
+val PREF_APPLET_REF = stringPreferencesKey("applet_ref")
 /** Preference key: which featureId this widget instance is bound to. */
 val PREF_FEATURE_ID = stringPreferencesKey("feature_id")
 /** Serialised StyleSheet JSON for the selected style. */
@@ -79,6 +79,7 @@ class AISuperWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             val prefs      = currentState<Preferences>()
+            val appletRef  = prefs[PREF_APPLET_REF]  ?: ""
             val featureId  = prefs[PREF_FEATURE_ID]  ?: ""
             val styleJson  = prefs[PREF_STYLE_JSON]   ?: ""
 
@@ -91,7 +92,7 @@ class AISuperWidget : GlanceAppWidget() {
                 }
             }
 
-            if (featureId.isEmpty()) {
+            if (featureId.isEmpty() || appletRef.isEmpty()) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -110,21 +111,21 @@ class AISuperWidget : GlanceAppWidget() {
 
             var applet by remember { mutableStateOf<Applet?>(null) }
 
-            LaunchedEffect(featureId) {
-                if (featureId.isNotEmpty()) {
+            LaunchedEffect(appletRef, featureId) {
+                if (featureId.isNotEmpty() && appletRef.isNotEmpty()) {
                     if (AndroidAppContextHolder.appContext == null) {
                         AndroidAppContextHolder.appContext = context.applicationContext
                     }
-                    applet = WidgetAppletManager.getOrCreateApplet(id, featureId)
+                    applet = WidgetAppletManager.getOrCreateApplet(context, id, appletRef, featureId)
                 }
             }
 
             val currentFeatureFlow = applet?.currentFeature ?: MutableStateFlow<Feature?>(null)
             val currentFeature by currentFeatureFlow.collectAsState()
-            
+
             val layoutRootFlow = currentFeature?.layoutRoot ?: MutableStateFlow<LayoutRoot?>(null)
             val layoutRoot by layoutRootFlow.collectAsState()
-            
+
             val valuesFlow = currentFeature?.values ?: MutableStateFlow(emptyMap())
             val valuesMap by valuesFlow.collectAsState()
 
@@ -136,7 +137,6 @@ class AISuperWidget : GlanceAppWidget() {
                 }
             }
 
-            // Use style's "screen" class background if available, else dark fallback
             val screenBg = parseColorOrNull(
                 styleSheet?.classes?.get("screen")?.backgroundColor
             ) ?: Color(0xFF121212.toInt())
@@ -199,13 +199,11 @@ class AISuperWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
-        // Clean up per-instance DataStore state for each removed widget
         MainScope().launch {
             val manager = GlanceAppWidgetManager(context)
             appWidgetIds.forEach { appWidgetId ->
                 try {
                     val glanceId = manager.getGlanceIdBy(appWidgetId)
-                    // Clear all prefs for this widget instance
                     updateAppWidgetState(
                         context,
                         PreferencesGlanceStateDefinition,
@@ -226,14 +224,11 @@ class AISuperWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 }
 
-
 private fun cacheImages(
     layoutRoot: LayoutRoot?,
     valuesMap: MutableMap<String, JsonElement>,
     context: Context
 ) {
-    // Pre-warm image cache: download images in the background so the content provider
-    // can serve them instantly without blocking the RemoteViews host process.
     val imageUrls = mutableSetOf<String>()
     if (layoutRoot != null) imageUrls += collectImageUrls(layoutRoot.layout)
     valuesMap.values.forEach { element -> imageUrls += collectImageUrlsFromValue(element) }
@@ -246,14 +241,11 @@ private fun cacheImages(
                 val bytes = URL(url).openStream().use { it.readBytes() }
                 file.writeBytes(bytes)
             }
-        } catch (_: Exception) { /* non-fatal: provider will retry on demand */
+        } catch (_: Exception) {
         }
     }
 }
 
-/**
- * Recursively collect all non-blank image URLs from [ImageWidget] nodes in the static layout tree.
- */
 private fun collectImageUrls(widget: Widget): List<String> = when (widget) {
     is ImageWidget -> listOfNotNull(widget.url.takeIf { it.isNotBlank() })
     is com.damn.aisuper.layout.ColumnWidget ->
@@ -267,11 +259,6 @@ private fun collectImageUrls(widget: Widget): List<String> = when (widget) {
     else -> emptyList()
 }
 
-/**
- * Extract image URLs from a [JsonElement] that may be a dynamic widget array value
- * (e.g. `imageList = [{"type":"Image","url":"..."},...]`).
- * Handles both raw JsonArray and a string-encoded JSON array.
- */
 private fun collectImageUrlsFromValue(element: JsonElement): List<String> {
     val array: JsonArray = when (element) {
         is JsonArray -> element
@@ -295,26 +282,5 @@ private fun collectImageUrlsFromValue(element: JsonElement): List<String> {
                     ?.takeIf { it.isNotBlank() }
             } else null
         } else null
-    }
-}
-
-/**
- * Load the raw JSON string for a style by ID from applet.json + the style file path.
- * Returns null if the style cannot be found or loaded.
- */
-@androidx.annotation.WorkerThread
-private suspend fun loadStyleJson(context: Context, styleId: String): String? {
-    return try {
-        val manifestBytes = Res.readBytes("files/applet.json")
-        val manifest = json
-            .decodeFromString<AppletManifest>(manifestBytes.decodeToString())
-        val styleFile = manifest.styles[styleId]?.file ?: run {
-            Log.w(TAG, "Style '$styleId' not found in manifest")
-            return null
-        }
-        Res.readBytes(styleFile).decodeToString()
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to load style '$styleId': ${e.message}")
-        null
     }
 }

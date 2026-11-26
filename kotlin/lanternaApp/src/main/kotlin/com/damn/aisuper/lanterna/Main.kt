@@ -1,6 +1,9 @@
-package com.damn.aisuper.lanterna
+﻿package com.damn.aisuper.lanterna
 
-import com.damn.aisuper.applet.AppletProviders
+import com.damn.aisuper.applet.AppletEntry
+import com.damn.aisuper.applet.AppletSourceKind
+import com.damn.aisuper.applet.JvmAppletScanner
+import com.damn.aisuper.applet.ResolvedApplet
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.layout.*
 import com.damn.aisuper.modal.ConfirmationRequest
@@ -45,186 +48,206 @@ fun main(args: Array<String>) {
     val mainPanel = Panel(LinearLayout(Direction.VERTICAL))
     window.component = mainPanel
 
-    // 2. Setup AISuper Core Applet
-    val provider = if (args.isNotEmpty()) {
-        val path = Paths.get(args[0])
-        val file = path.toFile()
-        if (file.isFile && file.extension.equals("zip", ignoreCase = true)) {
-            AppletProviders.zip(path)
-        } else {
-            AppletProviders.filesystem(path, fallbackToClasspath = true)
-        }
-    } else {
-        AppletProviders.classpath()
-    }
-
-    val applet = Applet(
-        engineFactory = { createAppJSEngine("app-ui") },
-        resourceLoader = provider.createLoader()
-    )
-
-    // 3. Collect State and Render
     val scope = CoroutineScope(Dispatchers.Default + Job())
+    var activeApplet: Applet? = null
+    var activeJob: Job? = null
+    var modalJob: Job? = null
 
-    scope.launch {
-        val entryPath = if (args.isNotEmpty()) "applet.json" else "files/applet.json"
-        try {
-            applet.loadApplet(entryPath)
-        } catch (e: Exception) {
-            if (entryPath != "files/applet.json") {
-                // We use println here because Logger is disabled and we might want to see critical startup errors
-                // but since it's a TUI, even this might be problematic if it happens after screen.startScreen()
-                // However, the requirement was to disable Logger, so we follow that.
-                try {
-                    applet.loadApplet("files/applet.json")
-                } catch (e2: Exception) {
-                    // Critical failure
-                }
-            }
-        }
-    }
+    fun startResolvedApplet(resolved: ResolvedApplet) {
+        activeJob?.cancel()
+        modalJob?.cancel()
+        activeApplet?.close()
 
-    scope.launch {
-        var layoutJob: Job? = null
-        var previousRoot: LayoutRoot? = null
-        var previousValues: Map<String, JsonElement> = emptyMap()
-        var previousStyleSheet: StyleSheet? = null
-        val lastTypedValues = mutableMapOf<String, String>()
+        val applet = Applet(
+            engineFactory = { createAppJSEngine("app-ui") },
+            resourceLoader = resolved.provider.createLoader()
+        )
+        activeApplet = applet
 
-        applet.currentFeature.collect { feature ->
-            layoutJob?.cancel()
-            previousRoot = null
-            previousValues = emptyMap()
-            previousStyleSheet = null
-            lastTypedValues.clear()
-
-            if (feature == null) {
+        scope.launch {
+            try {
+                applet.loadApplet(resolved.entry.entryPath)
+            } catch (e: Exception) {
                 gui.updateUI {
                     mainPanel.removeAllComponents()
-                    mainPanel.addComponent(Label("Loading Applet..."))
+                    mainPanel.addComponent(Label("Failed to load '${resolved.entry.name}': ${e.message}"))
                 }
-                return@collect
             }
+        }
 
-            layoutJob = scope.launch {
-                combine(
-                    feature.layoutRoot,
-                    feature.values,
-                    applet.currentStyleSheet
-                ) { root, values, styleSheet ->
-                    Triple(root, values, styleSheet)
-                }.collect { (root, values, styleSheet) ->
-                    val rootChanged = root != previousRoot
-                    val styleChanged = styleSheet != previousStyleSheet
-                    val changedKeys = values.filter { (k, v) -> previousValues[k] != v }.keys
+        activeJob = scope.launch {
+            var layoutJob: Job? = null
+            var previousRoot: LayoutRoot? = null
+            var previousValues: Map<String, JsonElement> = emptyMap()
+            var previousStyleSheet: StyleSheet? = null
+            val lastTypedValues = mutableMapOf<String, String>()
 
-                    val meaningfulChanges = changedKeys.filter { key ->
-                        val typedVal = lastTypedValues[key]
-                        val newVal = values[key]?.stringOrNull() ?: ""
-                        typedVal != newVal
-                    }
+            applet.currentFeature.collect { feature ->
+                layoutJob?.cancel()
+                previousRoot = null
+                previousValues = emptyMap()
+                previousStyleSheet = null
+                lastTypedValues.clear()
 
-                    previousRoot = root
-                    previousValues = values
-                    previousStyleSheet = styleSheet
-
-                    if (!rootChanged && !styleChanged && meaningfulChanges.isEmpty()) {
-                        // Skip re-render if it's just an echo of what we are currently typing
-                        return@collect
-                    }
-
+                if (feature == null) {
                     gui.updateUI {
                         mainPanel.removeAllComponents()
+                        mainPanel.addComponent(Label("Loading Applet..."))
+                    }
+                    return@collect
+                }
 
-                        // Apply global background from theme if available
-                        if (styleSheet != null) {
-                            val isDark = styleSheet.scheme == "dark"
-                            val isProbablyDark = isDark || styleSheet.name?.contains("Neon", ignoreCase = true) == true || styleSheet.name?.contains("Dark", ignoreCase = true) == true
+                layoutJob = scope.launch {
+                    combine(
+                        feature.layoutRoot,
+                        feature.values,
+                        applet.currentStyleSheet
+                    ) { root, values, styleSheet ->
+                        Triple(root, values, styleSheet)
+                    }.collect { (root, values, styleSheet) ->
+                        val rootChanged = root != previousRoot
+                        val styleChanged = styleSheet != previousStyleSheet
+                        val changedKeys = values.filter { (k, v) -> previousValues[k] != v }.keys
 
-                            val bgHex = styleSheet.classes["screen"]?.backgroundColor
-                                ?: styleSheet.classes["screen"]?.containerColor
-                                ?: styleSheet.tokens.values["backgroundColor"]
-                                ?: styleSheet.tokens.values["containerColor"]
-                                ?: (if (isProbablyDark) "#000000" else null)
-                            val fgHex = styleSheet.classes["screen"]?.textColor
-                                ?: styleSheet.defaults["Text"]?.textColor
-                                ?: (if (isProbablyDark) "#FFFFFF" else null)
-                            
-                            val bg = toLanternaColor(bgHex)
-                            val fg = toLanternaColor(fgHex)
-                            if (bg != null || fg != null) {
-                                var base = gui.theme
-                                while (base is AisTheme) {
-                                    base = base.baseTheme
+                        val meaningfulChanges = changedKeys.filter { key ->
+                            val typedVal = lastTypedValues[key]
+                            val newVal = values[key]?.stringOrNull() ?: ""
+                            typedVal != newVal
+                        }
+
+                        previousRoot = root
+                        previousValues = values
+                        previousStyleSheet = styleSheet
+
+                        if (!rootChanged && !styleChanged && meaningfulChanges.isEmpty()) {
+                            return@collect
+                        }
+
+                        gui.updateUI {
+                            mainPanel.removeAllComponents()
+
+                            if (styleSheet != null) {
+                                val isDark = styleSheet.scheme == "dark"
+                                val isProbablyDark = isDark || styleSheet.name?.contains("Neon", ignoreCase = true) == true || styleSheet.name?.contains("Dark", ignoreCase = true) == true
+
+                                val bgHex = styleSheet.classes["screen"]?.backgroundColor
+                                    ?: styleSheet.classes["screen"]?.containerColor
+                                    ?: styleSheet.tokens.values["backgroundColor"]
+                                    ?: styleSheet.tokens.values["containerColor"]
+                                    ?: (if (isProbablyDark) "#000000" else null)
+                                val fgHex = styleSheet.classes["screen"]?.textColor
+                                    ?: styleSheet.defaults["Text"]?.textColor
+                                    ?: (if (isProbablyDark) "#FFFFFF" else null)
+
+                                val bg = toLanternaColor(bgHex)
+                                val fg = toLanternaColor(fgHex)
+                                if (bg != null || fg != null) {
+                                    var base = gui.theme
+                                    while (base is AisTheme) {
+                                        base = base.baseTheme
+                                    }
+                                    val theme = AisTheme(fg, bg, base)
+                                    gui.theme = theme
+                                    window.theme = theme
+                                    mainPanel.theme = theme
+                                    mainPanel.fillColorOverride = bg
                                 }
-                                val theme = AisTheme(fg, bg, base)
-                                gui.theme = theme
-                                window.theme = theme
-                                mainPanel.theme = theme
-                                mainPanel.fillColorOverride = bg
+                            }
+
+                            if (root != null) {
+                                val rendered =
+                                    renderWidget(root.layout, applet, values, styleSheet, lastTypedValues)
+                                mainPanel.addComponent(rendered)
+                                findFirstInteractable(rendered)?.takeFocus()
+                            } else {
+                                mainPanel.addComponent(Label("Loading Feature Layout..."))
                             }
                         }
+                    }
+                }
+            }
+        }
 
-                        if (root != null) {
-                            val rendered =
-                                renderWidget(root.layout, applet, values, styleSheet, lastTypedValues)
-                            mainPanel.addComponent(rendered)
-                            // Automatically focus the first interactive component to maintain keyboard navigation
-                            findFirstInteractable(rendered)?.takeFocus()
-                        } else {
-                            mainPanel.addComponent(Label("Loading Feature Layout..."))
+        modalJob = scope.launch {
+            var currentModalWindow: BasicWindow? = null
+            applet.modalHost.activeModal.collect { modal ->
+                gui.updateUI {
+                    currentModalWindow?.let { win ->
+                        gui.removeWindow(win)
+                        currentModalWindow = null
+                    }
+
+                    if (modal is ConfirmationRequest) {
+                        val dialog = BasicWindow(modal.title)
+                        dialog.setHints(listOf(Window.Hint.MODAL, Window.Hint.CENTERED))
+                        dialog.setCloseWindowWithEscape(false)
+
+                        val panel = Panel(LinearLayout(Direction.VERTICAL))
+                        panel.addComponent(Label(modal.message))
+                        panel.addComponent(EmptySpace(TerminalSize(0, 1)))
+
+                        val buttonPanel = Panel(LinearLayout(Direction.HORIZONTAL))
+                        val confirmBtn = Button(modal.confirmText) {
+                            modal.onResult(true)
+                            dialog.close()
                         }
+                        val cancelBtn = Button(modal.cancelText) {
+                            modal.onResult(false)
+                            dialog.close()
+                        }
+
+                        buttonPanel.addComponent(confirmBtn)
+                        buttonPanel.addComponent(cancelBtn)
+                        panel.addComponent(buttonPanel)
+
+                        dialog.component = panel
+                        currentModalWindow = dialog
+                        gui.addWindow(dialog)
+                        confirmBtn.takeFocus()
                     }
                 }
             }
         }
     }
 
-    // 3b. Observe and display Modal Requests (e.g. non-cancellable confirmations).
-    // Note: We use a custom BasicWindow instead of Lanterna's built-in MessageDialog because:
-    // 1) Applets specify arbitrary button labels (e.g. "Arm", "Disarm", "Delete") via confirmText/cancelText,
-    //    whereas MessageDialog is restricted to predefined MessageDialogButton enum values (OK, Cancel, Yes, No, etc.).
-    // 2) Non-blocking reactive lifecycle allows closing the dialog immediately if answered or dismissed
-    //    remotely (e.g. via MCP automation tool `modal_respond`).
-    // 3) Explicitly enforces non-cancellable semantics (setCloseWindowWithEscape(false)).
-    scope.launch {
-        var currentModalWindow: BasicWindow? = null
-        applet.modalHost.activeModal.collect { modal ->
-            gui.updateUI {
-                currentModalWindow?.let { win ->
-                    gui.removeWindow(win)
-                    currentModalWindow = null
-                }
+    fun openEntry(entry: AppletEntry) {
+        val targetPath = when (entry.sourceKind) {
+            AppletSourceKind.ZIP -> Paths.get(entry.sourceRef)
+            AppletSourceKind.DIRECTORY -> Paths.get(entry.sourceRef).resolve(entry.entryPath)
+        }
+        startResolvedApplet(JvmAppletScanner.resolveAppletPath(targetPath))
+    }
 
-                if (modal is ConfirmationRequest) {
-                    val dialog = BasicWindow(modal.title)
-                    dialog.setHints(listOf(Window.Hint.MODAL, Window.Hint.CENTERED))
-                    dialog.setCloseWindowWithEscape(false)
-
-                    val panel = Panel(LinearLayout(Direction.VERTICAL))
-                    panel.addComponent(Label(modal.message))
-                    panel.addComponent(EmptySpace(TerminalSize(0, 1)))
-
-                    val buttonPanel = Panel(LinearLayout(Direction.HORIZONTAL))
-                    val confirmBtn = Button(modal.confirmText) {
-                        modal.onResult(true)
-                        dialog.close()
+    if (args.isNotEmpty()) {
+        runCatching {
+            JvmAppletScanner.resolveAppletPath(Paths.get(args[0]))
+        }.onSuccess { resolved ->
+            startResolvedApplet(resolved)
+        }.onFailure { err ->
+            mainPanel.addComponent(Label("Failed to load '${args[0]}': ${err.message}"))
+            mainPanel.addComponent(Button("Quit") { window.close() })
+        }
+    } else {
+        val defaultDir = JvmAppletScanner.getConfiguredAppletsDirectory()
+        val entries = JvmAppletScanner.scanDirectory(defaultDir)
+        mainPanel.addComponent(Label("AISuper Terminal — Applet Picker"))
+        mainPanel.addComponent(Label("Directory: $defaultDir"))
+        mainPanel.addComponent(EmptySpace(TerminalSize(0, 1)))
+        if (entries.isEmpty()) {
+            mainPanel.addComponent(Label("No applets found. Place folders or .zip archives in the directory above or pass a path via CLI."))
+            mainPanel.addComponent(EmptySpace(TerminalSize(0, 1)))
+            mainPanel.addComponent(Button("Quit") { window.close() })
+        } else {
+            entries.forEach { entry ->
+                mainPanel.addComponent(
+                    Button("${entry.name} [${entry.sourceKind.name}]") {
+                        openEntry(entry)
                     }
-                    val cancelBtn = Button(modal.cancelText) {
-                        modal.onResult(false)
-                        dialog.close()
-                    }
-
-                    buttonPanel.addComponent(confirmBtn)
-                    buttonPanel.addComponent(cancelBtn)
-                    panel.addComponent(buttonPanel)
-
-                    dialog.component = panel
-                    currentModalWindow = dialog
-                    gui.addWindow(dialog)
-                    confirmBtn.takeFocus()
-                }
+                )
             }
+            mainPanel.addComponent(EmptySpace(TerminalSize(0, 1)))
+            mainPanel.addComponent(Button("Quit") { window.close() })
+            findFirstInteractable(mainPanel)?.takeFocus()
         }
     }
 
@@ -233,7 +256,7 @@ fun main(args: Array<String>) {
 
     // 5. Cleanup
     scope.cancel()
-    applet.close()
+    activeApplet?.close()
     screen.stopScreen()
 }
 

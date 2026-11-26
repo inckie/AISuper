@@ -1,6 +1,6 @@
 {
   "id": "com.damn.aisuper.demo",
-  "name": "Super Demo",
+  "name": "Demo",
   "entryFeature": "menu",
   "styles": {
     "light": {
@@ -90,73 +90,6 @@
       "layout": "files/form_layout.json",
       "script": "files/form_script.js",
       "name": "Form Demo"
-    },
-    "transmission": {
-      "layouts": {
-        "settings": "files/transmission_settings_layout.json",
-        "list": "files/transmission_list_layout.json",
-        "add": "files/transmission_add_layout.json"
-      },
-      "script": "files/transmission_script.js",
-      "name": "Transmission RPC",
-      "modules": [
-        {
-          "type": "jsModule",
-          "name": "transmission",
-          "script": "files/transmission_module.js"
-        },
-        {
-          "type": "http",
-          "name": "httpMain"
-        }
-      ]
-    },
-    "weather": {
-      "layouts": {
-        "main": "files/weather_main_layout.json",
-        "settings": "files/weather_settings_layout.json"
-      },
-      "script": "files/weather_script.js",
-      "name": "Weather",
-      "supportsWidget": true,
-      "modules": [
-        {
-          "type": "jsModule",
-          "name": "weather",
-          "script": "files/weather_module.js"
-        },
-        {
-          "type": "http",
-          "name": "httpMain"
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
-    },
-    "metromoverJs": {
-      "layouts": {
-        "main": "files/metromover_layout.json",
-        "settings": "files/metromover_settings_layout.json"
-      },
-      "script": "files/metromover_js_script.js",
-      "name": "Miami Metromover",
-      "modules": [
-        {
-          "type": "jsModule",
-          "name": "miamiMetromover",
-          "script": "files/miami_metromover_module.js"
-        },
-        {
-          "type": "http",
-          "name": "httpMain"
-        },
-        {
-          "type": "geolocation",
-          "name": "geoMain"
-        }
-      ]
     }
   }
 }

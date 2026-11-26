@@ -29,9 +29,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -39,18 +39,27 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import com.damn.aisuper.R
-import com.damn.aisuper.applet.ComposeAppletProvider
+import com.damn.aisuper.applet.AndroidAppletScanner
+import com.damn.aisuper.applet.AppletEntry
+import com.damn.aisuper.applet.decodeAndroidAppletRef
+import com.damn.aisuper.applet.parseAppletManifestBytes
 import com.damn.aisuper.modules.impl.platform.android.AndroidAppContextHolder
-import com.damn.aisuper.runtime.AppletManifest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import org.jetbrains.compose.resources.ExperimentalResourceApi
+import kotlinx.coroutines.withContext
+
+private data class WidgetFeatureChoice(
+    val entry: AppletEntry,
+    val featureId: String,
+    val featureName: String,
+    val styles: List<Pair<String, String>>,
+    val defaultStyleId: String?
+)
 
 class WidgetConfigurationActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
-    @OptIn(ExperimentalResourceApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
@@ -67,8 +76,8 @@ class WidgetConfigurationActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 WidgetConfigScreen(
-                    onConfirm = { featureId, styleId ->
-                        confirmSelection(featureId, styleId)
+                    onConfirm = { choice, styleId ->
+                        confirmSelection(choice, styleId)
                     }
                 )
             }
@@ -80,84 +89,99 @@ class WidgetConfigurationActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    @OptIn(ExperimentalResourceApi::class)
-    private fun confirmSelection(featureId: String, styleId: String?) {
+    private fun confirmSelection(choice: WidgetFeatureChoice, styleId: String?) {
         val resultValue = Intent().apply { putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId) }
-        
+
         lifecycleScope.launch {
             try {
                 val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
-                
-                // Read style JSON if a style was selected
-                var styleJson: String? = null
-                if (!styleId.isNullOrBlank()) {
-                    try {
-                        val bytes = ComposeAppletProvider().createLoader().readBytes("files/applet.json")
-                        val json = Json { ignoreUnknownKeys = true }
-                        val manifest = json.decodeFromString<AppletManifest>(bytes.decodeToString())
-                        val styleFile = manifest.styles[styleId]?.file
-                        if (styleFile != null) {
-                            styleJson = ComposeAppletProvider().createLoader().readBytes(styleFile).decodeToString()
+
+                val styleJson: String? = withContext(Dispatchers.IO) {
+                    val chosenStyleId = styleId?.takeIf { it.isNotBlank() } ?: choice.defaultStyleId
+                    if (chosenStyleId.isNullOrBlank()) return@withContext null
+                    runCatching {
+                        val ref = decodeAndroidAppletRef(choice.entry.sourceRef)
+                        val resolved = AndroidAppletScanner.resolveRef(applicationContext, ref)
+                        val loader = resolved.provider.createLoader()
+                        val manifest = parseAppletManifestBytes(loader.readBytes(resolved.entry.entryPath))
+                        val styleFile = manifest.styles[chosenStyleId]?.file ?: return@runCatching null
+                        loader.readBytes(styleFile).decodeToString()
+                    }.getOrNull()
+                }
+
+                updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[PREF_APPLET_REF] = choice.entry.sourceRef
+                        this[PREF_FEATURE_ID] = choice.featureId
+                        if (styleJson != null) {
+                            this[PREF_STYLE_JSON] = styleJson
+                        } else {
+                            remove(PREF_STYLE_JSON)
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
 
-                // Immediately save the featureId BEFORE finishing, so the initial OS update receives it
-                updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[PREF_FEATURE_ID] = featureId
-                        if (styleJson != null) {
-                            this[PREF_STYLE_JSON] = styleJson
-                        }
-                    }
-                }
-                
-                // Preheat the Applet so the JS engine spins up right away
-                WidgetAppletManager.getOrCreateApplet(glanceId, featureId)
-                
-                // Force an immediate update to ensure Glance recomposes
+                WidgetAppletManager.getOrCreateApplet(
+                    context = applicationContext,
+                    glanceId = glanceId,
+                    appletRefJson = choice.entry.sourceRef,
+                    featureId = choice.featureId
+                )
+
                 AISuperWidget().update(applicationContext, glanceId)
-                
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            
-            // Now tell the OS the configuration is complete. It will trigger provideGlance.
+
             setResult(RESULT_OK, resultValue)
             finish()
         }
     }
 }
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) -> Unit) {
-    var widgetFeatures by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+private fun WidgetConfigScreen(onConfirm: (choice: WidgetFeatureChoice, styleId: String?) -> Unit) {
+    val context = LocalContext.current
+    var widgetChoices by remember { mutableStateOf<List<WidgetFeatureChoice>>(emptyList()) }
     var availableStyles by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var selectedStyleId by remember { mutableStateOf<String?>(null) }
     var styleDropdownExpanded by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val bytes = ComposeAppletProvider().createLoader().readBytes("files/applet.json")
-                val json = Json { ignoreUnknownKeys = true }
-                val manifest = json.decodeFromString<AppletManifest>(bytes.decodeToString())
-                widgetFeatures = manifest.features
-                    .filter { (_, def) -> def.supportsWidget }
-                    .map { (id, def) -> id to (def.name ?: id) }
-                availableStyles = manifest.styles.map { (id, def) -> id to (def.name ?: id) }
-                selectedStyleId = manifest.defaultStyle ?: availableStyles.firstOrNull()?.first
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                loading = false
+        val loaded = withContext(Dispatchers.IO) {
+            val choices = mutableListOf<WidgetFeatureChoice>()
+            val applets = runCatching { AndroidAppletScanner.scanDefaultDirectory(context) }.getOrDefault(emptyList())
+            for (entry in applets) {
+                runCatching {
+                    val resolved = AndroidAppletScanner.resolveRef(context, decodeAndroidAppletRef(entry.sourceRef))
+                    val bytes = resolved.provider.createLoader().readBytes(entry.entryPath)
+                    val manifest = parseAppletManifestBytes(bytes)
+                    val styles = manifest.styles.map { (id, def) -> id to (def.name ?: id) }
+                    manifest.features
+                        .filter { (_, def) -> def.supportsWidget }
+                        .forEach { (featureId, def) ->
+                            choices.add(
+                                WidgetFeatureChoice(
+                                    entry = entry,
+                                    featureId = featureId,
+                                    featureName = def.name ?: featureId,
+                                    styles = styles,
+                                    defaultStyleId = manifest.defaultStyle ?: styles.firstOrNull()?.first
+                                )
+                            )
+                        }
+                }
             }
+            choices
         }
+
+        widgetChoices = loaded
+        val firstStyles = loaded.firstOrNull()?.styles.orEmpty()
+        availableStyles = firstStyles
+        selectedStyleId = loaded.firstOrNull()?.defaultStyleId ?: firstStyles.firstOrNull()?.first
+        loading = false
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -168,7 +192,6 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Style dropdown
             if (availableStyles.isNotEmpty()) {
                 Text(
                     "Style",
@@ -211,21 +234,27 @@ private fun WidgetConfigScreen(onConfirm: (featureId: String, styleId: String?) 
 
             if (loading) {
                 CircularProgressIndicator()
-            } else if (widgetFeatures.isEmpty()) {
-                Text("No features support widget mode.")
+            } else if (widgetChoices.isEmpty()) {
+                Text("No applets in the default directory expose a widget-capable feature.")
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(widgetFeatures) { (featureId, featureName) ->
+                    items(widgetChoices) { choice ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onConfirm(featureId, selectedStyleId) }
+                                .clickable { onConfirm(choice, selectedStyleId) }
                         ) {
-                            Text(
-                                text = featureName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = choice.featureName,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = choice.entry.name,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

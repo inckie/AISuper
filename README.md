@@ -74,25 +74,27 @@ All applet execution lives in the `:shared` Kotlin Multiplatform module — no U
 - **`StateStorage`** — hierarchical, scope-isolated state with transient and persistent backends (APPLET / FEATURE / MODULE / MODULE_GLOBAL scopes).
 - **`HeadlessSessionManager`** / **`HeadlessSession`** — wraps `Applet` for server-side use; re-emits state changes as a `Flow<HeadlessSessionSnapshot>` for REST/SSE delivery.
 
-**Improrant**: Keight JS engine while been awesome piece of code was never intended to be used as full blown JS runtime, so it has a lot of small issues.
+**Important**: Keight JS engine while being an awesome piece of code was never intended to be used as a full blown JS runtime, so it has a lot of small issues.
 
 ## Applet Resources layer (`:applet-provider`)
 
 Decouples *where* applet files live from *who* executes them:
 
-- **`ComposeAppletProvider`** — reads from Compose Multiplatform bundled resources; works on Android, iOS, Desktop, and web-compose targets.
-- **`AppletProviders`** (JVM) — classpath, filesystem, or ZIP strategies; used by the server and JVM tests.
+- **`AppletProvider` / `AppletCatalog`** — shared `AppletEntry`, `ResolvedApplet`, and `AppletSourceKind` (`DIRECTORY`, `ZIP`) models.
+- **`AppletProviders` & `JvmAppletScanner`** (JVM) — filesystem, ZIP, and directory-scanning strategies; scans a configurable default applets directory (defaults to `~/.aisuper/applets`) for folder applets and `.zip` archives.
+- **Android providers** (`:composeApp`) — `AndroidLocalDirectoryAppletProvider`, `AndroidZipAppletProvider`, `AndroidSafDirectoryAppletProvider`, and `AndroidAppletScanner` (App Storage or user-selected SAF folder).
 
-The default applet is bundled here once and made available to all consumers.
+No default applet is baked into the app binary; applets are discovered dynamically or opened from any location.
 
 ## Native UI layer (`:composeApp`)
 
 Renders applet widget trees using Compose Multiplatform on all native and web-compose targets:
 
+- **`AppletPickerScreen` & `AppletStatusBar`** — TinyJS-inspired picker for the default applets directory, external folder/ZIP browsing, and a top status bar (`☰ Applets`, reload `↻`, and `+ Home` shortcut pinning on Android) while an applet is running.
 - **`RikkaLayoutRenderer`** — primary Compose renderer (Rikka UI design system).
 - **`Material3LayoutRenderer`** — alternative Material 3 Compose renderer.
-- **`GlanceLayoutRenderer`** — renders applets as Android App Widgets via Jetpack Glance.
-- Platform entry points: `MainActivity` (Android), `main.kt` (Desktop / web-compose), iOS glue.
+- **`GlanceLayoutRenderer`** — renders applets as Android App Widgets via Jetpack Glance (discovering widget-capable features from the default applets directory).
+- Platform entry points: `MainActivity` (Android, with SAF picking and home screen / dynamic launcher shortcuts), `main.kt` (Desktop with drag-and-drop / web-compose), iOS glue.
 
 The Compose app simply collects the `layoutRoot` and `values` state flows from `Applet`/`Feature` and passes them to the renderer — no business logic here.
 
@@ -128,22 +130,22 @@ A Vite + React + TypeScript browser app that connects to `:server`:
               ▼                            ▼                                  ▼
   ┌─────────────────────┐    ┌──────────────────────────┐   ┌──────────────────────────┐
   │  :composeApp        │    │  :applet-provider        │   │  :server  (Ktor JVM)     │
-  │  Compose renderers  │    │  ComposeAppletProvider   │   │  REST + SSE              │
-  │  platform entries   │◄───│  AppletProviders (JVM)   │──►│  HeadlessSessionManager  │
-  └─────────────────────┘    └──────────────────────────┘   └────────────┬─────────────┘
-                                                                          │ REST / SSE
-                                                             ┌────────────▼─────────────┐
-                                                             │  client-react/  (npm)    │
-                                                             │  React · WidgetRenderer  │
-                                                             └──────────────────────────┘
+  │  Picker · StatusBar │    │  AppletCatalog           │   │  REST + SSE              │
+  │  Compose renderers  │◄───│  JvmAppletScanner        │──►│  HeadlessSessionManager  │
+  │  platform entries   │    │  FS & ZIP Providers      │   └────────────┬─────────────┘
+  └─────────────────────┘    └──────────────────────────┘                │ REST / SSE
+                                                              ┌────────────▼─────────────┐
+                                                              │  client-react/  (npm)    │
+                                                              │  React · WidgetRenderer  │
+                                                              └──────────────────────────┘
 ```
 
-# Custom Applet Loading
+# Applet Discovery and Loading
 
-You can dynamically load external custom applets into the running application instead of relying on the bundled default applet.
+AISuper discovers and loads applets dynamically without any baked-in applet bundle.
 
 ### Format and Directory Structure Requirements
-Custom applets must be either a **ZIP archive** or a **standard directory** (JVM only). The applet must contain the entry point manifest file `applet.json` directly at its root. Any internal resources (scripts, layouts, etc.) referenced in `applet.json` under `"files/"` paths (e.g. `"files/feature1.js"`) must be located inside a sibling `files/` directory.
+Applets can be a **ZIP archive** or a **standard directory**. The applet must contain the entry point manifest file `applet.json` at its root (or under `files/applet.json`, or a single top-level wrapper folder). Any internal resources referenced in `applet.json` under `"files/"` paths (e.g. `"files/feature1.js"`) must reside in a sibling `files/` directory:
 
 ```text
 my-custom-applet/                <-- Root of the ZIP or Directory
@@ -153,8 +155,14 @@ my-custom-applet/                <-- Root of the ZIP or Directory
     └── feature1.json            <-- (Loaded as "files/feature1.json")
 ```
 
-### Loading on JVM Desktop
-Pass the path to your custom applet ZIP or directory as a command-line argument:
+### Default Applets Directory & Picker
+When launched without arguments, AISuper scans the configured default applets directory for folder applets and `.zip` archives and displays the **Applet Picker**:
+- **JVM Desktop**: Defaults to `~/.aisuper/applets` (configurable via **Change Folder** in the picker, saved in `~/.aisuper/aisuper_host.properties`). You can also browse for an external folder/`.zip`/`applet.json`, or drag and drop directly onto the window.
+- **Android**: Defaults to `App Storage / applets` (`/sdcard/Android/data/com.damn.aisuper.androidapp/files/applets`), or any user-selected folder via **Change Folder** (Android Storage Access Framework). You can also browse external folders or `.zip` archives.
+- **Running Status Bar**: While an applet is running, a top status bar provides quick access to **☰ Applets** (reopen picker while keeping the running applet alive), **↻** (reload), and on Android **+ Home** to pin a home screen shortcut (and register a dynamic launcher shortcut).
+
+### Loading via CLI on JVM Desktop
+Pass the path to your custom applet ZIP, directory, or `applet.json` as a command-line argument:
 ```powershell
 # Running the compiled desktop executable
 .\com.damn.aisuper.exe "C:\path\to\my-applet.zip"
@@ -166,7 +174,7 @@ Pass the path to your custom applet ZIP or directory as a command-line argument:
 
 *For more details on building and packaging the JVM Desktop app, see the `applet-lifecycle` article in the `wikiknowledge-aisuper` Knowledge Base.*
 
-### Loading on Android
-On Android, only `.zip` applets are supported. You can load a custom applet using two methods:
+### Additional Android Entry Points
 1. **From a File Manager**: Tap on any `.zip` file. If prompted, choose "AISuper" from the "Open With..." dialog.
-2. **From the App Shortcut**: Long-press the AISuper app icon on your home screen and select **Run custom applet...**. A native file picker will open allowing you to select your applet `.zip`.
+2. **From the App Shortcut**: Long-press the AISuper app icon on your home screen and select **Run custom applet...** (or any recently opened dynamic applet shortcut).
+3. **Pinned Home Screen Shortcuts**: Tap **+ Home** in the running applet status bar to pin a dedicated shortcut for that applet to your home screen.

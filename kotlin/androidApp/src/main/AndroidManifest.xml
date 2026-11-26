@@ -2,6 +2,7 @@
     package="com.damn.aisuper.androidapp">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <application
         android:label="AISuper"
@@ -10,6 +11,7 @@
         <activity
             android:name="com.damn.aisuper.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:icon="@mipmap/ic_launcher"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode"
@@ -65,6 +67,11 @@
 
             <intent-filter>
                 <action android:name="com.damn.aisuper.ACTION_PICK_APPLET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="com.damn.aisuper.ACTION_LAUNCH_APPLET" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 

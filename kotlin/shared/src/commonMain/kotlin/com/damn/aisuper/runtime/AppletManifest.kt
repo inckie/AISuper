@@ -7,6 +7,7 @@ data class AppletManifest(
     val id: String,
     val name: String,
     val entryFeature: String,
+    val icon: String? = null,
     /** Applet-level JS module definitions, shared across all features. */
     val jsModules: Map<String, JsModuleDefinition> = emptyMap(),
     val styles: Map<String, StyleDefinition> = emptyMap(),

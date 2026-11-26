@@ -4,7 +4,7 @@ categories:
 - architecture
 created: '2026-06-20T04:50:15.468213+00:00'
 id: architecture-overview
-modified: '2026-11-14T03:00:43.489191+00:00'
+modified: '2026-11-26T05:49:52.736393+00:00'
 tags:
 - architecture
 - overview
@@ -52,35 +52,34 @@ Contains:
 | `storage/` | `StateStorage`, `InMemoryStateStorage`, `PersistentStateStorage`, `CompositeStateStorage`, `ScopedStateStorage` (see [[state-management-and-persistence\|State Management and Persistence]]) |
 
 ### `:applet-provider`  *(Kotlin Multiplatform library)*
-Targets: same as `:shared` + Compose Resources plugin.
+Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm`, `js`, `wasmJs`.
 
-Responsible for **supplying applet artifacts** to whoever needs them.
+Responsible for **discovering and supplying applet artifacts** to whoever needs them (no baked-in default applet).
 
 | Class | Description |
 |---|---|
 | `AppletProvider` interface | `fun createLoader(): AppletResourceLoader` |
-| `ComposeAppletProvider` | Reads from Compose Multiplatform bundled resources (`commonMain/composeResources/files/`). Used by all Compose targets. |
-| `AppletProviders` (jvmMain) | Factory: `classpath()`, `filesystem(path, fallbackToClasspath)`, `zip(path)`. Used by `:server` and JVM tests. |
-
-Also **bundles the default applet** in both `composeResources/files/` (for Compose targets) and `jvmMain/resources/files/` (for plain classpath access on JVM/server).
+| `AppletCatalog` (`commonMain`) | `AppletEntry`, `ResolvedApplet`, `AppletSourceKind` (`DIRECTORY`, `ZIP`), `parseAppletManifestBytes()` |
+| `AppletProviders` (`jvmMain`) | Factory: `filesystem(root, fallbackRoots)`, `zip(zipPath, rootPrefix)` |
+| `JvmAppletScanner` (`jvmMain`) | Scans a configurable default directory (`~/.aisuper/applets` by default) and resolves folders, `.zip` archives, or `applet.json` paths |
 
 ### `:composeApp`  *(Kotlin Multiplatform app)*
 Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm` (Desktop), `js` (Browser), `wasmJs` (Browser).
 
-Responsible for **all Compose UI rendering and platform entry points**. No server logic here.
+Responsible for **all Compose UI rendering, applet picker/status bar host UI, and platform entry points**. No server logic here.
 
 | Source set | Key files |
 |---|---|
+| `commonMain/host/` | `AppletPickerScreen.kt`, `AppletStatusBar.kt`, `AppletHostModels.kt` – directory picker, external browse, and running status bar |
 | `commonMain/modal/` | `ModalContextProvider.kt` – standalone modal host rendering dialogs over the UI |
 | `commonMain/layout/frontend/rikka/` | `RikkaLayoutRenderer.kt` (primary renderer), `RikkaFrontendTheme.kt` |
 | `commonMain/layout/frontend/material3/` | `Material3LayoutRenderer.kt` |
 | `commonMain/layout/` | `LayoutRenderUtils.kt`, `ColorUtils.kt` |
+| `androidMain/applet/` | `AndroidAppletScanner.kt`, `AndroidSafDirectoryAppletProvider.kt`, `AndroidZipAppletProvider.kt`, `AndroidShortcutHelper.kt` |
 | `androidMain/layout/frontend/glance/` | `GlanceLayoutRenderer.kt` – App Widgets via Jetpack Glance |
 | `androidMain/` | `MainActivity.kt`, `AISuperWidget.kt`, widget helpers |
-| `jvmMain/` | `main.kt` – Desktop Compose window |
+| `jvmMain/` | `main.kt` – Desktop Compose window with picker, folder/file dialogs, drag-and-drop, and MCP harness |
 | `webMain/` | `main.kt` – Browser Compose canvas |
-
-Loads applets via `ComposeAppletProvider` from `:applet-provider`.
 
 ### `:androidApp`  *(Android application shell)*
 Thin Android app module that depends on `:composeApp`. Provides `AndroidManifest.xml`, signing, and packaging.
@@ -89,7 +88,7 @@ Thin Android app module that depends on `:composeApp`. Provides `AndroidManifest
 A **headless HTTP server** that runs applets server-side and exposes them over REST + SSE so web/remote clients can drive them without a native runtime. Contains the headless layer (`com.damn.aisuper.headless`: `HeadlessSessionManager`, `HeadlessSession`, `HeadlessApiModels`, `RemoteAppletClient`).
 
 Entry point: `ServerMain.kt`
-1. Builds an `AppletResourceLoader` via `AppletProviders.filesystem(fallbackToClasspath = true)`.
+1. Resolves an optional CLI applet path via `JvmAppletScanner.resolveAppletPath(...)` or falls back to `AppletProviders.filesystem()`.
 2. Creates a `HeadlessSessionManager` (one `Applet` per session).
 3. Starts Ktor/Netty on `:8080`.
 
@@ -118,7 +117,7 @@ REST API:
 | `src/layoutUtils.ts` | `parseJsonInput()` safe JSON helper |
 
 ### `modules-ts/`  *(npm + TypeScript)*
-TypeScript source for JavaScript modules loaded by the engine at runtime. Compiled output is bundled as applet resources.
+TypeScript source for JavaScript modules loaded by the engine at runtime.
 
 ---
 
@@ -128,17 +127,18 @@ TypeScript source for JavaScript modules loaded by the engine at runtime. Compil
 
 ```
 Platform entry point (MainActivity / main.kt / …)
-  └─ ComposeAppletProvider → AppletResourceLoader
-       └─ Applet.loadApplet("files/applet.json")
-            ├─ Parse AppletManifest
-            ├─ Launch entry Feature
-            │   ├─ Load layout JSON → Widget tree (LayoutRoot)
-            │   ├─ Load + evaluate feature script (AppJSEngine / Keight)
-            │   ├─ Attach FeatureModules via FeatureModuleHost
-            │   └─ Call script.initialize()
-            ├─ modalHost (StateFlow<ModalRequest?>) → ModalContextProvider (Compose Dialogs)
-            └─ currentFeature / layoutRoot / values (StateFlows)
-                 └─ RikkaLayoutRenderer / Material3LayoutRenderer → Compose UI
+  └─ AppletScanner (directory / SAF / ZIP) → AppletPickerScreen
+       └─ AppletProvider → AppletResourceLoader
+            └─ Applet.loadApplet(entryPath)
+                 ├─ Parse AppletManifest
+                 ├─ Launch entry Feature
+                 │   ├─ Load layout JSON → Widget tree (LayoutRoot)
+                 │   ├─ Load + evaluate feature script (AppJSEngine / Keight)
+                 │   ├─ Attach FeatureModules via FeatureModuleHost
+                 │   └─ Call script.initialize()
+                 ├─ modalHost (StateFlow<ModalRequest?>) → ModalContextProvider (Compose Dialogs)
+                 └─ currentFeature / layoutRoot / values (StateFlows)
+                      └─ AppletStatusBar + RikkaLayoutRenderer / Material3LayoutRenderer → Compose UI
 ```
 
 ### Headless / Web path (`:server` + `client-react`)
@@ -175,9 +175,9 @@ UI event (Compose click / React button)
 ## Platform Backends & Security Model
 
 ### Platform Matrix
-* **Android**: QuickJS (Keight), `SharedPreferences` (`KStorage`), Compose + Glance (App Widgets)
+* **Android**: QuickJS (Keight), `SharedPreferences` (`KStorage`), Compose + Glance (App Widgets), SAF/ZIP applet loading & pinned/dynamic shortcuts
 * **iOS**: QuickJS (Keight), `UserDefaults` (`KStorage`), Compose Multiplatform
-* **Desktop/JVM**: QuickJS (Keight), file-based properties (`KStorage`), Compose for Desktop / Lanterna TUI
+* **Desktop/JVM**: QuickJS (Keight), file-based properties (`KStorage`), Compose for Desktop / Lanterna TUI, directory/ZIP/drag-and-drop applet loading
 * **Web / Browser (Compose)**: Native browser JS, `LocalStorage` (`KStorage`), Compose for Web canvas
 * **Web / Browser (React)**: No Kotlin; `client-react/` connects to `:server` via REST/SSE with server-side storage
 

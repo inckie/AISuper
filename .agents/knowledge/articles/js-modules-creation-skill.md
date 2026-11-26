@@ -3,7 +3,7 @@ categories:
 - applet-developer
 created: '2026-06-20T04:50:58.173333+00:00'
 id: js-modules-creation-skill
-modified: '2026-11-14T03:00:30.132341+00:00'
+modified: '2026-11-26T05:50:10.132144+00:00'
 tags:
 - skills
 - js-modules
@@ -36,9 +36,9 @@ This note captures the repeatable workflow for adding or debugging JS modules in
 
 1. TypeScript source: `modules-ts/modules/<moduleId>/index.ts`
 2. Build config: `modules-ts/modules/<moduleId>/module.config.json`
-3. Build output (generated): `composeApp/src/commonMain/composeResources/files/<module>_module.js`
-4. Feature declaration in: `composeApp/src/commonMain/composeResources/files/applet.json`
-5. Feature script: `composeApp/src/commonMain/composeResources/files/<feature>_script.js`
+3. Build output (generated): `<appletRoot>/files/<module>_module.js`
+4. Feature declaration in: `<appletRoot>/applet.json`
+5. Feature script: `<appletRoot>/files/<feature>_script.js`
 
 ### module.config.json shape
 ```json

@@ -53,6 +53,9 @@ class Applet(
 
     val modalHost: ModalHostState = DefaultModalHostState()
 
+    private val _currentManifest = MutableStateFlow<AppletManifest?>(null)
+    val currentManifest = _currentManifest.asStateFlow()
+
     private var manifest: AppletManifest? = null
 
     suspend fun loadApplet(
@@ -67,6 +70,7 @@ class Applet(
 
             val json = Json { ignoreUnknownKeys = true }
             manifest = json.decodeFromString<AppletManifest>(jsonString)
+            _currentManifest.value = manifest
 
             ui.loadStyleSheets(json, manifest, resourceLoader)
 

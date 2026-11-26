@@ -3,7 +3,7 @@
     "type": "Column",
     "fillMaxSize": true,
     "children": [
-      { "type": "Text", "text": "AI Super App Menu", "classes": ["header_text"] },
+      { "type": "Text", "text": "Demo Menu", "classes": ["header_text"] },
       {
         "type": "Row",
         "fillMaxWidth": true,

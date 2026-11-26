@@ -15,14 +15,6 @@ val KEY_ACTION = ActionParameters.Key<String>("widget_action")
 /** ActionParameters key carrying serialised JSON array of action args. */
 val KEY_ARGS    = ActionParameters.Key<String>("widget_args")
 
-/**
- * Generic Glance ActionCallback that:
- * 1. Reads the persisted featureId from widget state.
- * 2. Boots the Applet + feature.
- * 3. Calls the JS action named in [KEY_ACTION] with args from [KEY_ARGS].
- * 4. Waits for async work to settle.
- * 5. Snapshots the updated layout + values and pushes them back to the widget.
- */
 @Keep
 class WidgetActionCallback : ActionCallback {
 
@@ -36,6 +28,7 @@ class WidgetActionCallback : ActionCallback {
         }
 
         val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
+        val appletRef = prefs[PREF_APPLET_REF] ?: return
         val featureId = prefs[PREF_FEATURE_ID] ?: return
 
         val actionName = parameters[KEY_ACTION] ?: return
@@ -46,12 +39,7 @@ class WidgetActionCallback : ActionCallback {
             else emptyList()
         } catch (_: Exception) { emptyList() }
 
-        val applet = WidgetAppletManager.getOrCreateApplet(glanceId, featureId)
+        val applet = WidgetAppletManager.getOrCreateApplet(context, glanceId, appletRef, featureId) ?: return
         applet.handleAction(actionName, actionArgs)
-        
-        // We don't need to manually serialize and save JSON snapshots anymore.
-        // The live applet's state flows are observed by provideGlance,
-        // so any state changes will automatically trigger a widget recomposition.
     }
 }
-

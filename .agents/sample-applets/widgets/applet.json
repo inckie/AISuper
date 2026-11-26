@@ -74,5 +74,27 @@
       "script": "files/confirmation_script.js",
       "name": "Confirmation Dialog Demo"
     }
+  },
+  "fluentos": {
+    "id": "widgets",
+    "title": "Widgets",
+    "shortName": "Widgets",
+    "subtitle": "Widgets demo applet",
+    "icon": "widget",
+    "emoji": "📱",
+    "accent": "#be123c",
+    "defaultWindow": {
+      "width": 640,
+      "height": 580,
+      "x": 220,
+      "y": 110
+    },
+    "order": 40,
+    "requires": {
+      "modules": [
+        "http"
+      ],
+      "pods": []
+    }
   }
 }

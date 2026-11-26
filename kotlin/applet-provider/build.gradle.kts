@@ -4,8 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 group = "com.damn.aisuper"
@@ -18,7 +17,6 @@ kotlin {
         namespace = "com.damn.aisuper.appletprovider"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
-        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
@@ -44,22 +42,12 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
         }
-        // jvmMain contains FileSystemAppletProvider, ClasspathAppletProvider, ZipAppletProvider.
-        // We also add commonMain/composeResources as a JVM resources source directory so the
-        // bundled applet files (files/applet.json, etc.) are accessible on the JVM classpath
-        // via ClassLoader.getResourceAsStream("files/...") without maintaining a second copy.
-        jvmMain {
-            resources.srcDir("src/commonMain/composeResources")
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
-}
-
-compose.resources {
-    // Keep the generated Res accessor in a stable, predictable package
-    packageOfResClass = "aisuper.appletprovider.generated.resources"
-    generateResClass = always
 }

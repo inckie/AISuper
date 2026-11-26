@@ -53,6 +53,7 @@ kotlin {
     sourceSets {
         androidMain {
             dependencies {
+                implementation(libs.androidx.core.ktx)
                 implementation(libs.compose.uiToolingPreview)
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.compose.uiTooling) // moved debug tooling dependency into androidMain

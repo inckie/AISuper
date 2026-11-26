@@ -1,6 +1,7 @@
 package com.damn.aisuper.server
 
 import com.damn.aisuper.applet.AppletProviders
+import com.damn.aisuper.applet.JvmAppletScanner
 import com.damn.aisuper.engine.createAppJSEngine
 import com.damn.aisuper.headless.ActionRequest
 import com.damn.aisuper.headless.CreateSessionRequest
@@ -30,26 +31,16 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
-import java.io.File
+import java.nio.file.Paths
 import java.util.UUID
 
 fun main(args: Array<String>) {
-    val customProvider = args.firstOrNull()?.let { pathString ->
-        val file = File(pathString)
-        if (file.isDirectory) {
-            AppletProviders.filesystem(file.toPath(), fallbackToClasspath = false)
-        } else if (file.extension.equals("zip", ignoreCase = true)) {
-            AppletProviders.zip(file.toPath())
-        } else {
-            null
-        }
+    val resolvedCli = args.firstOrNull()?.let { pathString ->
+        JvmAppletScanner.resolveAppletPath(Paths.get(pathString))
     }
 
-    // Filesystem-first with classpath fallback: custom path overrides work,
-    // and the bundled default applet from :applet-provider is always available.
-    val resourceLoader = (customProvider ?: AppletProviders
-        .filesystem(fallbackToClasspath = true))
-        .createLoader()
+    val resourceLoader = (resolvedCli?.provider ?: AppletProviders.filesystem()).createLoader()
+    val defaultEntryPath = resolvedCli?.entry?.entryPath ?: "applet.json"
 
     val manager = HeadlessSessionManager(
         appletFactory = { sessionId ->
@@ -95,7 +86,7 @@ fun main(args: Array<String>) {
                     val request = call.receive<CreateSessionRequest>()
                     
                     val entryPath = request.manifestPath.takeIf { it.isNotEmpty() }
-                        ?: if (customProvider != null) "applet.json" else "files/applet.json"
+                        ?: defaultEntryPath
 
                     val session = manager.create(entryPath)
                     val createdState = session.snapshot("created")
